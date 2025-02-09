@@ -6,10 +6,7 @@ OrbitCamera::OrbitCamera(volpe::App* pApp)
     m_lastMousePos = m_pApp->getMousePos();
 }
 
-OrbitCamera::~OrbitCamera()
-{
-
-}
+OrbitCamera::~OrbitCamera() {}
 
 void OrbitCamera::update(float dt)
 {
@@ -47,7 +44,7 @@ void OrbitCamera::update(float dt)
     m_lastMousePos = mousePos;
 }
 
-glm::mat4 OrbitCamera::getViewMatrix()
+glm::mat4 OrbitCamera::getViewMatrix() 
 {
     glm::mat4 m(1.0f);
     m = glm::rotate(m_rotY, glm::vec3(0.0f,1.0f,0.0f));

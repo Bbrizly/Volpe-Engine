@@ -3,37 +3,30 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "../volpe/Volpe.h"
-#include "SceneManager.h"
+#include "Program.h"
 using namespace std;
 
 class Main : public volpe::App {
 private:
-    SceneManager* scene;
+    Program* program;
 
 public:
     Main() 
         : App("Volpe Engine")
     {
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        // glDisable(GL_DEPTH_TEST);
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LEQUAL);
-        glDisable(GL_CULL_FACE);
-
-        scene = new SceneManager(this);
-        scene->initScene();
+        program = new Program(this);
+        program->init();
 
     }
 
     ~Main() override 
     {
-        delete scene;
+        delete program;
     }
 
     void update(float dt) override 
     {
-        scene->update(dt);
+        program->update(dt);
     }
 
     void render() override 
@@ -41,7 +34,7 @@ public:
         glClearColor(0.0f, 0.5f, 0.5f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        scene->draw(m_width,m_height);
+        program->draw(m_width,m_height);
 
     }
 };

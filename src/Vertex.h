@@ -14,7 +14,6 @@ struct Vertex {
           nx(0), ny(0), nz(1)
     {}
 
-    // Input constructor
     Vertex(GLfloat px, GLfloat py, GLfloat pz, 
            GLubyte pr, GLubyte pg, GLubyte pb, GLubyte pa, 
            GLfloat pu, GLfloat pv,

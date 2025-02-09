@@ -9,7 +9,6 @@
 using namespace std;
 using namespace glm;
 
-// Simple “debug” geometry
 class DebugCube : public Node
 {
 private:

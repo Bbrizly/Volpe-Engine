@@ -1,21 +1,22 @@
 #pragma once
 
+#include "Camera.h"
 #include "../volpe/Volpe.h"
 
-class OrbitCamera
+class OrbitCamera : public Camera
 {
 public:
     OrbitCamera(volpe::App* pApp);
     virtual ~OrbitCamera();
 
-    void update(float dt);
-    glm::mat4 getViewMatrix();
-    glm::mat4 getProjMatrix(int width, int height);
+    void update(float dt) override;
+    glm::mat4 getViewMatrix()  override;
+    glm::mat4 getProjMatrix(int width, int height)  override;
+
     glm::vec3 getViewDirection() const;
     glm::vec3 getViewPosition() const;
 
     void focusOn(const glm::vec3& min, const glm::vec3& max);
-
 private:
     void _rotate(const glm::vec2& mouseMovement);
     glm::vec3 _getCameraUp();
