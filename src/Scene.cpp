@@ -96,7 +96,7 @@ void Scene::RandomInitScene()
     // allCubes.push_back(parentCube);
 
     // Generate child cubes with random positions and parent-child relationships
-    for (int i = 1; i <= 5; ++i)
+    for (int i = 1; i <= 200; ++i)
     {
         DebugCube* newCube = new DebugCube("cube_" + std::to_string(i));
         glm::vec3 randomPos(distPos(gen), 0.0f, distPos(gen));
@@ -107,7 +107,7 @@ void Scene::RandomInitScene()
         // allCubes[parentIndex]->addChild(newCube);
 
         AddNode(newCube);
-        return;
+        // return;5
         // allCubes.push_back(newCube);
     }
 
@@ -136,8 +136,6 @@ void Scene::ShowDebugText()
 }
 
 void Scene::Update(float dt, int screenWidth, int screenHeight) {
-
-
     #pragma region  Get FPS
     static int frameCounter = 0;
     static float accumulatedTime = 0.0f;
@@ -147,7 +145,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     // Only update FPS text every 10 frames
     frameCounter++;
     accumulatedTime += dt;
-    if (frameCounter >= 30) { 
+    if (frameCounter >= 60) { 
         float avgFps = frameCounter / accumulatedTime;  // Calculate smoothed FPS
         textBox->SetText("FPS: " + std::to_string((int)avgFps));
         
@@ -175,14 +173,14 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     // if (m_activeCamera && m_quadTree) {
     //     m_quadTree->Query(frustum, m_objectsToRender);
     // } else {
-        // m_objectsToRender = m_nodes;
+        m_nodesToRender = m_nodes;
     //     // std::cout<<"WHAT?";
     // }
 }
 void Scene::Clear()
 {
     m_nodes.clear();
-    m_objectsToRender.clear();
+    m_nodesToRender.clear();
     DebugRender::Instance().Clear();
 }
 
@@ -193,25 +191,24 @@ void Scene::Render(int screenWidth, int screenHeight) {
     glm::mat4 proj = m_activeCamera->getProjMatrix(screenWidth, screenHeight);
     glm::mat4 view = m_activeCamera->getViewMatrix();
     
+    m_pGrid->render(view,proj);
+
+    //COMMENT OUT TO DEBUG QUADTREE LOGICCCC
+    //MAKE SURE TO ADD DEBUG CIRCLE TO EVERY NODE BEFOREHAND
+    for (auto node : m_nodesToRender)
+        // node->draw(proj, view);
+        
+    if(m_renderQuadTree)
+        m_quadTree->Render(proj, view);
+
+    // DebugRender::Instance().Render(proj,view);
+    
     //Render text
     if(m_textRenderer && textBox)
     {
         glDisable(GL_DEPTH_TEST);
         m_textRenderer->render(proj,view);
-        // textBox->Render(proj, view);
         glEnable(GL_DEPTH_TEST);
     }
-    
-    m_pGrid->render(view,proj);
-
-    for (auto node : m_nodes)//m_objectsToRender)
-        node->draw(proj, view);
-        
-    if(m_renderQuadTree)
-        m_quadTree->Render(proj, view);
-
-        
-
-    // DebugRender::Instance().Render(proj,view);
 }
 

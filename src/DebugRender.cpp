@@ -5,7 +5,7 @@
 using namespace std;
 
 DebugRender::DebugRender() : m_vertexBuffer(nullptr), m_vertexDecl(nullptr) {
-    m_pProgram = volpe::ProgramManager::CreateProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
+    m_pProgram = volpe::ProgramManager::CreateProgram("data/Debug.vsh", "data/Debug.fsh");
 }
 
 DebugRender::~DebugRender() {}
@@ -16,8 +16,13 @@ DebugRender& DebugRender::Instance() {
 }
 
 void DebugRender::DrawLine(const glm::vec3& start, const glm::vec3& end, const glm::vec3& color) {
-    vertices.push_back({start, color});
-    vertices.push_back({end, color});
+    glm::vec3 adjustedStart = start + glm::vec3(0.0f, 0.5f, 0.0f);
+    glm::vec3 adjustedEnd = end + glm::vec3(0.0f, 0.5f, 0.0f);
+
+    vertices.push_back({adjustedStart, color});
+    vertices.push_back({adjustedEnd, color});
+    // vertices.push_back({start, color});
+    // vertices.push_back({end, color});
 }
 
 void DebugRender::DrawSquare(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& p4, const glm::vec3& color) {
@@ -26,10 +31,10 @@ void DebugRender::DrawSquare(const glm::vec3& p1, const glm::vec3& p2, const glm
     DrawLine(p3, p4, color);
     DrawLine(p4, p1, color);
     
-    updateBuffer();
+    pushVertexData();
 }
 
-void DebugRender::DrawSphere(const glm::vec3& center, float radius, const glm::vec3& color) {
+void DebugRender::DrawCircle(const glm::vec3& center, float radius, const glm::vec3& color) {
     int segments = 16;
     for (int i = 0; i < segments; i++) {
         float theta1 = i * 2.0f * 3.14159f / segments;
@@ -41,10 +46,10 @@ void DebugRender::DrawSphere(const glm::vec3& center, float radius, const glm::v
         DrawLine(p1, p2, color);
     }
     
-    updateBuffer();
+    pushVertexData();
 }
 
-void DebugRender::updateBuffer() {
+void DebugRender::pushVertexData() {
     // if (m_vertexBuffer) {
     //     volpe::BufferManager::DestroyBuffer(m_vertexBuffer);
     //     m_vertexBuffer = nullptr;
@@ -70,7 +75,6 @@ void DebugRender::Render(const glm::mat4& proj, const glm::mat4& view) {
 
     // for(auto x: vertices){std::cout<<x.position.x<<", "<<x.position.y<<", "<<x.position.z<<".\n";}
 
-
     glm::mat4 world = glm::mat4(1.0f);
     glm::mat4 worldIT = glm::transpose(glm::inverse(world));
 
@@ -82,8 +86,6 @@ void DebugRender::Render(const glm::mat4& proj, const glm::mat4& view) {
 
     m_vertexDecl->Bind();
     glDrawArrays(GL_LINES, 0, vertices.size());
-
-    // Clear();
 }
 
 void DebugRender::Clear() {

@@ -39,6 +39,7 @@ QuadTree::~QuadTree() {
         delete child;
 
     m_children.clear();
+
     // DebugRender::Instance().Clear();
 }
 
@@ -51,9 +52,10 @@ void QuadTree::Insert(Node* node)
     glm::vec3 pos3D = glm::vec3(world[3]);
     glm::vec2 pos2D(pos3D.x, pos3D.z);
 
-    DebugRender::Instance().DrawSphere(glm::vec3(pos3D.x,0.0f, pos3D.z),5,glm::vec3(1));
+    DebugRender::Instance().DrawCircle(glm::vec3(pos3D.x,0.0f, pos3D.z),0.2f,glm::vec3(1));
+    // std::cout << "Inserting Node: " << node->getName() << " at (" << pos2D.x << ", " << pos2D.y << ")\n";
 
-    // If this node doesn't belong in this quadrant, do nothing
+    // If this node not in quad, move on
     if (!Contains(pos2D)) {
         return;
     }
@@ -65,16 +67,15 @@ void QuadTree::Insert(Node* node)
         return;
     }
 
-    // Otherwise we need to ensure we have children
     if (m_children.empty()) {
         Subdivide();
 
-        // Once we have children, push all existing nodes down into them
+        // push all existing nodes down to the children
         for (auto* existing : m_nodes) {
             glm::vec3 exPos3D = glm::vec3(existing->getWorldTransform()[3]);
             glm::vec2 exPos2D(exPos3D.x, exPos3D.z);
 
-            // Insert each existing node into exactly one child
+            // Cross ref parent quad nodes with children and assign them
             for (auto* child : m_children) {
                 if (child->Contains(exPos2D)) {
                     child->Insert(existing);
@@ -82,11 +83,11 @@ void QuadTree::Insert(Node* node)
                 }
             }
         }
-        // Parent no longer holds anything
+        // Parent has nothing
         m_nodes.clear();
     }
 
-    // Finally, insert the new node into whichever child contains it
+    // insert the new node into whichever child contains it
     for (auto* child : m_children) {
         if (child->Contains(pos2D)) {
             child->Insert(node);
@@ -94,29 +95,6 @@ void QuadTree::Insert(Node* node)
         }
     }
 }
-
-
-// void QuadTree::Insert(Node* node) {
-//     glm::mat4 world = node->getWorldTransform();
-//     glm::vec3 pos(world[3]);
-//     glm::vec2 pos2D(pos.x, pos.z);
-//     if (!Contains(pos2D))
-//         return;
-//     std::cout << "Inserting node at: " << pos.x << ", " << pos.z << "\n"; 
-//     DebugRender::Instance().DrawSphere(glm::vec3(pos.x,0.0f,pos.z),10,glm::vec3(0));
-//     if (m_children.empty() && (m_nodes.size() < MAX_OBJECTS || m_level == MAX_LEVELS)) {
-//         m_nodes.push_back(node);
-//     } else {
-//         std::cout<<"LOOKIE HERE\n";
-//         if (m_children.empty())
-//         {
-//             std::cout<<"DDD HERE\n";
-//             Subdivide();
-//         }
-//         for (auto child : m_children)
-//             child->Insert(node);
-//     }
-// }
 
 void QuadTree::Query(const Frustum& frustum, std::vector<Node*>& results)
 {
@@ -155,6 +133,10 @@ void QuadTree::BuildDebugLines() {
     glm::vec3 p2(m_bounds.max.x, fixedY, m_bounds.min.y);
     glm::vec3 p3(m_bounds.max.x, fixedY, m_bounds.max.y);
     glm::vec3 p4(m_bounds.min.x, fixedY, m_bounds.max.y);
+    
+    // std::cout << "m_bounds.min: (" << m_bounds.min.x << ", " << m_bounds.min.y << ")" << std::endl;
+    // std::cout << "m_bounds.max: (" << m_bounds.max.x << ", " << m_bounds.max.y << ")" << std::endl;
+
 
     DebugRender::Instance().DrawSquare(p1,p2,p3,p4,glm::vec3(1.0f));
     
@@ -165,9 +147,13 @@ void QuadTree::BuildDebugLines() {
 
 }
 
-void QuadTree::Render(const glm::mat4& proj, const glm::mat4& view) {
-    
-    BuildDebugLines();
+void QuadTree::Render(const glm::mat4& proj, const glm::mat4& view)
+{
+    if(keepOld)
+    {
+        keepOld = false;
+        BuildDebugLines();
+    }
     DebugRender::Instance().Render(proj,view);
 }
 

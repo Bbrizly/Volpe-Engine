@@ -49,7 +49,6 @@ Font* TextRenderer::createFont(const string& fontDataPath) {
 
 TextBox* TextRenderer::createTextBox(Font* font, const string& text, float x, float y, float width, float height) {
     auto textBox = new TextBox(font, text, width, height, TextShader, m_pTextTable);
-
     
     textBox->SetPosition(x, y);
     return textBox;

@@ -21,7 +21,7 @@ private:
     Scene& operator=(const Scene&) = delete;
 
     vector<Node*> m_nodes;
-    vector<Node*> m_objectsToRender;
+    vector<Node*> m_nodesToRender;
     vector<Light> m_lights; 
     Camera* m_activeCamera;
     QuadTree* m_quadTree;

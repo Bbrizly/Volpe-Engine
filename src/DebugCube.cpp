@@ -106,11 +106,12 @@ void DebugCube::Render(const glm::mat4& proj, const glm::mat4& view)
 {
     if(!m_pProgram || !m_vertexBuffer || !m_vertexDecl || m_numVertices==0) {
         
-        std::cerr << "ERROR: DebugCube::Render() Skipped - Missing Shader, Buffer, or Vertices!\n";
+        std::cerr << "RENDER SKIPPED\n";
         return;
     }
 
     glm::mat4 world = getWorldTransform();
+
     // glm::mat4 modelViewProj = proj * view * world;
     glm::mat4 worldIT = glm::transpose(glm::inverse(world));
 

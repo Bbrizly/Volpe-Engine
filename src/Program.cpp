@@ -43,14 +43,16 @@ void Program::init()
 
 void Program::update(float dt)
 {
+    //DEBUGGING THE TEXT POSITIONS CUZ ITS SHIT
+    //looks funny keeping for now
     if(m_pApp->isKeyDown('W') || m_pApp->isKeyJustDown('a'))
     {
         std::random_device rd;
         std::mt19937 gen(rd());
-        std::uniform_real_distribution<float> distPos(-100.0f, 100.0f); // Random positions
-        std::uniform_int_distribution<int> distChildren(0, 3); // Random number of children per cube
+        // -640.0f, 360.0f
+        std::uniform_real_distribution<float> distPos(0.0f, 40.0f);
 
-        Scene::Instance().setTextBoxPos(distPos(gen),distPos(gen));
+        Scene::Instance().setTextBoxPos(-640.0f + distPos(gen), 360.0f - distPos(gen));
 
     }
 
