@@ -108,6 +108,7 @@ void TextBox::SetVisualization(bool visualization)
 
 void TextBox::GenerateVertices()
 {
+    // std::cout << "Generating vertices for text: " << m_text << std::endl;
     m_vertices.clear();
 
     if(m_visualization) {
@@ -135,6 +136,8 @@ void TextBox::GenerateVertices()
     BuildVerticesFromLines(finalLines, scale, truncated);
 
     pushVertexData(m_vertexBuffer, m_vertexDecl, m_vertices);
+
+    // std::cout << "Total vertices generated: " << m_vertices.size() << std::endl;
 }
 
 string TextBox::SubstitutePlaceholders(const string& raw) const
@@ -316,7 +319,9 @@ void TextBox::BuildVerticesFromLines(const vector<string>& lines,
 void TextBox::BuildVerticesActual(const vector<string>& lines,
                                   float scale)
 {
-    if(!m_font || !m_font->GetTexture()) return;
+    if(!m_font || !m_font->GetTexture()) {return;}
+    
+    // cout<<m_font->GetTexture()->m_width;
 
     float texW  = m_font->GetTexture()->GetWidth();
     float texH  = m_font->GetTexture()->GetHeight();
@@ -489,14 +494,18 @@ void TextBox::pushVertexData(volpe::VertexBuffer*& vBuffer,
 void TextBox::Render(const glm::mat4& proj, const glm::mat4& view)
 {
     if(!m_pProgram || !m_vertexBuffer || !m_vertexDecl || m_numVertices==0) {
+        std::cout << "Skipping render: No shader, buffer, or vertices." << std::endl;
         return;
     }
+
+    // std::cout << "Rendering text with " << m_numVertices << " vertices." << std::endl;
 
     m_pProgram->Bind();
     m_pProgram->SetUniform("projection", proj);
     m_pProgram->SetUniform("view", view);
 
     if(m_font && m_font->GetTexture()) {
+        // std::cout << "Binding font texture." << std::endl;
         m_font->GetTexture()->Bind(0);
         m_pProgram->SetUniform("u_texture", 0);
     }

@@ -27,6 +27,7 @@ public:
     ~TextRenderer();
 
     void init(TextTable* pTable);
+    void init();
     void update(float dt);
     void render(const glm::mat4& proj, const glm::mat4& view);
 

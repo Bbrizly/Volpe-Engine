@@ -2,6 +2,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 #include <iostream>
+#include <random>
 
 using namespace std;
 
@@ -32,6 +33,8 @@ void Program::init()
 
     Scene::Instance().SetActiveCamera(orbitCamera);
 
+    Scene::Instance().ShowDebugText();
+
     Scene::Instance().RandomInitScene();
 
     Scene::Instance().BuildQuadTree();
@@ -40,6 +43,17 @@ void Program::init()
 
 void Program::update(float dt)
 {
+    if(m_pApp->isKeyDown('W') || m_pApp->isKeyJustDown('a'))
+    {
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<float> distPos(-100.0f, 100.0f); // Random positions
+        std::uniform_int_distribution<int> distChildren(0, 3); // Random number of children per cube
+
+        Scene::Instance().setTextBoxPos(distPos(gen),distPos(gen));
+
+    }
+
 
     if(m_pApp->isKeyJustDown('R') || m_pApp->isKeyJustDown('r'))
     {
@@ -51,6 +65,7 @@ void Program::update(float dt)
     {
         Scene::Instance().ToggleQuadTreeRender();
     }
+
 
     // vector<Node*> nodes = Scene::Instance().GetNodes();
     // for (auto* n : nodes) {

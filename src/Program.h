@@ -7,6 +7,9 @@
 #include "../samplefw/OrbitCamera.h"
 #include "../samplefw/Grid3D.h"
 
+#include "../volpe/TextRendering/TextRenderer.h"
+#include "../volpe/TextRendering/TextBox.h"
+
 class Program
 {
 private:

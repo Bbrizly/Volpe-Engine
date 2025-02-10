@@ -6,6 +6,10 @@
 #include "Light.h"
 #include "../samplefw/Camera.h"
 #include "../samplefw/Grid3D.h"
+
+#include "../volpe/TextRendering/TextRenderer.h"
+#include "../volpe/TextRendering/TextBox.h"
+
 using namespace std;
 class Scene
 {
@@ -25,6 +29,9 @@ private:
 
     Grid3D* m_pGrid = nullptr;
 
+    TextRenderer* m_textRenderer = nullptr;
+    TextBox* textBox = nullptr;
+
     vector<Light> pickLightsForNode(const Node* node);
 
 public:
@@ -39,6 +46,13 @@ public:
     void BuildQuadTree();
     void Update(float dt, int screenWidth, int screenHeight);
     void Render(int screenWidth, int screenHeight);
+
+    void setTextBoxPos(float x, float y)
+    {
+        textBox->SetPosition(x,y);
+    }
+
+    void ShowDebugText();
 
     void ToggleQuadTreeRender() { m_renderQuadTree = !m_renderQuadTree; }
 

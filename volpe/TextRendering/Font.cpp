@@ -58,7 +58,7 @@ void Font::LoadAll(const string& fileName)
     }
 
     // now we create one big array texture for ALLLLL pages
-    // ArrayTextureOfAllFiles(variationBaseNames);
+    ArrayTextureOfAllFiles(variationBaseNames);
 
     cout << "[Font::LoadAll] # of mini-fonts loaded: " << m_fonts.size() << endl;
 }

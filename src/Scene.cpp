@@ -118,8 +118,44 @@ void Scene::RandomInitScene()
 
 }
 
+void Scene::ShowDebugText()
+{
+    m_textRenderer = new TextRenderer();
+    m_textRenderer->init();
+    Font* fontArial   = m_textRenderer->createFont("Arial");
+    TextBox* textBoc   = m_textRenderer->createTextBox(fontArial,"Press Q to visualize Quad Tree\n Press R To randomly Generate Nodes", 640.0f - 400, 360.0f, 400, 200);
+    textBoc->SetColor(0,0,0,255);
+    textBoc->SetVisualization(false); //remove bg box
+    textBoc->SetAlignment(2);
+
+    textBox  = m_textRenderer->createTextBox(fontArial,"FPS, Each Process's MS, Other important values", -640.0f, 360.0f, 200, 400);
+    textBox->SetColor(0, 0, 0, 255);
+    textBox->SetVisualization(false); //remove bg box
+    m_textRenderer->setTextBox(textBoc);
+    m_textRenderer->setTextBox(textBox);
+}
 
 void Scene::Update(float dt, int screenWidth, int screenHeight) {
+
+
+    #pragma region  Get FPS
+    static int frameCounter = 0;
+    static float accumulatedTime = 0.0f;
+    
+    m_activeCamera->update(dt);
+
+    // Only update FPS text every 10 frames
+    frameCounter++;
+    accumulatedTime += dt;
+    if (frameCounter >= 30) { 
+        float avgFps = frameCounter / accumulatedTime;  // Calculate smoothed FPS
+        textBox->SetText("FPS: " + std::to_string((int)avgFps));
+        
+        frameCounter = 0;
+        accumulatedTime = 0.0f;
+    }
+
+    #pragma endregion
 
     m_activeCamera->update(dt);
 
@@ -129,7 +165,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     // for (auto node : m_nodes)
     //     node->updateBoundingVolume();
 
-    // // Extract the frustum from the active camera.
+    // // Get frustum from active camera
     // glm::mat4 proj = m_activeCamera->getProjMatrix(screenWidth, screenHeight);
     // glm::mat4 view = m_activeCamera->getViewMatrix();
     // glm::mat4 clip = proj * view;
@@ -151,15 +187,30 @@ void Scene::Clear()
 }
 
 void Scene::Render(int screenWidth, int screenHeight) {
+
     if (!m_activeCamera)
         return;
     glm::mat4 proj = m_activeCamera->getProjMatrix(screenWidth, screenHeight);
     glm::mat4 view = m_activeCamera->getViewMatrix();
+    
+    //Render text
+    if(m_textRenderer && textBox)
+    {
+        glDisable(GL_DEPTH_TEST);
+        m_textRenderer->render(proj,view);
+        // textBox->Render(proj, view);
+        glEnable(GL_DEPTH_TEST);
+    }
+    
+    m_pGrid->render(view,proj);
+
     for (auto node : m_nodes)//m_objectsToRender)
         node->draw(proj, view);
         
     if(m_renderQuadTree)
         m_quadTree->Render(proj, view);
+
+        
 
     // DebugRender::Instance().Render(proj,view);
 }
