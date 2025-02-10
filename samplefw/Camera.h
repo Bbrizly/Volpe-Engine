@@ -10,5 +10,6 @@ public:
     virtual void update(float dt) = 0;
     virtual glm::mat4 getViewMatrix() = 0;
     virtual glm::mat4 getProjMatrix(int width, int height) = 0;
+    // virtual glm::mat4 getFrustum(int width, int height) = 0;
     
 };

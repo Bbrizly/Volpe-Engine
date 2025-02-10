@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <unordered_map>
 #include "Font.h"
-#include "Vertex.h"
+#include "TextVertex.h"
 #include "TextTable.h"
 #include <sstream>
 #include <cstdarg>
@@ -57,7 +57,7 @@ public:
 
     // convenience
     Font* GetFont() const;
-    const vector<Vertex>& GetVertices() const;
+    const vector<TextVertex>& GetVertices() const;
 
     // Re-generate geometry if text table changed
     // (This is called automatically if you used ObserveTextID)
@@ -98,7 +98,7 @@ private:
 
     void pushVertexData(volpe::VertexBuffer*& vBuffer,
                         volpe::VertexDeclaration*& vDecl,
-                        const vector<Vertex>& inVerts);
+                        const vector<TextVertex>& inVerts);
 
 private:
     Font* m_font;
@@ -126,5 +126,5 @@ private:
     volpe::VertexDeclaration* m_vertexDecl = nullptr;
     int m_numVertices = 0;
 
-    vector<Vertex> m_vertices;
+    vector<TextVertex> m_vertices;
 };

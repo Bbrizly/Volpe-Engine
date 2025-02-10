@@ -11,8 +11,14 @@ Font::~Font() {
     cout<<"DESTRUCTOR"<<endl;
     if (m_arrayTexture)
         volpe::TextureManager::DestroyTexture(m_arrayTexture);
-        m_arrayTexture = nullptr;
+    m_arrayTexture = nullptr;
+
+    for (MiniFont* font : m_fonts) {
+        delete font;
+    }
+    m_fonts.clear();
 }
+
 
 void Font::LoadAll(const string& fileName)
 {
@@ -24,7 +30,9 @@ void Font::LoadAll(const string& fileName)
     int pageOffset = 0;
     int count = 0;
 
-    while(true) {
+    int maxFonts = 30;
+
+    while(count < maxFonts) {
         stringstream ss;
         ss << baseName << count << ".fnt";
         string dataFile = ss.str();
@@ -50,7 +58,7 @@ void Font::LoadAll(const string& fileName)
     }
 
     // now we create one big array texture for ALLLLL pages
-    ArrayTextureOfAllFiles(variationBaseNames);
+    // ArrayTextureOfAllFiles(variationBaseNames);
 
     cout << "[Font::LoadAll] # of mini-fonts loaded: " << m_fonts.size() << endl;
 }
@@ -71,9 +79,10 @@ void Font::ArrayTextureOfAllFiles(const vector<string>& listOfFontSizes)
         }
     }
 
-    // now create the big array texture
+    cout << "Loading " << files.size() << " textures." << endl;
+
     m_arrayTexture = volpe::TextureManager::CreateAutoArrayTexture(files);
-    cout << "[Font::ArrayTextureOfAllFiles] Done creating array texture.\n";
+    
 }
 
 const CharInfo& Font::GetCharacter(char c, int index) const{

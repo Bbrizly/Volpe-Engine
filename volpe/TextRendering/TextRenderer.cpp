@@ -19,9 +19,7 @@ void TextRenderer::init(TextTable* pTable) {
 void TextRenderer::update(float dt) {}
 
 void TextRenderer::setTextBox(TextBox* textBox) {
-
-    m_textBoxes.push_back(textBox);
-}
+    m_textBoxes.push_back(textBox);}
 
 void TextRenderer::render(const glm::mat4& proj, const glm::mat4& view) {
     if(!TextShader || m_textBoxes.empty()) return;

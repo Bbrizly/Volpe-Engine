@@ -1,10 +1,10 @@
 #pragma once
-#include "volpe/Volpe.h"
+#include "../volpe/Volpe.h"
 #include "TextBox.h"
 #include "Font.h"
 #include <glm/glm.hpp>
 #include "../samplefw/Sample.h"
-#include "Vertex.h"
+#include "TextVertex.h"
 #include <string>
 #include <vector>
 #include "TextTable.h"

@@ -22,7 +22,9 @@ void MiniFont::LoadFont(const string& fontPath){
     ifstream file(fontPath);
 
     if (!file.is_open()) {
-        throw runtime_error("Failed to open font file: " + fontPath);
+        // throw runtime_error("Failed to open font file: " + fontPath);
+        cerr << "Failed to open font file: " << fontPath << endl;
+        return;
     }
 
     string line;

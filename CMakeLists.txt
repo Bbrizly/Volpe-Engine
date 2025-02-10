@@ -69,7 +69,7 @@ include_directories(
     thirdparty/glew/include 
     thirdparty/assimp/include
     ${CMAKE_SOURCE_DIR}/volpe
-    ${CMAKE_SOURCE_DIR}/volpe/TextRendering # Add this if needed
+    # ${CMAKE_SOURCE_DIR}/volpe/TextRendering # Add this if needed
     ${OPENGL_INCLUDE_DIRS})
 
 file(GLOB_RECURSE SAMPLEFW_SOURCE_FILES 

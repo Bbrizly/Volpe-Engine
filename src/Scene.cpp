@@ -1,25 +1,60 @@
 #include "Scene.h"
-#include <glm/gtc/matrix_transform.hpp>
+#include "DebugRender.h"
 #include <algorithm>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <iostream>
+#include <random>
 
+// Helper function to extract a frustum from a clip matrix.
+static Frustum ExtractFrustum(const glm::mat4& clip) {
+    Frustum frustum;
+    frustum.planes[0] = glm::vec4(clip[0][3] + clip[0][0],
+                                  clip[1][3] + clip[1][0],
+                                  clip[2][3] + clip[2][0],
+                                  clip[3][3] + clip[3][0]);
+    frustum.planes[1] = glm::vec4(clip[0][3] - clip[0][0],
+                                  clip[1][3] - clip[1][0],
+                                  clip[2][3] - clip[2][0],
+                                  clip[3][3] - clip[3][0]);
+    frustum.planes[2] = glm::vec4(clip[0][3] + clip[0][1],
+                                  clip[1][3] + clip[1][1],
+                                  clip[2][3] + clip[2][1],
+                                  clip[3][3] + clip[3][1]);
+    frustum.planes[3] = glm::vec4(clip[0][3] - clip[0][1],
+                                  clip[1][3] - clip[1][1],
+                                  clip[2][3] - clip[2][1],
+                                  clip[3][3] - clip[3][1]);
+    frustum.planes[4] = glm::vec4(clip[0][3] + clip[0][2],
+                                  clip[1][3] + clip[1][2],
+                                  clip[2][3] + clip[2][2],
+                                  clip[3][3] + clip[3][2]);
+    frustum.planes[5] = glm::vec4(clip[0][3] - clip[0][2],
+                                  clip[1][3] - clip[1][2],
+                                  clip[2][3] - clip[2][2],
+                                  clip[3][3] - clip[3][2]);
+    for (int i = 0; i < 6; ++i) {
+        float length = glm::length(glm::vec3(frustum.planes[i]));
+        frustum.planes[i] /= length;
+    }
+    return frustum;
+}
 
 Scene& Scene::Instance() {
     static Scene instance;
     return instance;
 }
 
-Scene::Scene()
-{
-    // m_root = new Node("root");
-}
+Scene::Scene() : m_activeCamera(nullptr), m_quadTree(nullptr), m_renderQuadTree(false) {}
 
-Scene::~Scene()
-{
-    if (!m_nodes.empty())
-        m_nodes.clear();
-    
-    if(!m_objectsToRender.empty())
-        m_objectsToRender.clear();
+Scene::~Scene() {
+    // for (auto node : m_nodes)
+    //     delete node;
+    m_nodes.clear();
+    if(m_quadTree) {
+        delete m_quadTree;
+        m_quadTree = nullptr;
+    }
 }
 
 void Scene::AddNode(Node* node) {
@@ -27,45 +62,53 @@ void Scene::AddNode(Node* node) {
         m_nodes.push_back(node);
 }
 
-void Scene::SetActiveCamera(Camera* cam) {
-    m_activeCamera = cam;
+
+void Scene::BuildQuadTree() {
+    AABB2D sceneBounds;
+    sceneBounds.min = glm::vec2(-30.0f, -30.0f);
+    sceneBounds.max = glm::vec2(30.0f, 30.0f);
+    if(m_quadTree) {
+        delete m_quadTree;
+    }
+    m_quadTree = new QuadTree(sceneBounds);
+
+    for(auto node : m_nodes)
+    {
+        m_quadTree->Insert(node);
+    }
 }
 
 void Scene::RandomInitScene()
 {
+    m_nodes.clear();
     m_pGrid = new Grid3D(30);
 
-    // m_pOrbitCam->focusOn(glm::vec3(-10.0f,-10.0f,-10.0f),glm::vec3(10.0f,10.0f,10.0f));
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> distPos(-10.0f, 10.0f); // Random positions
+    std::uniform_int_distribution<int> distChildren(0, 3); // Random number of children per cube
 
-    DebugCube* parentCube = new DebugCube("parentCube");
-    parentCube->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0)));
+    // DebugCube* parentCube = new DebugCube("parentCube");
+    // parentCube->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(distPos(gen), 0, distPos(gen))));
+    // AddNode(parentCube);
 
-    DebugCube* childCube1 = new DebugCube("childCube1");
-    DebugCube* childCube2 = new DebugCube("childCube2");
-    DebugCube* childCube3 = new DebugCube("childCube2");
+    // std::vector<Node*> allCubes;
+    // allCubes.push_back(parentCube);
 
-    childCube1->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f))); // Right
-    childCube2->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f))); // Up
-    childCube3->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 0.0f, 0.0f))); // Further rightt
-
-    parentCube->addChild(childCube1);
-    childCube1->addChild(childCube2);
-    childCube2->addChild(childCube3);
-
-    AddNode(parentCube);
-    AddNode(childCube1);
-    AddNode(childCube2);
-    AddNode(childCube3);
-
-    for (int i = 2; i < 5; ++i)
+    // Generate child cubes with random positions and parent-child relationships
+    for (int i = 1; i <= 5; ++i)
     {
-        DebugCube* floatingCube = new DebugCube("floatingCube_" + std::to_string(i));
-        float x = (float)((i % 2 == 0) ? i * 3 : -i * 3);
-        float y = (float)((i % 3 == 0) ? i : -i);
-        float z = (float)((i % 2 == 0) ? -i * 2 : i * 2);
+        DebugCube* newCube = new DebugCube("cube_" + std::to_string(i));
+        glm::vec3 randomPos(distPos(gen), 0.0f, distPos(gen));
+        newCube->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
 
-        floatingCube->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z)));
-        AddNode(floatingCube);
+        // Randomly parent from existing cubes
+        // int parentIndex = std::uniform_int_distribution<int>(0, allCubes.size() - 1)(gen);
+        // allCubes[parentIndex]->addChild(newCube);
+
+        AddNode(newCube);
+        return;
+        // allCubes.push_back(newCube);
     }
 
     m_lights.push_back( Light(glm::vec3(0, 5, 5),  glm::vec3(1,1,1), 1.0f) );
@@ -75,25 +118,49 @@ void Scene::RandomInitScene()
 
 }
 
-void Scene::Update(float dt)
-{
+
+void Scene::Update(float dt, int screenWidth, int screenHeight) {
+
     m_activeCamera->update(dt);
 
+    // // Update all top-level nodes.
+    // for (auto node : m_nodes)
+    //     node->update(dt);
+    // for (auto node : m_nodes)
+    //     node->updateBoundingVolume();
 
-    for(auto node : m_nodes)
-        node->update(dt);
-
-    for(auto node : m_nodes)
-        node->updateBoundingVolume();
+    // // Extract the frustum from the active camera.
+    // glm::mat4 proj = m_activeCamera->getProjMatrix(screenWidth, screenHeight);
+    // glm::mat4 view = m_activeCamera->getViewMatrix();
+    // glm::mat4 clip = proj * view;
+    // Frustum frustum = ExtractFrustum(clip);
+    
+    // m_objectsToRender.clear();
+    // if (m_activeCamera && m_quadTree) {
+    //     m_quadTree->Query(frustum, m_objectsToRender);
+    // } else {
+        // m_objectsToRender = m_nodes;
+    //     // std::cout<<"WHAT?";
+    // }
 }
-
-void Scene::Render(int width, int height)
+void Scene::Clear()
 {
-	glm::mat4 mProj = m_activeCamera->getProjMatrix(width, height);
-	glm::mat4 mView = m_activeCamera->getViewMatrix();
-	
-    for(auto node : m_nodes)
-        node->draw(mProj, mView);
-
-    m_pGrid->render(mView,mProj);
+    m_nodes.clear();
+    m_objectsToRender.clear();
+    DebugRender::Instance().Clear();
 }
+
+void Scene::Render(int screenWidth, int screenHeight) {
+    if (!m_activeCamera)
+        return;
+    glm::mat4 proj = m_activeCamera->getProjMatrix(screenWidth, screenHeight);
+    glm::mat4 view = m_activeCamera->getViewMatrix();
+    for (auto node : m_nodes)//m_objectsToRender)
+        node->draw(proj, view);
+        
+    if(m_renderQuadTree)
+        m_quadTree->Render(proj, view);
+
+    // DebugRender::Instance().Render(proj,view);
+}
+

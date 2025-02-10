@@ -54,17 +54,6 @@ void TextBox::SetText(const char* fmt, ...)
     SetText(string(buf));
 }
 
-// void TextBox::ObserveTextID(const string& textID)
-// {
-//     m_observeID = textID;
-//     if(m_pTextTable) {
-//         try {
-//             m_text = m_pTextTable->GetString(m_observeID);
-//         } catch(...) {}
-//     }
-//     GenerateVertices();
-// }
-
 void TextBox::SetTextTable(TextTable* pTable)
 {
     m_pTextTable = pTable;
@@ -385,13 +374,13 @@ void TextBox::GenerateCharacterVertices(const CharInfo& ch,
 
     float page = (float)ch.page;
 
-    Vertex v1a = {xpos,   ypos - h, 0.f, R,G,B,A, u0, v1, page};
-    Vertex v1b = {xpos+w, ypos - h, 0.f, R,G,B,A, u1, v1, page};
-    Vertex v1c = {xpos,   ypos,     0.f, R,G,B,A, u0, v0, page};
+    TextVertex v1a = {xpos,   ypos - h, 0.f, R,G,B,A, u0, v1, page};
+    TextVertex v1b = {xpos+w, ypos - h, 0.f, R,G,B,A, u1, v1, page};
+    TextVertex v1c = {xpos,   ypos,     0.f, R,G,B,A, u0, v0, page};
 
-    Vertex v2a = {xpos+w, ypos - h, 0.f, R,G,B,A, u1, v1, page};
-    Vertex v2b = {xpos+w, ypos,     0.f, R,G,B,A, u1, v0, page};
-    Vertex v2c = {xpos,   ypos,     0.f, R,G,B,A, u0, v0, page};
+    TextVertex v2a = {xpos+w, ypos - h, 0.f, R,G,B,A, u1, v1, page};
+    TextVertex v2b = {xpos+w, ypos,     0.f, R,G,B,A, u1, v0, page};
+    TextVertex v2c = {xpos,   ypos,     0.f, R,G,B,A, u0, v0, page};
 
     m_vertices.push_back(v1a);
     m_vertices.push_back(v1b);
@@ -456,10 +445,10 @@ void TextBox::GenerateBoundingBoxVertices()
     float right  = m_positionX + m_width;
     float bottom = m_positionY - m_height;
 
-    Vertex vA= {left,  bottom, 0.f, R,G,B,A, 0.f,0.f, layer};
-    Vertex vB= {right, bottom, 0.f, R,G,B,A, 0.f,0.f, layer};
-    Vertex vC= {left,  top,    0.f, R,G,B,A, 0.f,0.f, layer};
-    Vertex vD= {right, top,    0.f, R,G,B,A, 0.f,0.f, layer};
+    TextVertex vA= {left,  bottom, 0.f, R,G,B,A, 0.f,0.f, layer};
+    TextVertex vB= {right, bottom, 0.f, R,G,B,A, 0.f,0.f, layer};
+    TextVertex vC= {left,  top,    0.f, R,G,B,A, 0.f,0.f, layer};
+    TextVertex vD= {right, top,    0.f, R,G,B,A, 0.f,0.f, layer};
 
     m_vertices.push_back(vA); m_vertices.push_back(vB); m_vertices.push_back(vC);
     m_vertices.push_back(vB); m_vertices.push_back(vD); m_vertices.push_back(vC);
@@ -467,7 +456,7 @@ void TextBox::GenerateBoundingBoxVertices()
 
 void TextBox::pushVertexData(volpe::VertexBuffer*& vBuffer,
                              volpe::VertexDeclaration*& vDecl,
-                             const vector<Vertex>& inVerts)
+                             const vector<TextVertex>& inVerts)
 {
     if(vBuffer) {
         volpe::BufferManager::DestroyBuffer(vBuffer);
@@ -484,7 +473,7 @@ void TextBox::pushVertexData(volpe::VertexBuffer*& vBuffer,
 
     vBuffer = volpe::BufferManager::CreateVertexBuffer(
                   inVerts.data(),
-                  inVerts.size()*sizeof(Vertex));
+                  inVerts.size()*sizeof(TextVertex));
     vDecl = new volpe::VertexDeclaration();
     vDecl->Begin();
     vDecl->AppendAttribute(volpe::AT_Position, 3, volpe::CT_Float);
@@ -521,7 +510,7 @@ Font* TextBox::GetFont() const
     return m_font;
 }
 
-const vector<Vertex>& TextBox::GetVertices() const
+const vector<TextVertex>& TextBox::GetVertices() const
 {
     return m_vertices;
 }
