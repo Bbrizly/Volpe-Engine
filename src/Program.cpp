@@ -18,6 +18,8 @@ Program::~Program()
     delete fpsCamera;
 }
 
+int amount = 200; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
+
 void Program::init()
 {
     glEnable(GL_BLEND);
@@ -35,7 +37,7 @@ void Program::init()
 
     Scene::Instance().ShowDebugText();
 
-    Scene::Instance().RandomInitScene();
+    Scene::Instance().RandomInitScene(amount);
 
     Scene::Instance().BuildQuadTree();
 
@@ -60,7 +62,7 @@ void Program::update(float dt)
     if(m_pApp->isKeyJustDown('R') || m_pApp->isKeyJustDown('r'))
     {
         Scene::Instance().Clear();
-        Scene::Instance().RandomInitScene();
+        Scene::Instance().RandomInitScene(amount);
         Scene::Instance().BuildQuadTree();
     }
     if(m_pApp->isKeyJustDown('Q') || m_pApp->isKeyJustDown('q'))

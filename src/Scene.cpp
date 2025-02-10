@@ -78,37 +78,22 @@ void Scene::BuildQuadTree() {
     }
 }
 
-void Scene::RandomInitScene()
+void Scene::RandomInitScene(int amount)
 {
     m_nodes.clear();
     m_pGrid = new Grid3D(30);
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> distPos(-10.0f, 10.0f); // Random positions
-    std::uniform_int_distribution<int> distChildren(0, 3); // Random number of children per cube
+    std::uniform_real_distribution<float> distPos(-30.0f, 30.0f);
 
-    // DebugCube* parentCube = new DebugCube("parentCube");
-    // parentCube->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(distPos(gen), 0, distPos(gen))));
-    // AddNode(parentCube);
-
-    // std::vector<Node*> allCubes;
-    // allCubes.push_back(parentCube);
-
-    // Generate child cubes with random positions and parent-child relationships
-    for (int i = 1; i <= 200; ++i)
+    for (int i = 1; i <= amount; ++i)
     {
         DebugCube* newCube = new DebugCube("cube_" + std::to_string(i));
         glm::vec3 randomPos(distPos(gen), 0.0f, distPos(gen));
         newCube->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
 
-        // Randomly parent from existing cubes
-        // int parentIndex = std::uniform_int_distribution<int>(0, allCubes.size() - 1)(gen);
-        // allCubes[parentIndex]->addChild(newCube);
-
         AddNode(newCube);
-        // return;5
-        // allCubes.push_back(newCube);
     }
 
     m_lights.push_back( Light(glm::vec3(0, 5, 5),  glm::vec3(1,1,1), 1.0f) );
@@ -157,25 +142,24 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
 
     m_activeCamera->update(dt);
 
-    // // Update all top-level nodes.
-    // for (auto node : m_nodes)
-    //     node->update(dt);
-    // for (auto node : m_nodes)
-    //     node->updateBoundingVolume();
+    // Update all top-level nodes.
+    for (auto node : m_nodes)
+        node->update(dt);
+    for (auto node : m_nodes)
+        node->updateBoundingVolume();
 
-    // // Get frustum from active camera
-    // glm::mat4 proj = m_activeCamera->getProjMatrix(screenWidth, screenHeight);
-    // glm::mat4 view = m_activeCamera->getViewMatrix();
-    // glm::mat4 clip = proj * view;
-    // Frustum frustum = ExtractFrustum(clip);
+    // Get frustum from active camera
+    glm::mat4 proj = m_activeCamera->getProjMatrix(screenWidth, screenHeight);
+    glm::mat4 view = m_activeCamera->getViewMatrix();
+    glm::mat4 clip = proj * view;
+    Frustum frustum = ExtractFrustum(clip);
     
-    // m_objectsToRender.clear();
-    // if (m_activeCamera && m_quadTree) {
-    //     m_quadTree->Query(frustum, m_objectsToRender);
-    // } else {
+    m_nodesToRender.clear();
+    if (m_activeCamera && m_quadTree) {
+        m_quadTree->Query(frustum, m_nodesToRender);
+    } else {
         m_nodesToRender = m_nodes;
-    //     // std::cout<<"WHAT?";
-    // }
+    }
 }
 void Scene::Clear()
 {

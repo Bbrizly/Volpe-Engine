@@ -40,7 +40,7 @@ public:
     
     void AddNode(Node* node);
 
-    void RandomInitScene();
+    void RandomInitScene(int amount);
 
     void SetActiveCamera(Camera* cam) { m_activeCamera = cam; }
     void BuildQuadTree();
