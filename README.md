@@ -102,7 +102,7 @@ Volpe Engine also has a **Text Renderer**, which draws 2D overlays (FPS counters
 2.  **Dependencies**: Make sure you have OpenGL, GLEW, GLFW, GLM, and your favorite compiler toolchain (e.g. MSVC, Clang, or GCC).
 3.  **CMake**: Update your `CMakeLists.txt` or build system to include all source files (`Scene.cpp`, `QuadTree.cpp`, `TextRenderer.cpp`, etc.).
 4.  **Compile**:
-    
+
     ```bash
     cmake -B build
     cmake --build build

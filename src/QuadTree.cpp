@@ -98,7 +98,7 @@ void QuadTree::Insert(Node* node)
 
 void QuadTree::Query(const Frustum& frustum, std::vector<Node*>& results)
 {
-    // Quick “AABB vs. frustum” check
+    // AABB vs. frustum check
     if (!m_bounds.IntersectsFrustum(frustum)) {
         return;
     }
@@ -116,17 +116,6 @@ void QuadTree::Query(const Frustum& frustum, std::vector<Node*>& results)
     }
 }
 
-// void QuadTree::Query(const Frustum& frustum, std::vector<Node*>& results) {
-//     if (!m_bounds.IntersectsFrustum(frustum))
-//         return;
-//     for (auto node : m_nodes)
-//         if (SphereIntersectsFrustum(node->getBoundingSphere(), frustum))
-//             results.push_back(node);
-//     for (auto child : m_children)
-//         child->Query(frustum, results);
-// }
-
-
 void QuadTree::BuildDebugLines() {
     float fixedY = 0.0f;
     glm::vec3 p1(m_bounds.min.x, fixedY, m_bounds.min.y);
@@ -136,7 +125,6 @@ void QuadTree::BuildDebugLines() {
     
     // std::cout << "m_bounds.min: (" << m_bounds.min.x << ", " << m_bounds.min.y << ")" << std::endl;
     // std::cout << "m_bounds.max: (" << m_bounds.max.x << ", " << m_bounds.max.y << ")" << std::endl;
-
 
     DebugRender::Instance().DrawSquare(p1,p2,p3,p4,glm::vec3(1.0f));
     

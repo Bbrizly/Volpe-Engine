@@ -18,7 +18,7 @@ Program::~Program()
     delete fpsCamera;
 }
 
-int amount = 200; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
+int amount = 100; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
 
 void Program::init()
 {
@@ -47,7 +47,7 @@ void Program::update(float dt)
 {
     //DEBUGGING THE TEXT POSITIONS CUZ ITS SHIT
     //looks funny keeping for now
-    if(m_pApp->isKeyDown('W') || m_pApp->isKeyJustDown('a'))
+    if(m_pApp->isKeyDown('W') || m_pApp->isKeyJustDown('a')) //Move FPS counter
     {
         std::random_device rd;
         std::mt19937 gen(rd());
@@ -55,7 +55,10 @@ void Program::update(float dt)
         std::uniform_real_distribution<float> distPos(0.0f, 40.0f);
 
         Scene::Instance().setTextBoxPos(-640.0f + distPos(gen), 360.0f - distPos(gen));
+    }
 
+    if (m_pApp->isKeyJustDown('F') || m_pApp->isKeyJustDown('f')) {
+        Scene::Instance().ToggleUseDebugFrustum();
     }
 
 

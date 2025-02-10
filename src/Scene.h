@@ -34,6 +34,25 @@ private:
 
     vector<Light> pickLightsForNode(const Node* node);
 
+    Frustum m_debugFrustum;
+    bool m_useDebugFrustum = false;
+
+    //STATISTICSSS
+
+    // Track the last time (in ms) it took to build the QuadTree.
+    float m_lastQuadTreeBuildTimeMs = 0.0f;
+
+    // We'll keep exponential-moving-average for each update time:
+    float m_avgCameraUpdateMs       = 0.0f;
+    float m_avgNodeUpdateMs         = 0.0f;
+    float m_avgBoundingVolumeMs     = 0.0f;
+    float m_avgFrustumExtractMs     = 0.0f;
+    float m_avgQuadTreeQueryMs      = 0.0f;
+    
+    // Used for the smoothing factor. 
+    // e.g., alpha=0.1 means 90% old + 10% new every frame
+    const float m_smoothAlpha = 0.000001f;
+
 public:
 
     static Scene& Instance();
@@ -53,8 +72,10 @@ public:
     }
 
     void ShowDebugText();
+    void DebugDrawFrustum(const Frustum& frustum);
 
     void ToggleQuadTreeRender() { m_renderQuadTree = !m_renderQuadTree; }
+    void ToggleUseDebugFrustum();
 
     //TEMPORARYYYY
     vector<Node*> GetNodes() { return m_nodes; }
