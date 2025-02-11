@@ -44,6 +44,7 @@ static const glm::vec3 localCorners[8] = {
 DebugCube::DebugCube(const std::string& name)
 : Node(name)
 {
+    std::cout<<"CUBE INIT\n";
     m_boundingSphere.center = glm::vec3(0,0,0);
     m_boundingSphere.radius = 0.8f; // Smaller than node
     
@@ -55,13 +56,6 @@ DebugCube::DebugCube(const std::string& name)
 DebugCube::~DebugCube(){}
 
 void DebugCube::genVertexData() {
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_real_distribution<float> rgb(0.0f, 255.0f);
-    GLubyte r = rgb(gen) //255
-           ,g = rgb(gen) //255
-           ,b = rgb(gen) //255
-           ;
 
     std::vector<Vertex> vertices;
     for (int i = 0; i < 6; ++i) {

@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 
-// Simple bounding sphere for example
 struct BoundingSphere {
     glm::vec3 center;
     float     radius;
@@ -29,7 +28,7 @@ public:
     void removeChild(Node* child);
 
     virtual void update(float dt);
-    virtual void draw(const glm::mat4& proj, const glm::mat4& view);//const glm::mat4& viewProj);
+    virtual void draw(const glm::mat4& proj, const glm::mat4& view);
 
     // Basic getters/setters
     void        setName(const std::string& name);

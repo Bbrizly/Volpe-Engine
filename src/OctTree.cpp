@@ -1,45 +1,33 @@
 #include "OctTree.h"
 
-// ------------------- AABB3D Utility -------------------
 bool AABB3D::IntersectsFrustum(const Frustum& frustum) const
 {
-    // We do a rough "AABB vs. frustum" check:
-    // For each plane, project the AABB extents onto the plane normal
-    // and see if it's behind the plane.
-
-    // This is a standard technique: find the AABB center and half-extents,
-    // then use "p-vertex / n-vertex" or direct radius approach.
-
-    glm::vec3 center = 0.5f * (min + max);   // center of AABB
-    glm::vec3 extents = 0.5f * (max - min); // half-size in each dimension
+    glm::vec3 center = 0.5f * (min + max);
+    glm::vec3 extents = 0.5f * (max - min);
 
     for (int i = 0; i < 6; ++i) {
         glm::vec4 plane = frustum.planes[i];
         glm::vec3 normal(plane.x, plane.y, plane.z);
         float d = plane.w;
 
-        // "Radius" of this AABB, in direction of plane normal
         float r = extents.x * std::fabs(normal.x)
                 + extents.y * std::fabs(normal.y)
                 + extents.z * std::fabs(normal.z);
 
-        // Distance from center to plane
         float dist = glm::dot(normal, center) + d;
 
-        // If the AABB is completely behind this plane
         if (dist < -r) {
-            return false; // outside
+            return false;
         }
     }
-    return true; // overlap
+    return true;
 }
 
-// ------------------- OctTree Implementation -------------------
-OctTree::OctTree(const AABB3D& bounds, int level /*=0*/)
+OctTree::OctTree(const AABB3D& bounds, int level)//= 0)
     : m_bounds(bounds)
     , m_level(level)
 {
-    // no children yet
+    // make sure there arent any children yet
     for (int i=0; i<NUM_CHILDREN; i++){
         m_children[i] = nullptr;
     }
@@ -117,65 +105,14 @@ void OctTree::Insert(Node* node)
         }
     }
 }
-//////////////////////////////////////////////////////////////////////////////////
-
-/*void OctTree::Insert(Node* node)
-{
-    if (!node) return;
-
-    // Extract world position from node
-    glm::mat4 world = node->getWorldTransform();
-    glm::vec3 pos3D = glm::vec3(world[3]); // x,y,z from the translation part
-
-    // If not in this box, skip
-    if (!Contains(pos3D)) {
-        return;
-    }
-
-    // DebugRender::Instance().DrawCircle(pos3D, 0.2f, glm::vec3(1.0f));
-
-    // If we have no children and we haven't exceeded capacity or levels, store the node
-    if (!m_children[0] && ((int)m_nodes.size() < MAX_OBJECTS || m_level == MAX_LEVELS)) {
-        m_nodes.push_back(node);
-        return;
-    }
-
-    // If no children yet, subdivide
-    if (!m_children[0]) {
-        Subdivide();
-
-        // push existing nodes down into children
-        for (auto* existing : m_nodes) {
-            glm::vec3 ePos = glm::vec3(existing->getWorldTransform()[3]);
-            for (int i=0; i<NUM_CHILDREN; i++){
-                if (m_children[i]->Contains(ePos)){
-                    m_children[i]->Insert(existing);
-                    break;
-                }
-            }
-        }
-        m_nodes.clear();
-    }
-
-    // Insert new node into whichever child contains it
-    for (int i=0; i<NUM_CHILDREN; i++){
-        if (m_children[i]->Contains(pos3D)){
-            m_children[i]->Insert(node);
-            break;
-        }
-    }
-}
-*/
-
-//////////////////////////////////////////////////////////////////////////////////
 void OctTree::Query(const Frustum& frustum, std::vector<Node*>& results)
 {
-    // 1) AABB vs. frustum check: if bounding box is fully outside, skip
+    //Bounding box fully outside
     if (!m_bounds.IntersectsFrustum(frustum)) {
         return;
     }
 
-    // 2) Check each node stored at this level
+    // Check each node stored at this level
     for (auto* node : m_nodes) {
         // If bounding sphere of node is inside frustum, add it
         if (SphereIntersectsFrustum(node->getBoundingSphere(), frustum)) {
@@ -323,7 +260,67 @@ void OctTree::Subdivide()
 //     glEnable(GL_DEPTH_TEST);
 // }
 
+
+
 void OctTree::BuildDebugLines()
+{
+    // Check if this node is a leaf (no children) and contains nodes
+    bool isLeaf = true;
+    for (int i = 0; i < NUM_CHILDREN; ++i) {
+        if (m_children[i] != nullptr) {
+            isLeaf = false;
+            break;
+        }
+    }
+
+    if (isLeaf && !m_nodes.empty()) {
+        // Draw the bounding box edges as lines
+        glm::vec3 pMin = m_bounds.min;
+        glm::vec3 pMax = m_bounds.max;
+
+        // Define the 8 corners of the cube
+        glm::vec3 c[8] = {
+            glm::vec3(pMin.x, pMin.y, pMin.z),  // 0
+            glm::vec3(pMax.x, pMin.y, pMin.z),  // 1
+            glm::vec3(pMin.x, pMax.y, pMin.z),  // 2
+            glm::vec3(pMax.x, pMax.y, pMin.z),  // 3
+            glm::vec3(pMin.x, pMin.y, pMax.z),  // 4
+            glm::vec3(pMax.x, pMin.y, pMax.z),  // 5
+            glm::vec3(pMin.x, pMax.y, pMax.z),  // 6
+            glm::vec3(pMax.x, pMax.y, pMax.z)   // 7
+        };
+
+        // Draw edges using helper lambda
+        auto drawEdge = [&](int a, int b) {
+            DebugRender::Instance().DrawLine(c[a], c[b], glm::vec3(0.0f, 1.0f, 0.0f));
+        };
+
+        // Bottom face
+        drawEdge(0, 1);
+        drawEdge(1, 3);
+        drawEdge(3, 2);
+        drawEdge(2, 0);
+        // Top face
+        drawEdge(4, 5);
+        drawEdge(5, 7);
+        drawEdge(7, 6);
+        drawEdge(6, 4);
+        // Vertical edges
+        drawEdge(0, 4);
+        drawEdge(1, 5);
+        drawEdge(2, 6);
+        drawEdge(3, 7);
+    }
+
+    // Recurse into children to check if they should be rendered
+    for (int i = 0; i < NUM_CHILDREN; i++) {
+        if (m_children[i]) {
+            m_children[i]->BuildDebugLines();
+        }
+    }
+}
+
+/*void OctTree::BuildDebugLines()
 {
     // DebugRender::Instance().Clear();
     // Draw the bounding box edges as lines
@@ -375,3 +372,4 @@ void OctTree::BuildDebugLines()
     }
 }
 
+*/

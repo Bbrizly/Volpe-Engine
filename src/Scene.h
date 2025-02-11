@@ -90,7 +90,7 @@ public:
 
     void InitLights();         // rando lgihts
     void UpdateLighting();     // choose which cubes get which program
-    void RandomMoveLights();
+    void MoveLights();
     
 
     void setTextBoxPos(float x, float y)

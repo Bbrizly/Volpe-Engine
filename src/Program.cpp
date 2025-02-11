@@ -14,7 +14,7 @@ Program::~Program()
     delete fpsCamera;
 }
 
-int amount = 5; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
+int amount = 50; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
 
 void Program::init()
 {
@@ -60,7 +60,6 @@ void Program::update(float dt)
         Scene::Instance().ToggleUseDebugFrustum();
     }
 
-
     if(m_pApp->isKeyJustDown('R') || m_pApp->isKeyJustDown('r'))
     {
         Scene::Instance().Clear();
@@ -85,9 +84,9 @@ void Program::update(float dt)
             Scene::Instance().BuildQuadTree();
     }
     
-    if(m_pApp->isKeyJustDown('L')) {
+    if(m_pApp->isKeyJustDown('L')) { //HOLD L TO MOVE LIGHTS
         // random move lights
-        Scene::Instance().RandomMoveLights(); //move each light randomly
+        Scene::Instance().MoveLights();
     }
 
     // vector<Node*> nodes = Scene::Instance().GetNodes();

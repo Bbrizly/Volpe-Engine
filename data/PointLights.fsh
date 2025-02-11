@@ -16,8 +16,9 @@ struct PointLight{
     vec3 Color;
     float Strength;
 };
-
-uniform PointLight test;
+const int maximumLights = 5;
+uniform int lightsInRange;
+uniform PointLight pointLights[maximumLights];
 
 float calculateAttenuation(vec3 lightPos, float lightRange, vec3 fragPos){
     float distance = length(lightPos - fragPos);
@@ -31,12 +32,14 @@ float calculateAttenuation(vec3 lightPos, float lightRange, vec3 fragPos){
 void main()
 {
     vec4 baseColor = v_color;
-    vec3 totalLighting = vec3(0.2); // Base ambient lighting
+    vec3 totalLighting = vec3(0.3); // Base ambient lighting
 
-    float attenuation = calculateAttenuation(test.PositionRange.xyz, test.PositionRange.w, v_fragPosition);
-    vec3 lightDir = normalize(test.PositionRange.xyz - v_fragPosition);
-    float diff = max(dot(v_normal, lightDir), 0.0);
-    totalLighting += attenuation * diff * test.Color * test.Strength;
+    for(int i = 0; i < lightsInRange; i++){
+        float attenuation = calculateAttenuation(pointLights[i].PositionRange.xyz, pointLights[i].PositionRange.w, v_fragPosition);
+        vec3 lightDir = normalize(pointLights[i].PositionRange.xyz - v_fragPosition);
+        float diff = max(dot(v_normal, lightDir), 0.0);
+        totalLighting += attenuation * diff * pointLights[i].Color * pointLights[i].Strength;
+    }
 
     FragColor = vec4(baseColor.rgb * totalLighting, baseColor.a * fade);
 

@@ -187,9 +187,7 @@ void Scene::RandomInitScene(int amount)
 {
     Clear();
     m_pGrid = new Grid3D(bounds);
-    /*
-
-    int gridSize = std::ceil(std::cbrt(amount)); // Determine the grid dimensions (N x N x N)
+    /*int gridSize = std::ceil(std::cbrt(amount)); // Determine the grid dimensions (N x N x N)
     float spacing = (2.0f * bounds) / gridSize; // Adjust spacing to fit within bounds
 
     int cubeCount = 0;
@@ -212,15 +210,23 @@ void Scene::RandomInitScene(int amount)
         }
     }
     */
-    /*random_device rd;
+    
+    random_device rd;
     mt19937 gen(rd());
     uniform_real_distribution<float> distPos(-bounds, bounds);
+    uniform_real_distribution<float> rgb(0.0f, 255.0f);
+    // rgb = new vec3(rgb(gen),rgb(gen),rgb(gen));
+    
 
     for (int i = 1; i <= amount; ++i)
     {
         DebugCube* newCube = new DebugCube("cube_" + to_string(i));
         glm::vec3 randomPos(distPos(gen), distPos(gen), distPos(gen));
         newCube->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
+        GLubyte r = rgb(gen)
+               ,g = rgb(gen)
+               ,b = rgb(gen);
+        newCube->setColor(r,g,b);
         
         // DebugRender::Instance().DrawCircle(randomPos, 0.2f, glm::vec3(1.0f));
         AddNode(newCube);
@@ -231,20 +237,16 @@ void Scene::RandomInitScene(int amount)
         m_lights.push_back( Light(pos,  glm::vec3(1,1,1), 1.0f, 10.0f));
         // DebugRender::Instance().DrawCircle(pos, 0.2f, glm::vec3(1.0f));
     }
-    */
+    
 
-    DebugCube* cube = new DebugCube("Cube_");// + to_string(cubeCount));
-    cube->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0,2,0)));
-    AddNode(cube); // Add cube to scene
+    // DebugCube* cube = new DebugCube("Cube_");// + to_string(cubeCount));
+    // cube->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0,2,0)));
+    // AddNode(cube); // Add cube to scene
 
-    m_lights.push_back(
-    Light(
-    glm::vec3(0, 5, 0),
-    glm::vec3(1,1,1),
-    10.0f,
-    10.0f));
-    // m_lights.push_back( Light(glm::vec3(-5, 5, 0), glm::vec3(0,1,0), 1.0f, 10.0f));
-    // m_lights.push_back( Light(glm::vec3(0, 5, -5), glm::vec3(0,0,1), 1.0f, 10.0f));
+    // m_lights.push_back( Light(glm::vec3(0, 5, 0),  glm::vec3(1,1,1), 10.0f, 10.0f));
+
+    // m_lights.push_back( Light(glm::vec3(-5, 0, 0), glm::vec3(0,1,0), 1.0f, 10.0f));
+    // m_lights.push_back( Light(glm::vec3(0, 0, 5), glm::vec3(0,0,1), 1.0f, 10.0f));
 
 }
 
@@ -361,6 +363,12 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     m_avgQuadTreeQueryMs  = EMA(m_avgQuadTreeQueryMs,  quadTreeQueryMS);
 
     string activeTreeName = m_useQuadTreeOrOct ? "Quad" : "Oct";
+    int cubesAffectedByLight = 0;
+    for(auto* node : m_nodes) {
+        DebugCube* c = dynamic_cast<DebugCube*>(node);
+        if(c->m_affectingLights.size() > 0)
+            cubesAffectedByLight++; 
+    }
 
     string info;
     info += "FPS: " + to_string((int)lastKnownFps) + "\n";
@@ -370,6 +378,8 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     info += "CURRENT TREE   : " + activeTreeName + "\n";
     info += "Tree Build Time: " + to_string(m_lastQuadTreeBuildTimeMs) + " ms\n";
     info += "Cubes Visible  : " + to_string(m_nodesToRender.size()) + "\n";
+    info += "Lights In Scene: " + to_string(m_lights.size()) + "\n";
+    info += "Cubes Affected by light: " + to_string(cubesAffectedByLight) + "\n";
     info += "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
     info += "Camera Update      : " + to_string(cameraUpdateMS)    + " ms\n";
     info += "Nodes Update       : " + to_string(nodeUpdateMS)       + " ms\n";
@@ -443,18 +453,19 @@ void Scene::InitLights()
 
 void Scene::UpdateLighting()
 {
-    // 1) reset cubes
+    // reset cubes
     for(auto* node : m_nodes) {
         DebugCube* c = dynamic_cast<DebugCube*>(node);
         if(c) {
             c->m_numLightsAffecting = 0;
-            c->m_lightingColor     = glm::vec3(0);
         }
     }
 
-    // 2) For each light, do a "QueryLight"
-    for(auto& L : m_lights)
+    // For each light, we do QueryLight
+    // for(auto& L : m_lights)
+    for(int i = 0; i < m_lights.size(); i++)
     {
+        auto& L = m_lights[i];
         // DebugRender::Instance().DrawSphere(L.position, L.radius, glm::vec3(1.0f));  //CAUSES CRASHESS WATCH OUTTTTT
         float range = L.intensity * 10.f; 
         vector<Node*> inRange;
@@ -466,12 +477,13 @@ void Scene::UpdateLighting()
         for(auto* n : inRange){
             DebugCube* c = dynamic_cast<DebugCube*>(n);
             if(!c) continue;
+            
+            c->m_affectingLights.push_back(i);  // storing the LIGHT’S INDEX
             c->m_numLightsAffecting++;
-            c->m_lightingColor += L.color * L.intensity;
         }
     }
 
-    // 3) Switch program
+    // Switch shader
     for(auto* node : m_nodes)
     {
         DebugCube* c = dynamic_cast<DebugCube*>(node);
@@ -486,15 +498,29 @@ void Scene::UpdateLighting()
     }
 }
 
-void Scene::RandomMoveLights()
+void Scene::MoveLights()
 {
-    DebugRender::Instance().Clear();
+    // DebugRender::Instance().Clear();
     // Move all existing lights randomly
     if(m_lights.empty()) return;
     // m_lights.clear();
 
     std::random_device rd;
     std::mt19937 gen(rd());
+    /*
+    std::uniform_real_distribution<float> distDelta(-0.05f, 0.05f);
+
+    for(auto& light : m_lights)
+    {
+        // Add a small random offset to each coordinate.
+        light.position.x += distDelta(gen);
+        light.position.y += distDelta(gen);
+        light.position.z += distDelta(gen);
+        
+        // (Optionally: Clamp or wrap the position if it goes out of desired bounds.)
+    }
+    */
+    // /*
     std::uniform_real_distribution<float> distPos(-bounds, bounds);
 
     for(auto& light : m_lights)
@@ -503,6 +529,7 @@ void Scene::RandomMoveLights()
         light.position.y = distPos(gen);
         light.position.z = distPos(gen);
     }
+    // */
 }
 
 void Scene::Clear()
@@ -542,39 +569,44 @@ void Scene::Render(int screenWidth, int screenHeight) {
         {
             // Bind the point–light shader and push the lighting uniforms.
             prog->Bind();
-            
-            prog->SetUniform(("test.PositionRange"), glm::vec4(m_lights[0].position, m_lights[0].radius));
-            prog->SetUniform(("test.Color"), m_lights[0].color);
-            prog->SetUniform(("test.Strength"), m_lights[0].intensity);
-            prog->SetUniform("fade", 1.0f); // normal shit
-            
-            
-            // prog->SetUniform(("u_pointLights[0].PositionRange"), glm::vec4(m_lights[0].position, m_lights[0].radius));
-            // prog->SetUniform(("u_pointLights[0].Color"), m_lights[0].color);
-            // prog->SetUniform(("u_pointLights[0].Strength"), m_lights[0].intensity);
-            
-            
-            /*
-            // We'll pass up to 8 lights:
-            int lightCount = std::min((int)m_lights.size(), 8);
-            prog->SetUniform("u_lightCount", lightCount);
+            ////////////////////////////////////////////////////////////////
+            int lightCount = c->m_numLightsAffecting; 
+            int maximumLights = 5;
+            if(lightCount > maximumLights)
+                lightCount = maximumLights;  // clamp
 
-            for(int i = 0; i < lightCount; i++)
+            // Set how many we actually pass
+            prog->SetUniform("lightsInRange", lightCount);
+
+            // fill up test[ i ] for each light in c->m_affectingLights
+            for(int i=0; i<lightCount; i++)
             {
-                // Uniform name for this light:
-                std::string base = "u_pointLights[" + std::to_string(i) + "]";
-                // Use the light’s position and radius (or intensity * 10) for the w–component:
-                glm::vec3 pos = m_lights[i].position;
-                float range   = m_lights[i].radius; // or m_lights[i].intensity * 10.0f
-                glm::vec3 col = m_lights[i].color;
-                float strength= m_lights[i].intensity;
+                int lightIdx = c->m_affectingLights[i]; 
+                Light& L     = m_lights[lightIdx];
 
-                prog->SetUniform((base + ".PositionRange").c_str(), glm::vec4(pos, range));
-                prog->SetUniform((base + ".Color").c_str(),         col);
-                prog->SetUniform((base + ".Strength").c_str(),      strength);
+                std::string base = "pointLights[" + std::to_string(i) + "]";
+
+                glm::vec3 pos  =  L.position;
+                float radius   =  L.radius;
+                glm::vec3 col  =  L.color;
+                float strength =  L.intensity;
+
+                prog->SetUniform(base+".PositionRange", glm::vec4(pos, radius));
+                prog->SetUniform(base+".Color",         col);
+                prog->SetUniform(base+".Strength",      strength);
             }
 
-            */
+            prog->SetUniform("fade", 1.0f);
+            ////////////////////////////////////////////////////////////////
+            
+            //Make it so it only sets Uniform for the Lights that affect the cubes
+            //These lights are found during the UpdateLighting()
+
+            // prog->SetUniform(("test[0].PositionRange"), glm::vec4(m_lights[0].position, m_lights[0].radius));
+            // prog->SetUniform(("test[0].Color"), m_lights[0].color);
+            // prog->SetUniform(("test[0].Strength"), m_lights[0].intensity);
+            // prog->SetUniform(("lightsInRange"), 3);
+            // prog->SetUniform("fade", 1.0f); // normal shit
 
             // Draw the cube WITHOUT rebinding the shader.
             c->draw(proj, view, true);

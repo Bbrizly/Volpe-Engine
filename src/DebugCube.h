@@ -17,6 +17,11 @@ using namespace glm;
 class DebugCube : public Node
 {
 private:
+
+    GLubyte r=255
+           ,g=255
+           ,b=255;
+
     float cubeSize = 10.0f;
 
     volpe::VertexBuffer* m_vertexBuffer = nullptr;
@@ -37,10 +42,13 @@ public:
     
     AABB3D getWorldAABB3D() const;
     
+    std::vector<int> m_affectingLights;
     int        m_numLightsAffecting = 0;
-    glm::vec3  m_lightingColor = glm::vec3(0);
     
     void SetProgram(volpe::Program* prog) { m_pProgram = prog; }
+
+    void setColor(GLubyte inR, GLubyte inG, GLubyte inB) {r= inR; g = inG; b = inB;}
+
     volpe::Program* GetProgram() const { return m_pProgram; }
 
     // Override draw so we can actually render a cube
