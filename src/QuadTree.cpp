@@ -51,8 +51,7 @@ void QuadTree::Insert(Node* node)
     glm::mat4 world = node->getWorldTransform();
     glm::vec3 pos3D = glm::vec3(world[3]);
     glm::vec2 pos2D(pos3D.x, pos3D.z);
-
-    DebugRender::Instance().DrawCircle(glm::vec3(pos3D.x,0.0f, pos3D.z),0.2f,glm::vec3(1));
+    
     // std::cout << "Inserting Node: " << node->getName() << " at (" << pos2D.x << ", " << pos2D.y << ")\n";
 
     // If this node not in quad, move on
@@ -132,17 +131,6 @@ void QuadTree::BuildDebugLines() {
     {
         child->BuildDebugLines();
     }
-
-}
-
-void QuadTree::Render(const glm::mat4& proj, const glm::mat4& view)
-{
-    if(keepOld)
-    {
-        keepOld = false;
-        BuildDebugLines();
-    }
-    DebugRender::Instance().Render(proj,view);
 }
 
 bool QuadTree::Contains(const glm::vec2& point) const {

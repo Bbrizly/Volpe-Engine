@@ -23,6 +23,8 @@ void DebugRender::DrawLine(const glm::vec3& start, const glm::vec3& end, const g
     vertices.push_back({adjustedEnd, color});
     // vertices.push_back({start, color});
     // vertices.push_back({end, color});
+
+    pushVertexData();
 }
 
 void DebugRender::DrawSquare(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& p4, const glm::vec3& color) {
@@ -31,7 +33,7 @@ void DebugRender::DrawSquare(const glm::vec3& p1, const glm::vec3& p2, const glm
     DrawLine(p3, p4, color);
     DrawLine(p4, p1, color);
     
-    pushVertexData();
+    // pushVertexData();
 }
 
 void DebugRender::DrawCircle(const glm::vec3& center, float radius, const glm::vec3& color) {
@@ -46,7 +48,7 @@ void DebugRender::DrawCircle(const glm::vec3& center, float radius, const glm::v
         DrawLine(p1, p2, color);
     }
     
-    pushVertexData();
+    // pushVertexData();
 }
 
 void DebugRender::pushVertexData() {
@@ -89,5 +91,6 @@ void DebugRender::Render(const glm::mat4& proj, const glm::mat4& view) {
 }
 
 void DebugRender::Clear() {
-    vertices.clear();
+    if(!vertices.empty())
+        vertices.clear();
 }

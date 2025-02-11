@@ -39,7 +39,8 @@ void Program::init()
 
     Scene::Instance().RandomInitScene(amount);
 
-    Scene::Instance().BuildQuadTree();
+    // Scene::Instance().BuildQuadTree();
+    Scene::Instance().BuildOctTree();
 
 }
 
@@ -47,7 +48,7 @@ void Program::update(float dt)
 {
     //DEBUGGING THE TEXT POSITIONS CUZ ITS SHIT
     //looks funny keeping for now
-    if(m_pApp->isKeyDown('W') || m_pApp->isKeyJustDown('a')) //Move FPS counter
+    if(m_pApp->isKeyDown('W') || m_pApp->isKeyJustDown('s')) //Move FPS counter
     {
         std::random_device rd;
         std::mt19937 gen(rd());
@@ -66,11 +67,22 @@ void Program::update(float dt)
     {
         Scene::Instance().Clear();
         Scene::Instance().RandomInitScene(amount);
-        Scene::Instance().BuildQuadTree();
+        if(Scene::Instance().getWhichTree())
+            Scene::Instance().BuildQuadTree();
+        else
+            Scene::Instance().BuildOctTree();
     }
     if(m_pApp->isKeyJustDown('Q') || m_pApp->isKeyJustDown('q'))
     {
         Scene::Instance().ToggleQuadTreeRender();
+    }
+    if(m_pApp->isKeyJustDown('A') || m_pApp->isKeyJustDown('a'))
+    {
+        //Toggle between quadtree and octtree
+        if(Scene::Instance().getWhichTree()) //true is quad, false is oct. here theyre swapped to switch
+            Scene::Instance().BuildOctTree();
+        else
+            Scene::Instance().BuildQuadTree();
     }
 
 

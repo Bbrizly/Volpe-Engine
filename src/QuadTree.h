@@ -19,6 +19,8 @@ public:
     
     void Insert(Node* node);
     void Query(const Frustum& frustum, std::vector<Node*>& results);
+    
+    void BuildDebugLines();
     void Render(const glm::mat4& proj, const glm::mat4& view);
 
 private:
@@ -26,7 +28,6 @@ private:
     void Subdivide();
     bool SphereIntersectsFrustum(const BoundingSphere& sphere, const Frustum& frustum);
 
-    void BuildDebugLines();
     void DrawLine(const glm::vec3& a, const glm::vec3& b, const glm::mat4& proj, const glm::mat4& view);
 
     AABB2D m_bounds;

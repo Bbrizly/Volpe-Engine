@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "iostream"
+#include <random>
 
 using namespace std;
 static const glm::vec3 cubeVertices[] = {
@@ -47,6 +48,14 @@ DebugCube::DebugCube(const std::string& name)
 DebugCube::~DebugCube(){}
 
 void DebugCube::genVertexData() {
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<float> rgb(0.0f, 255.0f);
+    GLubyte r = rgb(gen) //255
+           ,g = rgb(gen) //255
+           ,b = rgb(gen) //255
+           ;
+
     std::vector<Vertex> vertices;
     for (int i = 0; i < 6; ++i) {
         for (int j = 0; j < 6; ++j) {
@@ -54,7 +63,6 @@ void DebugCube::genVertexData() {
             glm::vec3 pos = cubeVertices[idx];
             glm::vec2 uv = cubeUVs[j % 4];
             glm::vec3 norm = cubeNormals[i];
-            GLubyte r = 255, g = 255, b = 255;
             
             vertices.emplace_back(
                 pos.x, pos.y, pos.z,  // Position

@@ -48,7 +48,7 @@ Scene& Scene::Instance() {
     return instance;
 }
 
-Scene::Scene() : m_activeCamera(nullptr), m_quadTree(nullptr), m_renderQuadTree(false) {}
+Scene::Scene() : m_activeCamera(nullptr), m_quadTree(nullptr), m_octTree(nullptr), m_renderTree(false) {}
 
 Scene::~Scene() {
     // for (auto node : m_nodes)
@@ -57,6 +57,11 @@ Scene::~Scene() {
     if(m_quadTree) {
         delete m_quadTree;
         m_quadTree = nullptr;
+    }
+    if(m_octTree)
+    {
+        delete m_octTree;
+        m_octTree = nullptr;
     }
 }
 
@@ -132,18 +137,46 @@ void Scene::ToggleUseDebugFrustum()
     // DebugRender::Instance().Clear();
 }
 
+void Scene::BuildOctTree()
+{
+    using namespace chrono;
+    auto t0 = high_resolution_clock::now();
+
+    m_useQuadTreeOrOct = false;
+    AABB3D sceneBounds3D;
+    sceneBounds3D.min = glm::vec3(-bounds, -bounds, -bounds);
+    sceneBounds3D.max = glm::vec3(bounds, bounds, bounds);
+    if(m_octTree)
+        delete m_octTree;
+
+    m_octTree = new OctTree(sceneBounds3D);
+
+    DebugRender::Instance().Clear(); 
+    for (Node* n : m_nodes) {
+        m_octTree->Insert(n);
+    }
+    
+    auto t1 = high_resolution_clock::now();
+    float buildTimeMs = duration<float, milli>(t1 - t0).count();
+    m_lastQuadTreeBuildTimeMs = buildTimeMs;
+    
+    redebug = true;
+}
+
 void Scene::BuildQuadTree() {
     using namespace chrono;
     auto t0 = high_resolution_clock::now();
 
+    m_useQuadTreeOrOct = true;
     AABB2D sceneBounds;
-    sceneBounds.min = glm::vec2(-30.0f, -30.0f);
-    sceneBounds.max = glm::vec2(30.0f, 30.0f);
+    sceneBounds.min = glm::vec2(-bounds, -bounds);
+    sceneBounds.max = glm::vec2(bounds, bounds);
     if(m_quadTree) {
         delete m_quadTree;
     }
     m_quadTree = new QuadTree(sceneBounds);
 
+    DebugRender::Instance().Clear(); 
     for(auto node : m_nodes)
     {
         m_quadTree->Insert(node);
@@ -152,23 +185,26 @@ void Scene::BuildQuadTree() {
     auto t1 = high_resolution_clock::now();
     float buildTimeMs = duration<float, milli>(t1 - t0).count();
     m_lastQuadTreeBuildTimeMs = buildTimeMs;
+    
+    redebug = true;
 }
 
 void Scene::RandomInitScene(int amount)
 {
     m_nodes.clear();
-    m_pGrid = new Grid3D(30);
+    m_pGrid = new Grid3D(bounds);
 
     random_device rd;
     mt19937 gen(rd());
-    uniform_real_distribution<float> distPos(-30.0f, 30.0f);
+    uniform_real_distribution<float> distPos(-bounds, bounds);
 
     for (int i = 1; i <= amount; ++i)
     {
         DebugCube* newCube = new DebugCube("cube_" + to_string(i));
-        glm::vec3 randomPos(distPos(gen), 0.0f, distPos(gen));
+        glm::vec3 randomPos(distPos(gen), distPos(gen), distPos(gen));
         newCube->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
-
+        
+        // DebugRender::Instance().DrawCircle(randomPos, 0.2f, glm::vec3(1.0f));
         AddNode(newCube);
     }
 
@@ -189,21 +225,18 @@ void Scene::ShowDebugText()
     textBoc->SetVisualization(false); //remove bg box
     textBoc->SetAlignment(2);
 
-    textBox  = m_textRenderer->createTextBox(fontArial,"FPS, Each Process's MS, Other important values", -640.0f, 360.0f, 350, 720);
+    textBox  = m_textRenderer->createTextBox(fontArial,"FPS, Each Process's MS, Other important values", -640.0f, 360.0f, 400, 720);
     textBox->SetColor(0, 0, 0, 255);
     textBox->SetVisualization(false); //remove bg box
     m_textRenderer->setTextBox(textBoc);
     m_textRenderer->setTextBox(textBox);
 }
 
-
-
 void Scene::Update(float dt, int screenWidth, int screenHeight) {
     using namespace chrono;
     auto EMA = [this](float oldValue, float newValue) {
         return oldValue * (1.0f - m_smoothAlpha) + newValue * m_smoothAlpha;
     };
-
     
     if(m_useDebugFrustum)
         DebugDrawFrustum(m_debugFrustum);
@@ -223,11 +256,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
         accumulatedTime = 0.0f;
     }
 
-    /*********************************************
-     *runtime in ms
-     *********************************************/
-
-    // Grab current time at start
+    //time at start
     auto t0 = high_resolution_clock::now();
 
     // ========== Camera Update ==========
@@ -265,11 +294,24 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     // ========== QuadTree Query ==========
     t0 = high_resolution_clock::now();
     m_nodesToRender.clear();
-    if (m_activeCamera && m_quadTree) {
-        m_quadTree->Query(frustumToUse, m_nodesToRender);
-    } else {
-        m_nodesToRender = m_nodes;
+
+    if(m_useQuadTreeOrOct)
+    {
+        if (m_activeCamera && m_quadTree) {
+            m_quadTree->Query(frustumToUse, m_nodesToRender);
+        } else {
+            m_nodesToRender = m_nodes;
+        }
     }
+    else
+    {
+        if (m_activeCamera && m_octTree) {
+            m_octTree->Query(frustumToUse, m_nodesToRender);
+        } else {
+            m_nodesToRender = m_nodes;
+        }
+    }
+
     t1 = high_resolution_clock::now();
     float quadTreeQueryMS = duration<float, milli>(t1 - t0).count();
 
@@ -279,13 +321,16 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     m_avgFrustumExtractMs = EMA(m_avgFrustumExtractMs, frustumExtractMS);
     m_avgQuadTreeQueryMs  = EMA(m_avgQuadTreeQueryMs,  quadTreeQueryMS);
 
+    std::string activeTreeName = m_useQuadTreeOrOct ? "Quad" : "Oct";
+
     string info;
     info += "FPS: " + to_string((int)lastKnownFps) + "\n";
     info += "\n";
-    info += "QuadTree Render: "  + string(m_renderQuadTree   ? "ON" : "OFF") + "\n";
+    info += "QuadTree Render: "  + string(m_renderTree   ? "ON" : "OFF") + "\n";
     info += "Debug Frustum  : "  + string(m_useDebugFrustum  ? "ON" : "OFF") + "\n";
-    info += "QuadTree Build (last): " + to_string(m_lastQuadTreeBuildTimeMs) + " ms\n";
-    info += "Cubes Visible: " + to_string(m_nodesToRender.size()) + "\n";
+    info += "CURRENT TREE   : " + activeTreeName + "\n";
+    info += "Tree Build Time: " + to_string(m_lastQuadTreeBuildTimeMs) + " ms\n";
+    info += "Cubes Visible  : " + to_string(m_nodesToRender.size()) + "\n";
     info += "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
     info += "Camera Update      : " + to_string(cameraUpdateMS)    + " ms\n";
     info += "Nodes Update       : " + to_string(nodeUpdateMS)       + " ms\n";
@@ -368,8 +413,31 @@ void Scene::Render(int screenWidth, int screenHeight) {
     for (auto node : m_nodesToRender)
         node->draw(proj, view);
         
-    if(m_renderQuadTree)
-        m_quadTree->Render(proj, view);
+    if(m_renderTree)
+    {
+        if(redebug) //if change change = false
+        {
+            redebug = false;
+            if(m_useQuadTreeOrOct)
+            {
+                // m_quadTree->Render(proj, view);
+                DebugRender::Instance().Clear();
+                m_quadTree->BuildDebugLines();
+                // DebugRender::Instance().Render(proj,view);
+            }
+            else
+            {
+                cout<<"Clear and fuck off?\n";
+                // m_octTree->Render(proj, view);
+                DebugRender::Instance().Clear();
+                m_octTree->BuildDebugLines();
+                // DebugRender::Instance().Render(proj,view);
+            }
+        }
+        glDisable(GL_DEPTH_TEST);
+        DebugRender::Instance().Render(proj, view);
+        glEnable(GL_DEPTH_TEST);
+    }
 
     // if(m_useDebugFrustum)
     //     DebugRender::Instance().Render(proj,view);

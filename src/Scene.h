@@ -3,6 +3,7 @@
 #include "Node.h"
 #include "DebugCube.h"
 #include "QuadTree.h"
+#include "OctTree.h"
 #include "Light.h"
 #include "../samplefw/Camera.h"
 #include "../samplefw/Grid3D.h"
@@ -25,7 +26,8 @@ private:
     vector<Light> m_lights; 
     Camera* m_activeCamera;
     QuadTree* m_quadTree;
-    bool m_renderQuadTree = true;
+    OctTree* m_octTree;
+    bool m_renderTree = true;
 
     Grid3D* m_pGrid = nullptr;
 
@@ -36,6 +38,7 @@ private:
 
     Frustum m_debugFrustum;
     bool m_useDebugFrustum = false;
+    bool m_useQuadTreeOrOct = true; //true quadtree, false octree
 
     //STATISTICSSS
 
@@ -48,6 +51,11 @@ private:
     float m_avgBoundingVolumeMs     = 0.0f;
     float m_avgFrustumExtractMs     = 0.0f;
     float m_avgQuadTreeQueryMs      = 0.0f;
+
+    //BOUNDS
+    float bounds = 20.0f;
+
+    bool redebug = true;
     
     // Used for the smoothing factor. 
     // e.g., alpha=0.1 means 90% old + 10% new every frame
@@ -63,6 +71,7 @@ public:
 
     void SetActiveCamera(Camera* cam) { m_activeCamera = cam; }
     void BuildQuadTree();
+    void BuildOctTree();
     void Update(float dt, int screenWidth, int screenHeight);
     void Render(int screenWidth, int screenHeight);
 
@@ -74,8 +83,10 @@ public:
     void ShowDebugText();
     void DebugDrawFrustum(const Frustum& frustum);
 
-    void ToggleQuadTreeRender() { m_renderQuadTree = !m_renderQuadTree; }
+    void ToggleQuadTreeRender() { m_renderTree = !m_renderTree; }
     void ToggleUseDebugFrustum();
+
+    bool getWhichTree() {return m_useQuadTreeOrOct;} //true quadtree, false octree
 
     //TEMPORARYYYY
     vector<Node*> GetNodes() { return m_nodes; }
