@@ -10,6 +10,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <GL/glew.h>
 #include <iostream>
+#include "DebugCube.h"
 
 struct AABB2D {
     glm::vec2 min;
@@ -24,6 +25,7 @@ public:
     
     void Insert(Node* node);
     void Query(const Frustum& frustum, std::vector<Node*>& results);
+    void QueryLight(const glm::vec3& lightPos, float lightRadius, std::vector<Node*>& results);
     
     void BuildDebugLines();
     void Render(const glm::mat4& proj, const glm::mat4& view);

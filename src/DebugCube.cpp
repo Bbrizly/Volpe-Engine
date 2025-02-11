@@ -30,6 +30,17 @@ static unsigned int cubeIndices[] = {
     4,5,1,  1,0,4
 };
 
+static const glm::vec3 localCorners[8] = {
+    { -0.5f, -0.5f, -0.5f },
+    {  0.5f, -0.5f, -0.5f },
+    { -0.5f,  0.5f, -0.5f },
+    {  0.5f,  0.5f, -0.5f },
+    { -0.5f, -0.5f,  0.5f },
+    {  0.5f, -0.5f,  0.5f },
+    { -0.5f,  0.5f,  0.5f },
+    {  0.5f,  0.5f,  0.5f }
+};
+
 DebugCube::DebugCube(const std::string& name)
 : Node(name)
 {
@@ -71,10 +82,29 @@ void DebugCube::genVertexData() {
     pushVertexData(m_vertexBuffer, m_vertexDecl, vertices);
 }
 
+AABB3D DebugCube::getWorldAABB3D() const
+{
+    AABB3D box;
+    glm::vec3 minV(1e9f), maxV(-1e9f);
 
-void DebugCube::pushVertexData(volpe::VertexBuffer*& vBuffer,
-                             volpe::VertexDeclaration*& vDecl,
-                             const vector<Vertex>& inVerts)
+    glm::mat4 world = getWorldTransform();
+    for(int i=0; i<8; i++)
+    {
+        glm::vec4 wPos = world * glm::vec4(localCorners[i], 1.0f);
+        minV.x = std::min(minV.x, wPos.x);
+        minV.y = std::min(minV.y, wPos.y);
+        minV.z = std::min(minV.z, wPos.z);
+
+        maxV.x = std::max(maxV.x, wPos.x);
+        maxV.y = std::max(maxV.y, wPos.y);
+        maxV.z = std::max(maxV.z, wPos.z);
+    }
+    box.min = minV;
+    box.max = maxV;
+    return box;
+}
+
+void DebugCube::pushVertexData(volpe::VertexBuffer*& vBuffer, volpe::VertexDeclaration*& vDecl, const vector<Vertex>& inVerts)
 {
     if(vBuffer) {
         volpe::BufferManager::DestroyBuffer(vBuffer);
@@ -124,19 +154,27 @@ void DebugCube::Render(const glm::mat4& proj, const glm::mat4& view)
     m_pProgram->SetUniform("view", view);
     m_pProgram->SetUniform("world", world);
     m_pProgram->SetUniform("worldIT", worldIT);
+
+    // if(m_numLightsAffecting >= 1)
+    // {
+    //     m_pProgram->SetUniform("u_pointLights", m_lights[0].getLightPosition);
+    //     m_pProgram->SetUniform("u_lightCount", m_numLightsAffecting);
+    // }
+
+    //IF affected by light: Set Uniform Light info (list of lights & amount etc)
+
     // m_pProgram->SetUniform("u_texture", 0);
 
     m_vertexDecl->Bind();
-    glDrawArrays(GL_TRIANGLES, 0, m_numVertices);
+    glDrawArrays(GL_TRIANGLES, 0, m_numVertices); //GL_TRIANGLES //GL_LINES
 
     // std::cout << "DebugCube Draw Call Executed.\n";
 }
 
 void DebugCube::draw(const glm::mat4& proj, const glm::mat4& view)
 {
-    // 1) Build world transform
-    glm::mat4 world = getWorldTransform();
-    glm::mat4 mvp   = proj * view * world;
+    // glm::mat4 world = getWorldTransform();
+    // glm::mat4 mvp   = proj * view * world;
 
     Render(proj,view);
     // Now children draw themselves

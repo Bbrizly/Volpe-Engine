@@ -14,7 +14,7 @@ Program::~Program()
     delete fpsCamera;
 }
 
-int amount = 500; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
+int amount = 5; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
 
 void Program::init()
 {
@@ -32,6 +32,8 @@ void Program::init()
     Scene::Instance().SetActiveCamera(orbitCamera);
 
     Scene::Instance().ShowDebugText();
+    
+    Scene::Instance().InitLights();
 
     Scene::Instance().RandomInitScene(amount);
 
@@ -82,7 +84,11 @@ void Program::update(float dt)
         else
             Scene::Instance().BuildQuadTree();
     }
-
+    
+    if(m_pApp->isKeyJustDown('L')) {
+        // random move lights
+        Scene::Instance().RandomMoveLights(); //move each light randomly
+    }
 
     // vector<Node*> nodes = Scene::Instance().GetNodes();
     // for (auto* n : nodes) {
@@ -99,8 +105,6 @@ void Program::update(float dt)
     //         n->setTransform(rotation);
     //     }
     // }
-
-    
 
     Scene::Instance().Update(dt, m_pApp->getScreenSize().x, m_pApp->getScreenSize().y);
 }

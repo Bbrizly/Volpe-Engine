@@ -49,6 +49,30 @@ void DebugRender::DrawCircle(const glm::vec3& center, float radius, const glm::v
     // pushVertexData();
 }
 
+void DebugRender::DrawSphere(const glm::vec3& center, float radius, const glm::vec3& color) {
+    int segments = 16;
+    for (int i = 0; i < segments; i++) {
+        float theta1 = i * 2.0f * 3.14159f / segments;
+        float theta2 = (i + 1) * 2.0f * 3.14159f / segments;
+
+        glm::vec3 p1 = center + glm::vec3(radius * cos(theta1), 0, radius * sin(theta1));
+        glm::vec3 p2 = center + glm::vec3(radius * cos(theta2), 0, radius * sin(theta2));
+
+        DrawLine(p1, p2, color);
+    }
+    for (int i = 0; i < segments; i++) {
+        float theta1 = i * 2.0f * 3.14159f / segments;
+        float theta2 = (i + 1) * 2.0f * 3.14159f / segments;
+
+        glm::vec3 p1 = center + glm::vec3(0, radius * cos(theta1), radius * sin(theta1));
+        glm::vec3 p2 = center + glm::vec3(0, radius * cos(theta2), radius * sin(theta2));
+
+        DrawLine(p1, p2, color);
+    }
+    
+    // pushVertexData();
+}
+
 void DebugRender::pushVertexData() {
     // if (m_vertexBuffer) {
     //     volpe::BufferManager::DestroyBuffer(m_vertexBuffer);

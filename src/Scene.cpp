@@ -47,6 +47,7 @@ Scene::~Scene() {
     // for (auto node : m_nodes)
     //     delete node;
     m_nodes.clear();
+    m_lights.clear();
     if(m_quadTree) {
         delete m_quadTree;
         m_quadTree = nullptr;
@@ -153,7 +154,7 @@ void Scene::BuildOctTree()
     float buildTimeMs = duration<float, milli>(t1 - t0).count();
     m_lastQuadTreeBuildTimeMs = buildTimeMs;
     
-    redebug = true;
+    reDebug = true;
 }
 
 void Scene::BuildQuadTree() {
@@ -179,14 +180,39 @@ void Scene::BuildQuadTree() {
     float buildTimeMs = duration<float, milli>(t1 - t0).count();
     m_lastQuadTreeBuildTimeMs = buildTimeMs;
     
-    redebug = true;
+    reDebug = true;
 }
 
 void Scene::RandomInitScene(int amount)
 {
-    m_nodes.clear();
+    Clear();
     m_pGrid = new Grid3D(bounds);
+    /*
 
+    int gridSize = std::ceil(std::cbrt(amount)); // Determine the grid dimensions (N x N x N)
+    float spacing = (2.0f * bounds) / gridSize; // Adjust spacing to fit within bounds
+
+    int cubeCount = 0;
+    for (int     x = 0; x < gridSize && cubeCount < amount; x++) {
+        for (int y = 0; y < gridSize && cubeCount < amount; y++) {
+            for (int z = 0; z < gridSize && cubeCount < amount; z++) {
+                // Map (x, y, z) to a position within -bounds to bounds
+                float posX = -bounds + x * spacing;
+                float posY = -bounds + y * spacing;
+                float posZ = -bounds + z * spacing;
+
+                glm::vec3 position = glm::vec3(posX, posY, posZ);
+
+                DebugCube* cube = new DebugCube("Cube_" + std::to_string(cubeCount));
+                cube->setTransform(glm::translate(glm::mat4(1.0f), position));
+
+                AddNode(cube); // Add cube to scene
+                cubeCount++;
+            }
+        }
+    }
+    */
+    // /*
     random_device rd;
     mt19937 gen(rd());
     uniform_real_distribution<float> distPos(-bounds, bounds);
@@ -200,11 +226,17 @@ void Scene::RandomInitScene(int amount)
         // DebugRender::Instance().DrawCircle(randomPos, 0.2f, glm::vec3(1.0f));
         AddNode(newCube);
     }
+    // */
+    for (int i = 0; i < 2; i++)
+    {
+        glm::vec3 pos = glm::vec3(distPos(gen), distPos(gen), distPos(gen));
+        m_lights.push_back( Light(pos,  glm::vec3(1,1,1), 1.0f, 10.0f));
+        // DebugRender::Instance().DrawCircle(pos, 0.2f, glm::vec3(1.0f));
+    }
 
-    // m_lights.push_back( Light(glm::vec3(0, 5, 5),  glm::vec3(1,1,1), 1.0f) );
-    // m_lights.push_back( Light(glm::vec3(5, 5, 0),  glm::vec3(1,0,0), 1.0f) );
-    // m_lights.push_back( Light(glm::vec3(-5, 5, 0), glm::vec3(0,1,0), 1.0f) );
-    // m_lights.push_back( Light(glm::vec3(0, 5, -5), glm::vec3(0,0,1), 1.0f) );
+    // m_lights.push_back( Light(glm::vec3(5, 5, 0),  glm::vec3(1,0,0), 1.0f, 10.0f));
+    // m_lights.push_back( Light(glm::vec3(-5, 5, 0), glm::vec3(0,1,0), 1.0f, 10.0f));
+    // m_lights.push_back( Light(glm::vec3(0, 5, -5), glm::vec3(0,0,1), 1.0f, 10.0f));
 
 }
 
@@ -305,6 +337,8 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
         }
     }
 
+    UpdateLighting();
+
     t1 = high_resolution_clock::now();
     float quadTreeQueryMS = duration<float, milli>(t1 - t0).count();
 
@@ -385,10 +419,89 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     */
 }
 
+void Scene::InitLights()
+{
+
+    // load the GPU programs
+    m_unlitProgram  = volpe::ProgramManager::CreateProgram("data/Unlit3d.vsh",  "data/Unlit3d.fsh");
+    // m_pointProgram  = volpe::ProgramManager::CreateProgram("data/Unlit3d.vsh","data/Unlit3d.fsh");
+    m_pointProgram  = volpe::ProgramManager::CreateProgram("data/PointLights.vsh","data/PointLights.fsh");
+}
+
+void Scene::UpdateLighting()
+{
+    // 1) reset cubes
+    for(auto* node : m_nodes) {
+        DebugCube* c = dynamic_cast<DebugCube*>(node);
+        if(c) {
+            c->m_numLightsAffecting = 0;
+            c->m_lightingColor     = glm::vec3(0);
+        }
+    }
+
+    // 2) For each light, do a "QueryLight"
+    for(auto& L : m_lights)
+    {
+        DebugRender::Instance().DrawSphere(L.position, L.radius, glm::vec3(1.0f));
+        float range = L.intensity * 10.f; 
+        std::vector<Node*> inRange;
+        if(m_useQuadTreeOrOct && m_quadTree)
+            m_quadTree->QueryLight(L.position, range, inRange);
+        else if(!m_useQuadTreeOrOct && m_octTree)
+            m_octTree->QueryLight(L.position, range, inRange);
+
+        for(auto* n : inRange){
+            DebugCube* c = dynamic_cast<DebugCube*>(n);
+            if(!c) continue;
+            c->m_numLightsAffecting++;
+            c->m_lightingColor += L.color * L.intensity;
+        }
+    }
+
+    // 3) Switch program
+    for(auto* node : m_nodes)
+    {
+        DebugCube* c = dynamic_cast<DebugCube*>(node);
+        if(!c) continue;
+
+        if(c->m_numLightsAffecting == 0) {
+            c->SetProgram(m_unlitProgram);
+        } else {
+            c->SetProgram(m_pointProgram);
+        }
+    }
+}
+
+void Scene::RandomMoveLights()
+{
+    DebugRender::Instance().Clear();
+    // Move all existing lights randomly
+    if(m_lights.empty()) return;
+    // m_lights.clear();
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> distPos(-bounds, bounds);
+
+    for(auto& light : m_lights)
+    {
+        light.position.x = distPos(gen);
+        light.position.y = distPos(gen);
+        light.position.z = distPos(gen);
+    }
+}
+
 void Scene::Clear()
 {
-    m_nodes.clear();
-    m_nodesToRender.clear();
+    if(!m_nodes.empty())
+        m_nodes.clear();
+    
+    if(!m_lights.empty())
+        m_lights.clear();
+
+    if(!m_nodesToRender.empty())
+        m_nodesToRender.clear();
+        
     DebugRender::Instance().Clear();
 }
 
@@ -403,14 +516,101 @@ void Scene::Render(int screenWidth, int screenHeight) {
 
     //COMMENT OUT TO DEBUG QUADTREE LOGICCCC
     //MAKE SURE TO ADD DEBUG CIRCLE TO EVERY NODE BEFOREHAND
-    for (auto node : m_nodesToRender)
-        node->draw(proj, view);
+    // for (auto node : m_nodesToRender)
+        // node->draw(proj, view);
+
+    for(auto* n : m_nodesToRender)
+    {
+        DebugCube* c = dynamic_cast<DebugCube*>(n);
+        if(!c) {
+            // if not a DebugCube, just draw
+            n->draw(proj, view);
+            continue;
+        }
+
+        volpe::Program* prog = c->GetProgram();
+        if(prog == m_pointProgram)
+        {
+            // Bind the program and pass the array of lights
+            prog->Bind();
+
+            // We'll pass up to 8 lights:
+            int lightCount = std::min((int)m_lights.size(), 8);
+
+            prog->SetUniform("u_lightCount", lightCount);
+
+            for(int i=0; i<lightCount; i++)
+            {
+                // name in the shader
+                std::string base = "u_pointLights[" + std::to_string(i) + "]";
+                // define the 4D "PositionRange"
+                glm::vec3 pos = m_lights[i].position;
+                float range   = m_lights[i].radius;   // or m_lights[i].intensity * 10.0f
+                glm::vec3 col = m_lights[i].color;
+                float strength= m_lights[i].intensity;
+
+                prog->SetUniform(base+".PositionRange", glm::vec4(pos, range));
+                prog->SetUniform(base+".Color",         col);
+                prog->SetUniform(base+".Strength",      strength);
+            }
+
+            // also set "fade" or "texture1" if needed
+            prog->SetUniform("fade", 1.0f);
+            // etc.
+        }
+
+        // Now call the cube's draw:
+        c->draw(proj, view);
+    }
+    
+    
+    /*for(auto* n: m_nodesToRender)
+    {
+        DebugCube* c = dynamic_cast<DebugCube*>(n);
+        if(!c) {
+            n->draw(proj, view);
+            continue;
+        }
+
+        volpe::Program* prog = c->GetProgram();
+        if(prog == m_pointProgram) {
+            prog->Bind();
+
+            // We'll pass up to 8 lights or however many we have
+            int lightCount = std::min((int)m_lights.size(), 8);
+            // Optionally skip if c->m_numLightsAffecting==0 => but we already set unlit.
+
+            prog->SetUniform("u_lightCount", lightCount);
+
+            for(int i=0; i<lightCount; i++){
+                // define uniform name
+                std::string base = "u_pointLights[" + std::to_string(i) + "]";
+                glm::vec3 pos   = m_lights[i].position;
+                float range     = m_lights[i].intensity * 10.f;
+                glm::vec3 color = m_lights[i].color;
+                float str       = m_lights[i].intensity;
+
+                prog->SetUniform(base+".PositionRange", glm::vec4(pos, range));
+                prog->SetUniform(base+".Color", color);
+                prog->SetUniform(base+".Strength", str);
+            }
+
+            // also set fade or texture if needed:
+            prog->SetUniform("fade", 1.0f);
+            // ...
+        }
+
+        // now call the cube's draw
+        c->draw(proj, view);
+    }
+    */
+
         
     if(m_renderTree)
     {
-        if(redebug) //if change change = false
+        if(reDebug) //if change change = false
         {
-            redebug = false;
+            reDebug = false;
             if(m_useQuadTreeOrOct)
             {
                 // m_quadTree->Render(proj, view);

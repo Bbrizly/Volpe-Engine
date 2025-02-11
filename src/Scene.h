@@ -37,6 +37,10 @@ private:
     OctTree* m_octTree;
     bool m_renderTree = true;
 
+    volpe::Program* m_unlitProgram = nullptr;    // "Unlit3d.vsh" / "Unlit3d.fsh"
+    volpe::Program* m_pointProgram = nullptr;    // "PointLight.vsh" / "PointLight.fsh"
+
+
     Grid3D* m_pGrid = nullptr;
 
     TextRenderer* m_textRenderer = nullptr;
@@ -47,6 +51,7 @@ private:
     Frustum m_debugFrustum;
     bool m_useDebugFrustum = false;
     bool m_useQuadTreeOrOct = true; //true quadtree, false octree
+
 
     //STATISTICSSS
 
@@ -61,9 +66,9 @@ private:
     float m_avgQuadTreeQueryMs      = 0.0f;
 
     //BOUNDS
-    float bounds = 20.0f;
+    float bounds = 10.0f;
 
-    bool redebug = true;
+    bool reDebug = true;
     
     // Used for the smoothing factor. 
     // e.g., alpha=0.1 means 90% old + 10% new every frame
@@ -82,6 +87,11 @@ public:
     void BuildOctTree();
     void Update(float dt, int screenWidth, int screenHeight);
     void Render(int screenWidth, int screenHeight);
+
+    void InitLights();         // rando lgihts
+    void UpdateLighting();     // choose which cubes get which program
+    void RandomMoveLights();
+    
 
     void setTextBoxPos(float x, float y)
     {

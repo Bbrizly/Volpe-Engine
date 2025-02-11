@@ -39,7 +39,80 @@ QuadTree::~QuadTree() {
     // DebugRender::Instance().Clear();
 }
 
+static bool Overlaps2D(const AABB2D& quadRegion, const AABB3D& box3D)
+{
+    // flatten box3D onto XZ plane
+    float minX = box3D.min.x;
+    float maxX = box3D.max.x;
+    float minZ = box3D.min.z;
+    float maxZ = box3D.max.z;
+
+    // Compare with quadRegion in XZ
+    if (maxX < quadRegion.min.x || minX > quadRegion.max.x) return false;
+    if (maxZ < quadRegion.min.y || minZ > quadRegion.max.y) return false;
+    return true;
+}
+
+
 void QuadTree::Insert(Node* node)
+{
+    if(!node) return;
+
+    DebugCube* cube = dynamic_cast<DebugCube*>(node);
+    if(!cube) {
+        // If you only have cubes, that’s fine; or handle other node types
+        return;
+    }
+
+    // 1) get the node's 3D bounding box
+    AABB3D nodeBox = cube->getWorldAABB3D();
+
+    // 2) flatten to see if it overlaps this 2D region
+    if(!Overlaps2D(m_bounds, nodeBox)) {
+        // no overlap => skip
+        return;
+    }
+
+    // 3) if no children and not at capacity, store it
+    if(m_children.empty() && (m_nodes.size() < MAX_OBJECTS || m_level == MAX_LEVELS))
+    {
+        m_nodes.push_back(node);
+        return;
+    }
+
+    // if no children yet, subdiv
+    if(m_children.empty()) {
+        Subdivide();
+
+        // push existing nodes down
+        for(auto* existing : m_nodes)
+        {
+            DebugCube* ec = dynamic_cast<DebugCube*>(existing);
+            if(!ec) continue;
+
+            AABB3D eBox = ec->getWorldAABB3D();
+            for(auto* child : m_children)
+            {
+                if(Overlaps2D(child->m_bounds, eBox)) {
+                    child->Insert(existing);
+                    break;
+                }
+            }
+        }
+        m_nodes.clear();
+    }
+
+    // now insert the new node
+    for(auto* child : m_children)
+    {
+        if(Overlaps2D(child->m_bounds, nodeBox)) {
+            child->Insert(node);
+            return; // or store multiple if partial overlap
+        }
+    }
+}
+
+/*void QuadTree::Insert(Node* node)
 {
     if (!node) return;
 
@@ -90,6 +163,7 @@ void QuadTree::Insert(Node* node)
         }
     }
 }
+*/
 
 void QuadTree::Query(const Frustum& frustum, std::vector<Node*>& results)
 {
@@ -110,6 +184,47 @@ void QuadTree::Query(const Frustum& frustum, std::vector<Node*>& results)
         child->Query(frustum, results);
     }
 }
+
+// A “light sphere” query that uses bounding-sphere vs. bounding-box
+static bool AABBvsSphere(const AABB3D& box, const glm::vec3& center, float radius)
+{
+    float distSq = 0.f;
+    if(center.x < box.min.x) distSq += (box.min.x - center.x)*(box.min.x - center.x);
+    else if(center.x > box.max.x) distSq += (center.x - box.max.x)*(center.x - box.max.x);
+
+    if(center.y < box.min.y) distSq += (box.min.y - center.y)*(box.min.y - center.y);
+    else if(center.y > box.max.y) distSq += (center.y - box.max.y)*(center.y - box.max.y);
+
+    if(center.z < box.min.z) distSq += (box.min.z - center.z)*(box.min.z - center.z);
+    else if(center.z > box.max.z) distSq += (center.z - box.max.z)*(center.z - box.max.z);
+
+    return (distSq <= radius*radius);
+}
+
+void QuadTree::QueryLight(const glm::vec3& lightPos, float lightRadius, std::vector<Node*>& results)
+{
+    // If 2D region doesn't overlap the sphere (flatten?), do a quick test
+    // For a more advanced approach, we do bounding-sphere vs region. 
+    // We'll skip for brevity or do Overlaps2D(...)? 
+    // If you want to be thorough, flatten the sphere to a bounding circle in XZ, compare with m_bounds.
+    // Let’s just assume we proceed if partial overlap is possible.
+
+    // check each node
+    for(auto* node : m_nodes)
+    {
+        DebugCube* cube = dynamic_cast<DebugCube*>(node);
+        if(!cube) continue;
+        AABB3D box = cube->getWorldAABB3D();
+        if(AABBvsSphere(box, lightPos, lightRadius)) {
+            results.push_back(node);
+        }
+    }
+
+    // recurse children
+    for(auto* child : m_children)
+        child->QueryLight(lightPos, lightRadius, results);
+}
+
 
 void QuadTree::BuildDebugLines() {
     float fixedY = 0.0f;

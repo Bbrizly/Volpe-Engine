@@ -6,15 +6,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <algorithm>
-
-// A simple 3D Axis-Aligned Bounding Box
-struct AABB3D {
-    glm::vec3 min;
-    glm::vec3 max;
-
-    // Quick test if this AABB intersects the frustum
-    bool IntersectsFrustum(const Frustum& frustum) const;
-};
+#include "DebugCube.h"
+#include "AABB3D.h"
 
 // 3D Oct-Tree
 class OctTree
@@ -25,6 +18,8 @@ public:
 
     void Insert(Node* node);
     void Query(const Frustum& frustum, std::vector<Node*>& results);
+    void QueryLight(const glm::vec3& lightPos, float lightRadius, std::vector<Node*>& results);
+
 
     void BuildDebugLines();
     void Render(const glm::mat4& proj, const glm::mat4& view);

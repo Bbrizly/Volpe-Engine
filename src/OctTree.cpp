@@ -62,7 +62,64 @@ bool OctTree::Contains(const glm::vec3& point) const
             point.z >= m_bounds.min.z && point.z < m_bounds.max.z);
 }
 
+
+//////////////////////////////////////////////////////////////////////////////////
+static bool Overlaps3D(const AABB3D& r1, const AABB3D& r2)
+{
+    if(r1.max.x < r2.min.x || r1.min.x > r2.max.x) return false;
+    if(r1.max.y < r2.min.y || r1.min.y > r2.max.y) return false;
+    if(r1.max.z < r2.min.z || r1.min.z > r2.max.z) return false;
+    return true;
+}
+//////////////////////////////////////////////////////////////////////////////////
 void OctTree::Insert(Node* node)
+{
+    if(!node) return;
+
+    DebugCube* cube = dynamic_cast<DebugCube*>(node);
+    if(!cube) return;
+
+    AABB3D nodeBox = cube->getWorldAABB3D();
+
+    if(!Overlaps3D(m_bounds, nodeBox)) {
+        return; // no overlap
+    }
+
+    if(!m_children[0] && (m_nodes.size()<MAX_OBJECTS || m_level==MAX_LEVELS))
+    {
+        m_nodes.push_back(node);
+        return;
+    }
+
+    if(!m_children[0]) {
+        Subdivide();
+
+        // push existing down
+        for(auto* existing : m_nodes) {
+            DebugCube* ec = dynamic_cast<DebugCube*>(existing);
+            if(!ec) continue;
+            AABB3D eBox = ec->getWorldAABB3D();
+            for(int i=0; i<NUM_CHILDREN; i++){
+                if(Overlaps3D(m_children[i]->m_bounds, eBox)){
+                    m_children[i]->Insert(existing);
+                    break;
+                }
+            }
+        }
+        m_nodes.clear();
+    }
+
+    // insert new
+    for(int i=0; i<NUM_CHILDREN; i++){
+        if(Overlaps3D(m_children[i]->m_bounds, nodeBox)){
+            m_children[i]->Insert(node);
+            return;
+        }
+    }
+}
+//////////////////////////////////////////////////////////////////////////////////
+
+/*void OctTree::Insert(Node* node)
 {
     if (!node) return;
 
@@ -108,7 +165,9 @@ void OctTree::Insert(Node* node)
         }
     }
 }
+*/
 
+//////////////////////////////////////////////////////////////////////////////////
 void OctTree::Query(const Frustum& frustum, std::vector<Node*>& results)
 {
     // 1) AABB vs. frustum check: if bounding box is fully outside, skip
@@ -131,6 +190,53 @@ void OctTree::Query(const Frustum& frustum, std::vector<Node*>& results)
         }
     }
 }
+
+static bool AABBvsSphere(const AABB3D& box, const glm::vec3& c, float r)
+{
+    float distSq = 0.f;
+    if(c.x < box.min.x) distSq += (box.min.x - c.x)*(box.min.x - c.x);
+    else if(c.x > box.max.x) distSq += (c.x - box.max.x)*(c.x - box.max.x);
+
+    if(c.y < box.min.y) distSq += (box.min.y - c.y)*(box.min.y - c.y);
+    else if(c.y > box.max.y) distSq += (c.y - box.max.y)*(c.y - box.max.y);
+
+    if(c.z < box.min.z) distSq += (box.min.z - c.z)*(box.min.z - c.z);
+    else if(c.z > box.max.z) distSq += (c.z - box.max.z)*(c.z - box.max.z);
+
+    return (distSq <= r*r);
+}
+
+void OctTree::QueryLight(const glm::vec3& lightPos, float lightRadius, std::vector<Node*>& results)
+{
+    // skip if region doesn't overlap sphere
+    if(!AABBvsSphere(m_bounds, lightPos, lightRadius)) 
+        return;
+
+    // check each node
+    for(auto* node : m_nodes)
+    {
+        DebugCube* c = dynamic_cast<DebugCube*>(node);
+        if(!c) continue;
+
+        AABB3D box = c->getWorldAABB3D();
+        if(AABBvsSphere(box, lightPos, lightRadius)) {
+            results.push_back(node);
+        }
+    }
+
+    // recurse
+    for(int i=0; i<8; i++){
+        if(m_children[i])
+            m_children[i]->QueryLight(lightPos, lightRadius, results);
+    }
+}
+
+// region bounding box vs sphere
+static bool RegionOverlapsSphere(const AABB3D& region, const glm::vec3& center, float r)
+{
+    return AABBvsSphere(region, center, r);
+}
+
 
 bool OctTree::SphereIntersectsFrustum(const BoundingSphere& sphere, const Frustum& frustum) const
 {
