@@ -3,11 +3,12 @@
 Node::Node(const std::string& name)
 : m_name(name),
   m_localTransform(1.0f),
-  m_parent(nullptr)
+  m_parent(nullptr),
+  m_boundingVolume(nullptr)
 {
     // Bounding sphere w radius 1
-    m_boundingSphere.center = glm::vec3(0,0,0);
-    m_boundingSphere.radius = 1.0f;
+    // m_boundingSphere.center = glm::vec3(0,0,0);
+    // m_boundingSphere.radius = 1.0f;
 }
 
 Node::~Node()
@@ -16,6 +17,10 @@ Node::~Node()
         delete c;
     }
     m_children.clear();
+
+    if(m_boundingVolume)
+        delete m_boundingVolume;
+    m_boundingVolume =nullptr;
 }
 
 void Node::addChild(Node* child)
@@ -66,33 +71,38 @@ glm::mat4 Node::getWorldTransform() const
     return m_localTransform;
 }
 
-void Node::setBoundingSphere(const BoundingSphere& bs) { m_boundingSphere = bs; }
-const BoundingSphere Node::getBoundingSphere() const { return m_boundingSphere; }
 
-// Example of “expanding” the bounding sphere to encompass children
-void Node::updateBoundingVolume()
+
+BoundingVolume* Node::GetBoundingVolume() const { return m_boundingVolume; }
+
+void Node::SetBoundingVolume(BoundingVolume* volume)
 {
-    // Start with local bounding sphere
-    float maxRadius = m_boundingSphere.radius;
-    glm::vec3 center = m_boundingSphere.center; // local origin
-
-    for (auto* c : m_children) {
-        BoundingSphere childBS = c->getBoundingSphere();
-
-        // Child center in world coords
-        glm::vec4 childCenterWorld = c->getWorldTransform() * glm::vec4(childBS.center, 1.0f);
-        glm::vec3 childCenter = glm::vec3(childCenterWorld);
-
-        float dist = glm::length(childCenter - center) + childBS.radius;
-        if (dist > maxRadius) {
-            maxRadius = dist;
-        }
+    if(m_boundingVolume && m_boundingVolume != volume)
+    {
+        delete m_boundingVolume;
     }
-    m_boundingSphere.radius = maxRadius;
+    m_boundingVolume = volume;
+}
 
-    // Recursively update children’s bounding volumes after that
-    for (auto* c : m_children) {
-        c->updateBoundingVolume();
+// EXpanding the bounding volume to encompass children
+void Node::UpdateBoundingVolume()
+{
+    for (auto* c : m_children)
+    {
+        c->UpdateBoundingVolume();
+    }
+
+    if(!m_boundingVolume) 
+        return;
+
+    for (auto* c : m_children)
+    {
+        BoundingVolume* childVol = c->GetBoundingVolume();
+        if(!childVol) continue;
+
+        glm::mat4 childWorld = c->getWorldTransform();
+
+        m_boundingVolume->ExpandToFit(*childVol, childWorld);
     }
 }
 

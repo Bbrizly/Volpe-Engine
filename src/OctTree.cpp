@@ -1,29 +1,7 @@
 #include "OctTree.h"
 
-bool AABB3D::IntersectsFrustum(const Frustum& frustum) const
-{
-    glm::vec3 center = 0.5f * (min + max);
-    glm::vec3 extents = 0.5f * (max - min);
 
-    for (int i = 0; i < 6; ++i) {
-        glm::vec4 plane = frustum.planes[i];
-        glm::vec3 normal(plane.x, plane.y, plane.z);
-        float d = plane.w;
-
-        float r = extents.x * std::fabs(normal.x)
-                + extents.y * std::fabs(normal.y)
-                + extents.z * std::fabs(normal.z);
-
-        float dist = glm::dot(normal, center) + d;
-
-        if (dist < -r) {
-            return false;
-        }
-    }
-    return true;
-}
-
-OctTree::OctTree(const AABB3D& bounds, int level)//= 0)
+OctTree::OctTree(const AABBVolume& bounds, int level)//= 0)
     : m_bounds(bounds)
     , m_level(level)
 {
@@ -52,7 +30,7 @@ bool OctTree::Contains(const glm::vec3& point) const
 
 
 //////////////////////////////////////////////////////////////////////////////////
-static bool Overlaps3D(const AABB3D& r1, const AABB3D& r2)
+static bool Overlaps3D(const AABBVolume& r1, const AABBVolume& r2)
 {
     if(r1.max.x < r2.min.x || r1.min.x > r2.max.x) return false;
     if(r1.max.y < r2.min.y || r1.min.y > r2.max.y) return false;
@@ -67,7 +45,7 @@ void OctTree::Insert(Node* node)
     DebugCube* cube = dynamic_cast<DebugCube*>(node);
     if(!cube) return;
 
-    AABB3D nodeBox = cube->getWorldAABB3D();
+    AABBVolume nodeBox = cube->getWorldAABB3D();
 
     if(!Overlaps3D(m_bounds, nodeBox)) {
         return; // no overlap
@@ -86,7 +64,7 @@ void OctTree::Insert(Node* node)
         for(auto* existing : m_nodes) {
             DebugCube* ec = dynamic_cast<DebugCube*>(existing);
             if(!ec) continue;
-            AABB3D eBox = ec->getWorldAABB3D();
+            AABBVolume eBox = ec->getWorldAABB3D();
             for(int i=0; i<NUM_CHILDREN; i++){
                 if(Overlaps3D(m_children[i]->m_bounds, eBox)){
                     m_children[i]->Insert(existing);
@@ -115,7 +93,8 @@ void OctTree::Query(const Frustum& frustum, std::vector<Node*>& results)
     // Check each node stored at this level
     for (auto* node : m_nodes) {
         // If bounding sphere of node is inside frustum, add it
-        if (SphereIntersectsFrustum(node->getBoundingSphere(), frustum)) {
+        if (node->GetBoundingVolume()->IntersectsFrustum(frustum)){
+        // if (SphereIntersectsFrustum(node->GetBoundingVolume(), frustum)) {
             results.push_back(node);
         }
     }
@@ -128,7 +107,7 @@ void OctTree::Query(const Frustum& frustum, std::vector<Node*>& results)
     }
 }
 
-static bool AABBvsSphere(const AABB3D& box, const glm::vec3& c, float r)
+static bool AABBvsSphere(const AABBVolume& box, const glm::vec3& c, float r)
 {
     float distSq = 0.f;
     if(c.x < box.min.x) distSq += (box.min.x - c.x)*(box.min.x - c.x);
@@ -155,8 +134,11 @@ void OctTree::QueryLight(const glm::vec3& lightPos, float lightRadius, std::vect
         DebugCube* c = dynamic_cast<DebugCube*>(node);
         if(!c) continue;
 
-        AABB3D box = c->getWorldAABB3D();
-        if(AABBvsSphere(box, lightPos, lightRadius)) {
+        AABBVolume box = c->getWorldAABB3D();
+        SphereVolume lightSphere(lightPos, lightRadius);
+
+        if(box.OverlapsSphere(lightSphere)){
+        // if(AABBvsSphere(box, lightPos, lightRadius)) { // 
             results.push_back(node);
         }
     }
@@ -169,22 +151,9 @@ void OctTree::QueryLight(const glm::vec3& lightPos, float lightRadius, std::vect
 }
 
 // region bounding box vs sphere
-static bool RegionOverlapsSphere(const AABB3D& region, const glm::vec3& center, float r)
+static bool RegionOverlapsSphere(const AABBVolume& region, const glm::vec3& center, float r)
 {
     return AABBvsSphere(region, center, r);
-}
-
-
-bool OctTree::SphereIntersectsFrustum(const BoundingSphere& sphere, const Frustum& frustum) const
-{
-    // same logic you used in QuadTree
-    for (int i = 0; i < 6; i++) {
-        glm::vec3 planeNormal = glm::vec3(frustum.planes[i]);
-        float distance = glm::dot(planeNormal, sphere.center) + frustum.planes[i].w;
-        if (distance < -sphere.radius)
-            return false;
-    }
-    return true;
 }
 
 void OctTree::Subdivide()
@@ -199,9 +168,9 @@ void OctTree::Subdivide()
     // child 1: (x-mid)    -> (x-max, y-mid, z-mid), etc.
     // We'll systematically define them:
 
-    // We'll create a small helper lambda to quickly build AABB3D
+    // We'll create a small helper lambda to quickly build AABBVolume
     auto makeAABB = [&](float minX, float minY, float minZ, float maxX, float maxY, float maxZ){
-        AABB3D box;
+        AABBVolume box;
         box.min = glm::vec3(minX, minY, minZ);
         box.max = glm::vec3(maxX, maxY, maxZ);
         return box;
@@ -211,29 +180,29 @@ void OctTree::Subdivide()
     glm::vec3 maxP = m_bounds.max;
 
     // Child 0 (left/bottom/back)
-    AABB3D c0 = makeAABB(minP.x, minP.y, minP.z,
+    AABBVolume c0 = makeAABB(minP.x, minP.y, minP.z,
                          mid.x,   mid.y,   mid.z);
     // Child 1 (right/bottom/back)
-    AABB3D c1 = makeAABB(mid.x,   minP.y, minP.z,
+    AABBVolume c1 = makeAABB(mid.x,   minP.y, minP.z,
                          maxP.x,  mid.y,  mid.z);
     // Child 2 (left/top/back)
-    AABB3D c2 = makeAABB(minP.x,  mid.y,  minP.z,
+    AABBVolume c2 = makeAABB(minP.x,  mid.y,  minP.z,
                          mid.x,    maxP.y, mid.z);
     // Child 3 (right/top/back)
-    AABB3D c3 = makeAABB(mid.x,   mid.y,  minP.z,
+    AABBVolume c3 = makeAABB(mid.x,   mid.y,  minP.z,
                          maxP.x,  maxP.y, mid.z);
 
     // Child 4 (left/bottom/front)
-    AABB3D c4 = makeAABB(minP.x,  minP.y,  mid.z,
+    AABBVolume c4 = makeAABB(minP.x,  minP.y,  mid.z,
                          mid.x,    mid.y,  maxP.z);
     // Child 5 (right/bottom/front)
-    AABB3D c5 = makeAABB(mid.x,   minP.y,  mid.z,
+    AABBVolume c5 = makeAABB(mid.x,   minP.y,  mid.z,
                          maxP.x,  mid.y,   maxP.z);
     // Child 6 (left/top/front)
-    AABB3D c6 = makeAABB(minP.x,   mid.y,   mid.z,
+    AABBVolume c6 = makeAABB(minP.x,   mid.y,   mid.z,
                          mid.x,     maxP.y, maxP.z);
     // Child 7 (right/top/front)
-    AABB3D c7 = makeAABB(mid.x,    mid.y,   mid.z,
+    AABBVolume c7 = makeAABB(mid.x,    mid.y,   mid.z,
                          maxP.x,   maxP.y,  maxP.z);
 
     // Create the 8 children

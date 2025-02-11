@@ -7,7 +7,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "iostream"
-#include "AABB3D.h"
+#include "AABBVolume.h"
+#include "BoundingVolume.h"
 #include <random>
 
 using namespace std;
@@ -40,7 +41,7 @@ public:
     DebugCube(const std::string& name);
     virtual ~DebugCube();
     
-    AABB3D getWorldAABB3D() const;
+    AABBVolume getWorldAABB3D() const;
     
     std::vector<int> m_affectingLights;
     int        m_numLightsAffecting = 0;

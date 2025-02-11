@@ -7,13 +7,13 @@
 #include <iostream>
 #include <algorithm>
 #include "DebugCube.h"
-#include "AABB3D.h"
+#include "AABBVolume.h"
 
 // 3D Oct-Tree
 class OctTree
 {
 public:
-    OctTree(const AABB3D& bounds, int level = 0);
+    OctTree(const AABBVolume& bounds, int level = 0);
     ~OctTree();
 
     void Insert(Node* node);
@@ -25,7 +25,7 @@ public:
     void Render(const glm::mat4& proj, const glm::mat4& view);
 
 private:
-    AABB3D m_bounds;
+    AABBVolume m_bounds;
     int    m_level;
 
     // Store child pointers. If not subdivided, children are nullptr
@@ -40,7 +40,6 @@ private:
 
     void Subdivide();
     bool Contains(const glm::vec3& point) const;
-    bool SphereIntersectsFrustum(const BoundingSphere& sphere, const Frustum& frustum) const;
 
     // If true, we have not yet built debug lines
     bool keepOld = true;

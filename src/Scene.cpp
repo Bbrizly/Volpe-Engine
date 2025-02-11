@@ -137,7 +137,7 @@ void Scene::BuildOctTree()
     auto t0 = high_resolution_clock::now();
 
     m_useQuadTreeOrOct = false;
-    AABB3D sceneBounds3D;
+    AABBVolume sceneBounds3D;
     sceneBounds3D.min = glm::vec3(-bounds, -bounds, -bounds);
     sceneBounds3D.max = glm::vec3(bounds, bounds, bounds);
     if(m_octTree)
@@ -311,7 +311,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     // ========== Bounding Volume Updates ==========
     t0 = high_resolution_clock::now();
     for (auto node : m_nodes) {
-        node->updateBoundingVolume();
+        node->UpdateBoundingVolume();
     }
     t1 = high_resolution_clock::now();
     float boundingVolumeMS = duration<float, milli>(t1 - t0).count();

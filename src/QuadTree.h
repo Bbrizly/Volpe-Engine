@@ -33,7 +33,6 @@ public:
 private:
     bool Contains(const glm::vec2& point) const;
     void Subdivide();
-    bool SphereIntersectsFrustum(const BoundingSphere& sphere, const Frustum& frustum);
 
     void DrawLine(const glm::vec3& a, const glm::vec3& b, const glm::mat4& proj, const glm::mat4& view);
 

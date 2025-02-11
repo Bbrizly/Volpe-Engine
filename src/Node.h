@@ -5,20 +5,17 @@
 #include <glm/glm.hpp>
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
-
-struct BoundingSphere {
-    glm::vec3 center;
-    float     radius;
-};
+#include "BoundingVolume.h"
 
 class Node
 {
 protected:
     std::string       m_name;
     glm::mat4         m_localTransform;
-    BoundingSphere    m_boundingSphere;
     Node*             m_parent;
     std::vector<Node*> m_children;
+
+    BoundingVolume* m_boundingVolume;
 
 public:
     Node(const std::string& name);
@@ -31,16 +28,16 @@ public:
     virtual void draw(const glm::mat4& proj, const glm::mat4& view);
 
     // Basic getters/setters
-    void        setName(const std::string& name);
+    void setName(const std::string& name);
     std::string getName() const;
 
-    void        setTransform(const glm::mat4& transform);
-    glm::mat4   getTransform() const;
+    void setTransform(const glm::mat4& transform);
+    glm::mat4 getTransform() const;
 
-    glm::mat4   getWorldTransform() const;
+    glm::mat4 getWorldTransform() const;
 
     // Bounding volume
-    void                 setBoundingSphere(const BoundingSphere& bs);
-    const BoundingSphere getBoundingSphere() const;
-    void                 updateBoundingVolume();
+    void SetBoundingVolume(BoundingVolume* volume);
+    BoundingVolume* GetBoundingVolume() const;
+    virtual void UpdateBoundingVolume();
 };

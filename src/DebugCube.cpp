@@ -44,15 +44,31 @@ static const glm::vec3 localCorners[8] = {
 DebugCube::DebugCube(const std::string& name)
 : Node(name)
 {
-    std::cout<<"CUBE INIT\n";
-    m_boundingSphere.center = glm::vec3(0,0,0);
-    m_boundingSphere.radius = 0.8f; // Smaller than node
+    std::cout << "CUBE INIT\n";
     
-    m_pProgram = volpe::ProgramManager::CreateProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
-    // m_pProgram = volpe::ProgramManager::CreateProgram("data/Directional3D.vsh", "data/Directional3D.fsh");
+    glm::vec3 minv(+cubeSize), maxv(-cubeSize); //create cube boundingbox size
+    for(int i=0; i<8; i++)
+    {
+        minv.x = std::min(minv.x, localCorners[i].x);
+        minv.y = std::min(minv.y, localCorners[i].y);
+        minv.z = std::min(minv.z, localCorners[i].z);
 
+        maxv.x = std::max(maxv.x, localCorners[i].x);
+        maxv.y = std::max(maxv.y, localCorners[i].y);
+        maxv.z = std::max(maxv.z, localCorners[i].z);
+    }
+
+    AABBVolume* localBox = new AABBVolume(minv, maxv);
+    SetBoundingVolume(localBox);
+    
+    //Sphere init
+    //SphereVolume* localSphere = new SphereVolume(glm::vec3(0,0,0), 0.8f);
+    //SetBoundingVolume(localSphere);
+
+    m_pProgram = volpe::ProgramManager::CreateProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
     genVertexData();
 }
+
 DebugCube::~DebugCube(){}
 
 void DebugCube::genVertexData() {
@@ -76,9 +92,9 @@ void DebugCube::genVertexData() {
     pushVertexData(m_vertexBuffer, m_vertexDecl, vertices);
 }
 
-AABB3D DebugCube::getWorldAABB3D() const
+AABBVolume DebugCube::getWorldAABB3D() const
 {
-    AABB3D box;
+    AABBVolume box;
     glm::vec3 minV(1e9f), maxV(-1e9f);
 
     glm::mat4 world = getWorldTransform();

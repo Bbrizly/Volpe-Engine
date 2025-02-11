@@ -39,7 +39,7 @@ QuadTree::~QuadTree() {
     // DebugRender::Instance().Clear();
 }
 
-static bool Overlaps2D(const AABB2D& quadRegion, const AABB3D& box3D)
+static bool Overlaps2D(const AABB2D& quadRegion, const AABBVolume& box3D)
 {
     // flatten box3D onto XZ plane
     float minX = box3D.min.x;
@@ -53,7 +53,6 @@ static bool Overlaps2D(const AABB2D& quadRegion, const AABB3D& box3D)
     return true;
 }
 
-
 void QuadTree::Insert(Node* node)
 {
     if(!node) return;
@@ -65,7 +64,7 @@ void QuadTree::Insert(Node* node)
     }
 
     // 1) get the node's 3D bounding box
-    AABB3D nodeBox = cube->getWorldAABB3D();
+    AABBVolume nodeBox = cube->getWorldAABB3D();
 
     // 2) flatten to see if it overlaps this 2D region
     if(!Overlaps2D(m_bounds, nodeBox)) {
@@ -90,7 +89,7 @@ void QuadTree::Insert(Node* node)
             DebugCube* ec = dynamic_cast<DebugCube*>(existing);
             if(!ec) continue;
 
-            AABB3D eBox = ec->getWorldAABB3D();
+            AABBVolume eBox = ec->getWorldAABB3D();
             for(auto* child : m_children)
             {
                 if(Overlaps2D(child->m_bounds, eBox)) {
@@ -174,7 +173,8 @@ void QuadTree::Query(const Frustum& frustum, std::vector<Node*>& results)
 
     // Check each node stored here
     for (auto node : m_nodes) {
-        if (SphereIntersectsFrustum(node->getBoundingSphere(), frustum)) {
+        if(node->GetBoundingVolume()->IntersectsFrustum(frustum)){
+        // if (SphereIntersectsFrustum(node->GetBoundingVolume(), frustum)) {
             results.push_back(node);
         }
     }
@@ -186,7 +186,7 @@ void QuadTree::Query(const Frustum& frustum, std::vector<Node*>& results)
 }
 
 // A “light sphere” query that uses bounding-sphere vs. bounding-box
-static bool AABBvsSphere(const AABB3D& box, const glm::vec3& center, float radius)
+static bool AABBvsSphere(const AABBVolume& box, const glm::vec3& center, float radius)
 {
     float distSq = 0.f;
     if(center.x < box.min.x) distSq += (box.min.x - center.x)*(box.min.x - center.x);
@@ -214,7 +214,7 @@ void QuadTree::QueryLight(const glm::vec3& lightPos, float lightRadius, std::vec
     {
         DebugCube* cube = dynamic_cast<DebugCube*>(node);
         if(!cube) continue;
-        AABB3D box = cube->getWorldAABB3D();
+        AABBVolume box = cube->getWorldAABB3D();
         if(AABBvsSphere(box, lightPos, lightRadius)) {
             results.push_back(node);
         }
@@ -346,13 +346,5 @@ void QuadTree::Subdivide() {
     m_children.push_back(new QuadTree(childBounds, m_level + 1));
 }
 */
-bool QuadTree::SphereIntersectsFrustum(const BoundingSphere& sphere, const Frustum& frustum) {
-    for (int i = 0; i < 6; i++) {
-        glm::vec3 planeNormal = glm::vec3(frustum.planes[i]);
-        float distance = glm::dot(planeNormal, sphere.center) + frustum.planes[i].w;
-        if (distance < -sphere.radius)
-            return false;
-    }
-    return true;
-}
+
 
