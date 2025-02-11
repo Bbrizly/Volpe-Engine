@@ -6,6 +6,11 @@
 #include "Node.h"
 #include "Frustum.h"
 
+#include "DebugRender.h"
+#include <glm/gtc/matrix_transform.hpp>
+#include <GL/glew.h>
+#include <iostream>
+
 struct AABB2D {
     glm::vec2 min;
     glm::vec2 max;

@@ -1,8 +1,4 @@
 #include "QuadTree.h"
-#include "DebugRender.h"
-#include <glm/gtc/matrix_transform.hpp>
-#include <GL/glew.h>
-#include <iostream>
 
 bool AABB2D::IntersectsFrustum(const Frustum& frustum) const {
     glm::vec3 min3D(min.x, 0.0f, min.y);

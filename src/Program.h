@@ -7,6 +7,11 @@
 #include "../samplefw/OrbitCamera.h"
 #include "../samplefw/Grid3D.h"
 
+#include <glm/gtc/matrix_transform.hpp>
+#include <algorithm>
+#include <iostream>
+#include <random>
+
 #include "../volpe/TextRendering/TextRenderer.h"
 #include "../volpe/TextRendering/TextBox.h"
 

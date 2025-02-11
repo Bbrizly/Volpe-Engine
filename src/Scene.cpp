@@ -1,11 +1,4 @@
 #include "Scene.h"
-#include "DebugRender.h"
-#include <algorithm>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <iostream>
-#include <chrono> 
-#include <random>
 
 using namespace std;
 
@@ -208,10 +201,10 @@ void Scene::RandomInitScene(int amount)
         AddNode(newCube);
     }
 
-    m_lights.push_back( Light(glm::vec3(0, 5, 5),  glm::vec3(1,1,1), 1.0f) );
-    m_lights.push_back( Light(glm::vec3(5, 5, 0),  glm::vec3(1,0,0), 1.0f) );
-    m_lights.push_back( Light(glm::vec3(-5, 5, 0), glm::vec3(0,1,0), 1.0f) );
-    m_lights.push_back( Light(glm::vec3(0, 5, -5), glm::vec3(0,0,1), 1.0f) );
+    // m_lights.push_back( Light(glm::vec3(0, 5, 5),  glm::vec3(1,1,1), 1.0f) );
+    // m_lights.push_back( Light(glm::vec3(5, 5, 0),  glm::vec3(1,0,0), 1.0f) );
+    // m_lights.push_back( Light(glm::vec3(-5, 5, 0), glm::vec3(0,1,0), 1.0f) );
+    // m_lights.push_back( Light(glm::vec3(0, 5, -5), glm::vec3(0,0,1), 1.0f) );
 
 }
 
@@ -220,7 +213,7 @@ void Scene::ShowDebugText()
     m_textRenderer = new TextRenderer();
     m_textRenderer->init();
     Font* fontArial   = m_textRenderer->createFont("Arial");
-    TextBox* textBoc   = m_textRenderer->createTextBox(fontArial,"Press Q to visualize Quad Tree.\nPress R To randomly Generate Nodes.\nPress F to toggle Debug Frustum.", 640.0f - 400, 360.0f, 400, 200);
+    TextBox* textBoc   = m_textRenderer->createTextBox(fontArial,"Press Q to visualize Quad Tree.\nPress R To randomly Generate Nodes.\nPress F to toggle Debug Frustum.\nPress A to Switch Trees", 640.0f - 400, 360.0f, 400, 200);
     textBoc->SetColor(0,0,0,255);
     textBoc->SetVisualization(false); //remove bg box
     textBoc->SetAlignment(2);

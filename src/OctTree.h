@@ -2,6 +2,10 @@
 #include <vector>
 #include "Node.h"
 #include "Frustum.h"
+#include "DebugRender.h"
+#include <glm/gtc/matrix_transform.hpp>
+#include <iostream>
+#include <algorithm>
 
 // A simple 3D Axis-Aligned Bounding Box
 struct AABB3D {

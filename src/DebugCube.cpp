@@ -1,8 +1,4 @@
 #include "DebugCube.h"
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include "iostream"
-#include <random>
 
 using namespace std;
 static const glm::vec3 cubeVertices[] = {
@@ -65,10 +61,10 @@ void DebugCube::genVertexData() {
             glm::vec3 norm = cubeNormals[i];
             
             vertices.emplace_back(
-                pos.x, pos.y, pos.z,  // Position
-                r, g, b, 255,   // Color (RGBA)
-                uv.x, uv.y,           // UV coordinates
-                norm.x, norm.y, norm.z // Normal vector
+                pos.x, pos.y, pos.z,
+                r, g, b, 255,
+                uv.x, uv.y,
+                norm.x, norm.y, norm.z
             );
         }
     }

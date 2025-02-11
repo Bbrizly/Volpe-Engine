@@ -1,8 +1,4 @@
 #include "Program.h"
-#include <glm/gtc/matrix_transform.hpp>
-#include <algorithm>
-#include <iostream>
-#include <random>
 
 using namespace std;
 
@@ -18,7 +14,7 @@ Program::~Program()
     delete fpsCamera;
 }
 
-int amount = 100; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
+int amount = 500; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
 
 void Program::init()
 {
@@ -72,10 +68,12 @@ void Program::update(float dt)
         else
             Scene::Instance().BuildOctTree();
     }
+
     if(m_pApp->isKeyJustDown('Q') || m_pApp->isKeyJustDown('q'))
     {
         Scene::Instance().ToggleQuadTreeRender();
     }
+
     if(m_pApp->isKeyJustDown('A') || m_pApp->isKeyJustDown('a'))
     {
         //Toggle between quadtree and octtree

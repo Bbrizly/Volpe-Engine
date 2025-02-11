@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 #include <glm/glm.hpp>
+#include <algorithm>
+#include <glm/gtc/matrix_transform.hpp>
 
 // Simple bounding sphere for example
 struct BoundingSphere {

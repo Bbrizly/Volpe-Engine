@@ -1,6 +1,4 @@
 #include "DebugRender.h"
-#include <iostream>
-#include <glm/gtc/matrix_transform.hpp>
 
 using namespace std;
 

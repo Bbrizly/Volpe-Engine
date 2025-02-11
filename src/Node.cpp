@@ -1,6 +1,4 @@
 #include "Node.h"
-#include <algorithm>
-#include <glm/gtc/matrix_transform.hpp>
 
 Node::Node(const std::string& name)
 : m_name(name),

@@ -8,6 +8,14 @@
 #include "../samplefw/Camera.h"
 #include "../samplefw/Grid3D.h"
 
+#include "DebugRender.h"
+#include <algorithm>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <iostream>
+#include <chrono> 
+#include <random>
+
 #include "../volpe/TextRendering/TextRenderer.h"
 #include "../volpe/TextRendering/TextBox.h"
 

@@ -1,8 +1,4 @@
 #include "OctTree.h"
-#include "DebugRender.h"
-#include <glm/gtc/matrix_transform.hpp>
-#include <iostream>
-#include <algorithm>
 
 // ------------------- AABB3D Utility -------------------
 bool AABB3D::IntersectsFrustum(const Frustum& frustum) const
