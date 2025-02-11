@@ -136,7 +136,7 @@ void DebugCube::pushVertexData(volpe::VertexBuffer*& vBuffer, volpe::VertexDecla
     std::cout << "DebugCube created with " << m_numVertices << " vertices.\n";
 }
 
-void DebugCube::Render(const glm::mat4& proj, const glm::mat4& view)
+void DebugCube::Render(const glm::mat4& proj, const glm::mat4& view, bool skipBind)
 {
     if(!m_pProgram || !m_vertexBuffer || !m_vertexDecl || m_numVertices==0) {
         
@@ -148,6 +148,9 @@ void DebugCube::Render(const glm::mat4& proj, const glm::mat4& view)
 
     // glm::mat4 modelViewProj = proj * view * world;
     glm::mat4 worldIT = glm::transpose(glm::inverse(world));
+
+    if(!skipBind)
+        m_pProgram->Bind();
 
     m_pProgram->Bind();
     m_pProgram->SetUniform("projection", proj);
@@ -171,12 +174,14 @@ void DebugCube::Render(const glm::mat4& proj, const glm::mat4& view)
     // std::cout << "DebugCube Draw Call Executed.\n";
 }
 
-void DebugCube::draw(const glm::mat4& proj, const glm::mat4& view)
+void DebugCube::draw(const glm::mat4& proj, const glm::mat4& view, bool skipBind)
 {
     // glm::mat4 world = getWorldTransform();
     // glm::mat4 mvp   = proj * view * world;
-
-    Render(proj,view);
+    if(skipBind)
+        Render(proj,view, skipBind);
+    else
+        Render(proj,view);
     // Now children draw themselves
     Node::draw(proj,view);
 }

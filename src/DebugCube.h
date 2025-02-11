@@ -24,7 +24,7 @@ private:
     volpe::Program* m_pProgram = 0;
     int m_numVertices=0;
 
-    void Render(const glm::mat4& proj, const glm::mat4& view);
+    void Render(const glm::mat4& proj, const glm::mat4& view, bool skipBind = false);
 
     void pushVertexData(volpe::VertexBuffer*& vBuffer,
                              volpe::VertexDeclaration*& vDecl,
@@ -44,7 +44,7 @@ public:
     volpe::Program* GetProgram() const { return m_pProgram; }
 
     // Override draw so we can actually render a cube
-    virtual void draw(const glm::mat4& proj, const glm::mat4& view)override;
+    virtual void draw(const glm::mat4& proj, const glm::mat4& view, bool skipBind = false);
 
 
 };

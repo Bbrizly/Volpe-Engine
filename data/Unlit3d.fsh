@@ -1,6 +1,6 @@
 in vec4 v_color;
 in vec2 v_uv1;
-in vec4 v_normal;
+//in vec4 v_normal;
 
 out vec4 FragColor;
 

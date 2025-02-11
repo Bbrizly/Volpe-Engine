@@ -37,8 +37,8 @@ void Program::init()
 
     Scene::Instance().RandomInitScene(amount);
 
-    // Scene::Instance().BuildQuadTree();
-    Scene::Instance().BuildOctTree();
+    Scene::Instance().BuildQuadTree();
+    // Scene::Instance().BuildOctTree();
 
 }
 
