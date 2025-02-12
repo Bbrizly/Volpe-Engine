@@ -11,12 +11,7 @@
 #include <GL/glew.h>
 #include <iostream>
 #include "DebugCube.h"
-
-struct AABB2D {
-    glm::vec2 min;
-    glm::vec2 max;
-    bool IntersectsFrustum(const Frustum& frustum) const;
-};
+#include "AABB2D.h"
 
 class QuadTree {
 public:

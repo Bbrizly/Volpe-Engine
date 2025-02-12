@@ -48,7 +48,7 @@ public:
     
     void SetProgram(volpe::Program* prog) { m_pProgram = prog; }
 
-    void setColor(GLubyte inR, GLubyte inG, GLubyte inB) {r= inR; g = inG; b = inB;}
+    void setColor(GLubyte inR, GLubyte inG, GLubyte inB) {r= inR; g = inG; b = inB; genVertexData();}
 
     volpe::Program* GetProgram() const { return m_pProgram; }
 

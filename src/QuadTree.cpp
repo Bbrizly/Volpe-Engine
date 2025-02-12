@@ -254,10 +254,10 @@ void QuadTree::Subdivide()
     float midY = (m_bounds.min.y + m_bounds.max.y) * 0.5f;
 
     // Create four candidate AABBs for child regions
-    AABB2D topLeft    = { glm::vec2(m_bounds.min.x, midY),  glm::vec2(midX, m_bounds.max.y) };
-    AABB2D topRight   = { glm::vec2(midX, midY),           glm::vec2(m_bounds.max.x, m_bounds.max.y) };
-    AABB2D bottomLeft = { glm::vec2(m_bounds.min.x, m_bounds.min.y), glm::vec2(midX, midY) };
-    AABB2D bottomRight= { glm::vec2(midX, m_bounds.min.y), glm::vec2(m_bounds.max.x, midY) };
+    AABB2D topLeft(     glm::vec2(m_bounds.min.x, midY),            glm::vec2(midX, m_bounds.max.y));
+    AABB2D topRight(    glm::vec2(midX, midY),                      glm::vec2(m_bounds.max.x, m_bounds.max.y));
+    AABB2D bottomLeft(  glm::vec2(m_bounds.min.x, m_bounds.min.y),  glm::vec2(midX, midY));
+    AABB2D bottomRight( glm::vec2(midX, m_bounds.min.y),            glm::vec2(m_bounds.max.x, midY));
 
     // We’ll gather the objects that belong in each quadrant
     std::vector<Node*> tlNodes;

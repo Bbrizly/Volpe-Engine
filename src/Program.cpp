@@ -14,7 +14,7 @@ Program::~Program()
     delete fpsCamera;
 }
 
-int amount = 50; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
+int amount = 500; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
 
 void Program::init()
 {

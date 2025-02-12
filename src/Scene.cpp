@@ -1,5 +1,6 @@
 #include "Scene.h"
 
+using namespace chrono;
 using namespace std;
 
 // Helper function to extract a frustum from a clip matrix.
@@ -120,15 +121,12 @@ void Scene::ToggleUseDebugFrustum()
     m_debugFrustum.planes[4] = glm::vec4( 0, 0, 1,   1.0f);  //   0*x + 0*y +  z +  1 = 0
     m_debugFrustum.planes[5] = glm::vec4( 0, 0,-1, 100.0f);  //   0*x + 0*y + -z +100 = 0
 
-    // Make sure each plane is normalized
     for (int i = 0; i < 6; ++i) {
         float length = glm::length(glm::vec3(m_debugFrustum.planes[i]));
         m_debugFrustum.planes[i] /= length;
     }
 
     m_useDebugFrustum  = !m_useDebugFrustum;
-
-    // DebugRender::Instance().Clear();
 }
 
 void Scene::BuildOctTree()
@@ -185,6 +183,7 @@ void Scene::BuildQuadTree() {
 
 void Scene::RandomInitScene(int amount)
 {
+    auto t0 = high_resolution_clock::now();
     Clear();
     m_pGrid = new Grid3D(bounds);
     /*int gridSize = std::ceil(std::cbrt(amount)); // Determine the grid dimensions (N x N x N)
@@ -248,6 +247,9 @@ void Scene::RandomInitScene(int amount)
     // m_lights.push_back( Light(glm::vec3(-5, 0, 0), glm::vec3(0,1,0), 1.0f, 10.0f));
     // m_lights.push_back( Light(glm::vec3(0, 0, 5), glm::vec3(0,0,1), 1.0f, 10.0f));
 
+    
+    auto t1 = high_resolution_clock::now();
+    m_avgCreation = duration<float, milli>(t1 - t0).count();
 }
 
 void Scene::ShowDebugText()
@@ -255,7 +257,7 @@ void Scene::ShowDebugText()
     m_textRenderer = new TextRenderer();
     m_textRenderer->init();
     Font* fontArial   = m_textRenderer->createFont("Arial");
-    TextBox* textBoc   = m_textRenderer->createTextBox(fontArial,"Press Q to visualize Quad Tree.\nPress R To randomly Generate Nodes.\nPress F to toggle Debug Frustum.\nPress A to Switch Trees", 640.0f - 400, 360.0f, 400, 200);
+    TextBox* textBoc   = m_textRenderer->createTextBox(fontArial,"Press Q to visualize Quad Tree.\nPress R To randomly Generate Nodes.\nPress F to toggle Debug Frustum.\nPress A to Switch Trees\nPress L to randomize Light Locations.", 640.0f - 400, 360.0f, 400, 200);
     textBoc->SetColor(0,0,0,255);
     textBoc->SetVisualization(false); //remove bg box
     textBoc->SetAlignment(2);
@@ -268,7 +270,7 @@ void Scene::ShowDebugText()
 }
 
 void Scene::Update(float dt, int screenWidth, int screenHeight) {
-    using namespace chrono;
+    #pragma region Normal functions
     auto EMA = [this](float oldValue, float newValue) {
         return oldValue * (1.0f - m_smoothAlpha) + newValue * m_smoothAlpha;
     };
@@ -355,14 +357,20 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
 
     t1 = high_resolution_clock::now();
     float lightQueryMS = duration<float, milli>(t1 - t0).count();
+    #pragma endregion
+
+    #pragma region Statistics
 
     m_avgCameraUpdateMs   = EMA(m_avgCameraUpdateMs,   cameraUpdateMS);
     m_avgNodeUpdateMs     = EMA(m_avgNodeUpdateMs,     nodeUpdateMS);
     m_avgBoundingVolumeMs = EMA(m_avgBoundingVolumeMs, boundingVolumeMS);
     m_avgFrustumExtractMs = EMA(m_avgFrustumExtractMs, frustumExtractMS);
     m_avgQuadTreeQueryMs  = EMA(m_avgQuadTreeQueryMs,  quadTreeQueryMS);
+    m_avgLightQuery  = EMA(m_avgLightQuery,  lightQueryMS);
+    // m_avgQuadTreeQueryMs  = EMA(m_avgQuadTreeQueryMs,  quadTreeQueryMS);
 
     string activeTreeName = m_useQuadTreeOrOct ? "Quad" : "Oct";
+
     int cubesAffectedByLight = 0;
     for(auto* node : m_nodes) {
         DebugCube* c = dynamic_cast<DebugCube*>(node);
@@ -376,70 +384,25 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     info += "QuadTree Render: "  + string(m_renderTree   ? "ON" : "OFF") + "\n";
     info += "Debug Frustum  : "  + string(m_useDebugFrustum  ? "ON" : "OFF") + "\n";
     info += "CURRENT TREE   : " + activeTreeName + "\n";
+    info += "Scene Creation Time: " + to_string(m_avgCreation) + " ms\n";
     info += "Tree Build Time: " + to_string(m_lastQuadTreeBuildTimeMs) + " ms\n";
     info += "Cubes Visible  : " + to_string(m_nodesToRender.size()) + "\n";
     info += "Lights In Scene: " + to_string(m_lights.size()) + "\n";
     info += "Cubes Affected by light: " + to_string(cubesAffectedByLight) + "\n";
     info += "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
-    info += "Camera Update      : " + to_string(cameraUpdateMS)    + " ms\n";
-    info += "Nodes Update       : " + to_string(nodeUpdateMS)       + " ms\n";
-    info += "Bounding Vol Update: " + to_string(boundingVolumeMS)   + " ms\n";
-    info += "Extract Frustum    : " + to_string(frustumExtractMS)   + " ms\n";
-    info += "QuadTree Query     : " + to_string(quadTreeQueryMS)    + " ms\n";
-    info += "Light Query     : " + to_string(lightQueryMS)    + " ms\n";
+    info += "Camera Update      : " + to_string(m_avgCameraUpdateMs)    + " ms\n";
+    info += "Nodes Update       : " + to_string(m_avgNodeUpdateMs)       + " ms\n";
+    info += "Bounding Vol Update: " + to_string(m_avgBoundingVolumeMs)   + " ms\n";
+    info += "Extract Frustum    : " + to_string(m_avgFrustumExtractMs)   + " ms\n";
+    info += "QuadTree Query     : " + to_string(m_avgQuadTreeQueryMs)    + " ms\n";
+    info += "Light Query        : " + to_string(m_avgLightQuery)    + " ms\n";
 
-    // Now update your textBox
-    // (You can set this every frame or only every 60 frames; up to you.)
+    // updating textBox
     if (textBox) {
         textBox->SetText(info);
     }
-    /*
-    
-    #pragma region  Get FPS
-    static int frameCounter = 0;
-    static float accumulatedTime = 0.0f;
-    
-    m_activeCamera->update(dt);
-
-    // Only update FPS text every 10 frames
-    frameCounter++;
-    accumulatedTime += dt;
-    if (frameCounter >= 60) { 
-        float avgFps = frameCounter / accumulatedTime;  // Calculate smoothed FPS
-        textBox->SetText("FPS: " + to_string((int)avgFps));
-        
-        frameCounter = 0;
-        accumulatedTime = 0.0f;
-    }
 
     #pragma endregion
-
-    m_activeCamera->update(dt);
-
-    // Update all top-level nodes.
-    for (auto node : m_nodes)
-        node->update(dt);
-    for (auto node : m_nodes)
-        node->updateBoundingVolume();
-
-    // Get frustum from active camera
-    glm::mat4 proj = m_activeCamera->getProjMatrix(screenWidth, screenHeight);
-    glm::mat4 view = m_activeCamera->getViewMatrix();
-    glm::mat4 clip = proj * view;
-    Frustum frustum = ExtractFrustum(clip);
-    
-    Frustum frustumToUse = m_useDebugFrustum ? m_debugFrustum : frustum;
-
-    m_nodesToRender.clear();
-    if (m_activeCamera && m_quadTree) {
-        m_quadTree->Query(frustumToUse, m_nodesToRender);
-    } else {
-        m_nodesToRender = m_nodes;
-    }
-
-    // if(m_useDebugFrustum)
-    //     DebugDrawFrustum(m_debugFrustum);
-    */
 }
 
 void Scene::InitLights()
@@ -648,119 +611,3 @@ void Scene::Render(int screenWidth, int screenHeight) {
         glEnable(GL_DEPTH_TEST);
     }
 }
-
-
-// void Scene::Render(int screenWidth, int screenHeight) {
-//     if (!m_activeCamera)
-//         return;
-//     glm::mat4 proj = m_activeCamera->getProjMatrix(screenWidth, screenHeight);
-//     glm::mat4 view = m_activeCamera->getViewMatrix();
-//     m_pGrid->render(view,proj);
-//     //COMMENT OUT TO DEBUG QUADTREE LOGICCCC
-//     //MAKE SURE TO ADD DEBUG CIRCLE TO EVERY NODE BEFOREHAND
-//     // for (auto node : m_nodesToRender)
-//         // node->draw(proj, view);
-//     for(auto* n : m_nodesToRender)
-//     {
-//         DebugCube* c = dynamic_cast<DebugCube*>(n);
-//         if(!c) {
-//             // if not a DebugCube, just draw
-//             n->draw(proj, view);
-//             continue;
-//         }
-//         volpe::Program* prog = c->GetProgram();
-//         if(prog == m_pointProgram)
-//         {
-//             // Bind the program and pass the array of lights
-//             prog->Bind();
-//             // We'll pass up to 8 lights:
-//             int lightCount = std::min((int)m_lights.size(), 8);
-//             prog->SetUniform("u_lightCount", lightCount);
-//             for(int i=0; i<lightCount; i++)
-//             {
-//                 // name in the shader
-//                 string base = "u_pointLights[" + to_string(i) + "]";
-//                 // define the 4D "PositionRange"
-//                 glm::vec3 pos = m_lights[i].position;
-//                 float range   = m_lights[i].radius;   // or m_lights[i].intensity * 10.0f
-//                 glm::vec3 col = m_lights[i].color;
-//                 float strength= m_lights[i].intensity;
-//                 prog->SetUniform(base+".PositionRange", glm::vec4(pos, range));
-//                 prog->SetUniform(base+".Color",         col);
-//                 prog->SetUniform(base+".Strength",      strength);
-//             }
-//             // also set "fade" or "texture1" if needed
-//             prog->SetUniform("fade", 1.0f);
-//             // etc.
-//         }
-//         // Now call the cube's draw:
-//         c->draw(proj, view);
-//     }
-//     /*for(auto* n: m_nodesToRender)
-//     {
-//         DebugCube* c = dynamic_cast<DebugCube*>(n);
-//         if(!c) {
-//             n->draw(proj, view);
-//             continue;
-//         }
-//         volpe::Program* prog = c->GetProgram();
-//         if(prog == m_pointProgram) {
-//             prog->Bind();
-//             // We'll pass up to 8 lights or however many we have
-//             int lightCount = std::min((int)m_lights.size(), 8);
-//             // Optionally skip if c->m_numLightsAffecting==0 => but we already set unlit.
-//             prog->SetUniform("u_lightCount", lightCount);
-//             for(int i=0; i<lightCount; i++){
-//                 // define uniform name
-//                 std::string base = "u_pointLights[" + std::to_string(i) + "]";
-//                 glm::vec3 pos   = m_lights[i].position;
-//                 float range     = m_lights[i].intensity * 10.f;
-//                 glm::vec3 color = m_lights[i].color;
-//                 float str       = m_lights[i].intensity;
-//                 prog->SetUniform(base+".PositionRange", glm::vec4(pos, range));
-//                 prog->SetUniform(base+".Color", color);
-//                 prog->SetUniform(base+".Strength", str);
-//             }
-//             // also set fade or texture if needed:
-//             prog->SetUniform("fade", 1.0f);
-//             // ...
-//         }
-//         // now call the cube's draw
-//         c->draw(proj, view);
-//     }
-//     */
-//     if(m_renderTree)
-//     {
-//         if(reDebug) //if change change = false
-//         {
-//             reDebug = false;
-//             if(m_useQuadTreeOrOct)
-//             {
-//                 // m_quadTree->Render(proj, view);
-//                 DebugRender::Instance().Clear();
-//                 m_quadTree->BuildDebugLines();
-//                 // DebugRender::Instance().Render(proj,view);
-//             }
-//             else
-//             {
-//                 cout<<"Clear and fuck off?\n";
-//                 // m_octTree->Render(proj, view);
-//                 DebugRender::Instance().Clear();
-//                 m_octTree->BuildDebugLines();
-//                 // DebugRender::Instance().Render(proj,view);
-//             }
-//         }
-//         glDisable(GL_DEPTH_TEST);
-//         DebugRender::Instance().Render(proj, view);
-//         glEnable(GL_DEPTH_TEST);
-//     }
-//     // if(m_useDebugFrustum)
-//     //     DebugRender::Instance().Render(proj,view);
-//     //Render text
-//     if(m_textRenderer && textBox)
-//     {
-//         glDisable(GL_DEPTH_TEST);
-//         m_textRenderer->render(proj,view);
-//         glEnable(GL_DEPTH_TEST);
-//     }
-// }

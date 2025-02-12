@@ -59,20 +59,20 @@ private:
     float m_lastQuadTreeBuildTimeMs = 0.0f;
 
     // We'll keep exponential-moving-average for each update time:
+    float m_avgCreation             = 0.0f;
     float m_avgCameraUpdateMs       = 0.0f;
     float m_avgNodeUpdateMs         = 0.0f;
     float m_avgBoundingVolumeMs     = 0.0f;
     float m_avgFrustumExtractMs     = 0.0f;
     float m_avgQuadTreeQueryMs      = 0.0f;
+    float m_avgLightQuery           = 0.0f;
 
     //BOUNDS
     float bounds = 10.0f;
 
     bool reDebug = true;
     
-    // Used for the smoothing factor. 
-    // e.g., alpha=0.1 means 90% old + 10% new every frame
-    const float m_smoothAlpha = 0.000001f;
+    const float m_smoothAlpha = 0.0001f;
 
 public:
 
