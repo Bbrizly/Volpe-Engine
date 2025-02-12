@@ -94,7 +94,6 @@ void MiniFont::LoadFont(const string& fontPath){
             //     << " xAdvance: " << ch.xAdvance << "\n";
 
             m_characters[id] = ch;
-            
         } else if (line.rfind("kerning", 0) == 0) {
             //  If they kern then remove the amount of pixels from .fnt 
             int first, second, amount;
