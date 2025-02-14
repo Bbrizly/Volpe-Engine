@@ -21,6 +21,7 @@ private:
     volpe::App* m_pApp = nullptr;
     FirstPersonCamera* fpsCamera = nullptr;
     OrbitCamera* orbitCamera = nullptr;
+    bool whichCamera = false; //true = orbit, false = fps
 
 public:
     Program(volpe::App* pApp);

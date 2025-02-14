@@ -168,15 +168,6 @@ void DebugCube::Render(const glm::mat4& proj, const glm::mat4& view, bool skipBi
     m_pProgram->SetUniform("world", world);
     m_pProgram->SetUniform("worldIT", worldIT);
 
-    // if(m_numLightsAffecting >= 1)
-    // {
-    //     m_pProgram->SetUniform("u_pointLights", m_lights[0].getLightPosition);
-    //     m_pProgram->SetUniform("u_lightCount", m_numLightsAffecting);
-    // }
-
-    //IF affected by light: Set Uniform Light info (list of lights & amount etc)
-
-    // m_pProgram->SetUniform("u_texture", 0);
 
     m_vertexDecl->Bind();
     glDrawArrays(GL_TRIANGLES, 0, m_numVertices); //GL_TRIANGLES //GL_LINES

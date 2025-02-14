@@ -123,6 +123,34 @@ void App::_init()
     RenderTarget::InitScreen(resX, resY);
 }
 
+void App::LockCursor()
+{
+    // Get current window dimensions.
+    int winWidth, winHeight;
+    glfwGetWindowSize(m_pWindow, &winWidth, &winHeight);
+    double centerX = winWidth / 2.0;
+    double centerY = winHeight / 2.0;
+
+    // Immediately center the cursor.
+    glfwSetCursorPos(m_pWindow, centerX, centerY);
+    // Disable (grab/hide) the cursor.
+    glfwSetInputMode(m_pWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    // Enable raw mouse motion for more precise movement if supported.
+    if (glfwRawMouseMotionSupported())
+    {
+        glfwSetInputMode(m_pWindow, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    }
+}
+
+void App::UnlockCursor()
+{
+    // Restore normal cursor behavior.
+    glfwSetInputMode(m_pWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    // Disable raw mouse motion.
+    glfwSetInputMode(m_pWindow, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
+}
+
 void App::_internalUpdate(float dt)
 {
     update(dt);

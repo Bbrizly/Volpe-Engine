@@ -52,6 +52,7 @@ private:
     bool m_useDebugFrustum = false;
     bool m_useQuadTreeOrOct = true; //true quadtree, false octree
 
+    Camera* m_debugCamera;
 
     //STATISTICSSS
 
@@ -70,7 +71,7 @@ private:
     //BOUNDS
     float bounds = 10.0f;
 
-    bool reDebug = true;
+    bool reDebug = false;
     
     const float m_smoothAlpha = 0.0001f;
 
@@ -102,7 +103,7 @@ public:
     void DebugDrawFrustum(const Frustum& frustum);
 
     void ToggleQuadTreeRender() { m_renderTree = !m_renderTree; }
-    void ToggleUseDebugFrustum();
+    void ToggleUseDebugFrustum(Camera* c);
 
     bool getWhichTree() {return m_useQuadTreeOrOct;} //true quadtree, false octree
 

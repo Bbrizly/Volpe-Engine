@@ -6,6 +6,7 @@
 #include "../volpe/Volpe.h"
 #include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
+#include "Frustum.h"
 
 class DebugRender {
 public:
@@ -15,6 +16,7 @@ public:
     void DrawSquare(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& p4, const glm::vec3& color = glm::vec3(1.0f));
     void DrawCircle(const glm::vec3& center, float radius, const glm::vec3& color = glm::vec3(1.0f));
     void DrawSphere(const glm::vec3& center, float radius, const glm::vec3& color);
+    void DrawFrustum(const Frustum& frustum);
 
     void Render(const glm::mat4& proj, const glm::mat4& view);
     void Clear();
@@ -27,6 +29,8 @@ private:
         glm::vec3 position;
         glm::vec3 color;
     };
+    
+    glm::vec3 IntersectPlanes(const glm::vec4& p1, const glm::vec4& p2, const glm::vec4& p3) const;
 
     std::vector<DebugVertex> vertices;
 

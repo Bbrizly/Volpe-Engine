@@ -111,20 +111,21 @@ void Scene::DebugDrawFrustum(const Frustum& frustum)
     }
 }
 
-void Scene::ToggleUseDebugFrustum()
+void Scene::ToggleUseDebugFrustum(Camera* c)
 {
+    m_debugCamera = c;
     //Left, Right, Bottom, Top, Near, Far
-    m_debugFrustum.planes[0] = glm::vec4( 1, 0, 0,  10.0f);  //   x + 0*y + 0*z + 10 = 0
-    m_debugFrustum.planes[1] = glm::vec4(-1, 0, 0,  10.0f);  //  -x + 0*y + 0*z + 10 = 0
-    m_debugFrustum.planes[2] = glm::vec4( 0, 1, 0,   5.0f);  //   0*x +  y + 0*z +  5 = 0
-    m_debugFrustum.planes[3] = glm::vec4( 0,-1, 0,   5.0f);  //   0*x + -y + 0*z +  5 = 0
-    m_debugFrustum.planes[4] = glm::vec4( 0, 0, 1,   1.0f);  //   0*x + 0*y +  z +  1 = 0
-    m_debugFrustum.planes[5] = glm::vec4( 0, 0,-1, 100.0f);  //   0*x + 0*y + -z +100 = 0
+    // m_debugFrustum.planes[0] = glm::vec4( 1, 0, 0,  10.0f);  //   x + 0*y + 0*z + 10 = 0
+    // m_debugFrustum.planes[1] = glm::vec4(-1, 0, 0,  10.0f);  //  -x + 0*y + 0*z + 10 = 0
+    // m_debugFrustum.planes[2] = glm::vec4( 0, 1, 0,   5.0f);  //   0*x +  y + 0*z +  5 = 0
+    // m_debugFrustum.planes[3] = glm::vec4( 0,-1, 0,   5.0f);  //   0*x + -y + 0*z +  5 = 0
+    // m_debugFrustum.planes[4] = glm::vec4( 0, 0, 1,   1.0f);  //   0*x + 0*y +  z +  1 = 0
+    // m_debugFrustum.planes[5] = glm::vec4( 0, 0,-1, 100.0f);  //   0*x + 0*y + -z +100 = 0
 
-    for (int i = 0; i < 6; ++i) {
-        float length = glm::length(glm::vec3(m_debugFrustum.planes[i]));
-        m_debugFrustum.planes[i] /= length;
-    }
+    // for (int i = 0; i < 6; ++i) {
+    //     float length = glm::length(glm::vec3(m_debugFrustum.planes[i]));
+    //     m_debugFrustum.planes[i] /= length;
+    // }
 
     m_useDebugFrustum  = !m_useDebugFrustum;
 }
@@ -275,8 +276,8 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
         return oldValue * (1.0f - m_smoothAlpha) + newValue * m_smoothAlpha;
     };
     
-    if(m_useDebugFrustum)
-        DebugDrawFrustum(m_debugFrustum);
+    // if(m_useDebugFrustum)
+    //     DebugDrawFrustum(m_debugFrustum);
 
     /************************************
      *FPS
@@ -320,10 +321,15 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
 
     // ========== Frustum Extraction ==========
     t0 = high_resolution_clock::now();
-    glm::mat4 proj = m_activeCamera->getProjMatrix(screenWidth, screenHeight);
-    glm::mat4 view = m_activeCamera->getViewMatrix();
-    glm::mat4 clip = proj * view;
-    Frustum realFrustum = ExtractFrustum(clip);
+    // glm::mat4 proj = m_activeCamera->getProjMatrix(screenWidth, screenHeight);
+    // glm::mat4 view = m_activeCamera->getViewMatrix();
+    // glm::mat4 clip = proj * view;
+    // Frustum realFrustum = ExtractFrustum(clip);
+
+    Frustum realFrustum = m_activeCamera->getFrustum(screenWidth, screenHeight);
+    if(m_debugCamera != NULL)
+        m_debugFrustum = m_debugCamera->getFrustum(screenWidth, screenHeight);
+
     Frustum frustumToUse = m_useDebugFrustum ? m_debugFrustum : realFrustum;
     t1 = high_resolution_clock::now();
     float frustumExtractMS = duration<float, milli>(t1 - t0).count();
@@ -601,6 +607,13 @@ void Scene::Render(int screenWidth, int screenHeight) {
         glDisable(GL_DEPTH_TEST);
         DebugRender::Instance().Render(proj, view);
         glEnable(GL_DEPTH_TEST);
+    }
+
+    // DebugRender::Instance().DrawFrustum(proj, view);
+    if(m_debugCamera != NULL)
+    {
+        Frustum camFrustum = m_debugCamera->getFrustum(screenWidth, screenHeight);
+        DebugRender::Instance().DrawFrustum(camFrustum);
     }
 
     // Render text

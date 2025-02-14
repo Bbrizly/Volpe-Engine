@@ -15,6 +15,7 @@ public:
     void update(float dt) override;
     glm::mat4 getViewMatrix() override;
     glm::mat4 getProjMatrix(int width, int height) override;
+    // Frustum getFrustum(int width, int height) override;
 
     glm::vec3 getPosition() const { return m_position; }
     glm::vec3 getDirection() const { return m_direction; }
@@ -30,6 +31,7 @@ private:
     float m_yaw;
     float m_pitch;
     bool m_invertY;
+    bool lockMouse = true;
 
     float m_normalSpeed = 20.0f;
     float m_SprintSpeed = 50.0f;

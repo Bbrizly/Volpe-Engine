@@ -10,8 +10,9 @@ public:
     virtual ~OrbitCamera();
 
     void update(float dt) override;
-    glm::mat4 getViewMatrix()  override;
-    glm::mat4 getProjMatrix(int width, int height)  override;
+    glm::mat4 getViewMatrix() override;
+    glm::mat4 getProjMatrix(int width, int height) override;
+    // Frustum getFrustum(int width, int height) override;
 
     glm::vec3 getViewDirection() const;
     glm::vec3 getViewPosition() const;
