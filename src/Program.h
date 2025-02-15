@@ -2,6 +2,7 @@
 #include <vector>
 #include "Node.h"
 #include "DebugCube.h"
+#include "DebugSphere.h"
 #include "Scene.h"
 #include "../samplefw/FirstPersonCamera.h"
 #include "../samplefw/OrbitCamera.h"

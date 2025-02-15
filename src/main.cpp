@@ -11,8 +11,7 @@ private:
     Program* program;
 
 public:
-    Main() 
-        : App("Volpe Engine")
+    Main() : App("Volpe Engine")
     {
         program = new Program(this);
         program->init();

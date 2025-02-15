@@ -1,6 +1,4 @@
 #include "AABBVolume.h"
-#include "iostream"
-#include "DebugRender.h"
 
 void AABBVolume::DrawMe(const glm::mat4& proj, const glm::mat4& view) //DEBUGGGGGGGGGG
 {
@@ -33,7 +31,7 @@ void AABBVolume::DrawMe(const glm::mat4& proj, const glm::mat4& view) //DEBUGGGG
     DebugRender::Instance().DrawLine(corners[1], corners[5], color, "BoundingVolumes");
     DebugRender::Instance().DrawLine(corners[2], corners[6], color, "BoundingVolumes");
     DebugRender::Instance().DrawLine(corners[3], corners[7], color, "BoundingVolumes");
-    std::cout<<"DRAWING\n\n";
+    // std::cout<<"DRAWING\n\n";
 
 
 }

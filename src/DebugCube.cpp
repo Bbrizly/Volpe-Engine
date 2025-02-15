@@ -158,10 +158,10 @@ void DebugCube::pushVertexData(volpe::VertexBuffer*& vBuffer, volpe::VertexDecla
 
     vDecl = new volpe::VertexDeclaration();
     vDecl->Begin();
-    vDecl->AppendAttribute(volpe::AT_Position, 3, volpe::CT_Float);
-    vDecl->AppendAttribute(volpe::AT_Color,    4, volpe::CT_UByte);
-    vDecl->AppendAttribute(volpe::AT_TexCoord1,2, volpe::CT_Float);
-    vDecl->AppendAttribute(volpe::AT_Normal, 3, volpe::CT_Float);
+    vDecl->AppendAttribute(volpe::AT_Position,  3, volpe::CT_Float);
+    vDecl->AppendAttribute(volpe::AT_Color,     4, volpe::CT_UByte);
+    vDecl->AppendAttribute(volpe::AT_TexCoord1, 2, volpe::CT_Float);
+    vDecl->AppendAttribute(volpe::AT_Normal,    3, volpe::CT_Float);
     // vDecl->AppendAttribute(volpe::AT_TexCoord2,1, volpe::CT_Float);
     vDecl->SetVertexBuffer(vBuffer);
     vDecl->End();
@@ -196,7 +196,6 @@ void DebugCube::Render(const glm::mat4& proj, const glm::mat4& view, bool skipBi
 
     m_vertexDecl->Bind();
     glDrawArrays(GL_TRIANGLES, 0, m_numVertices); //GL_TRIANGLES //GL_LINES
-
 }
 
 void DebugCube::draw(const glm::mat4& proj, const glm::mat4& view, bool skipBind)

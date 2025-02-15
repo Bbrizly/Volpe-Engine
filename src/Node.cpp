@@ -48,7 +48,7 @@ void Node::update(float dt)
     }
 }
 
-void Node::draw(const glm::mat4& proj, const glm::mat4& view)
+void Node::draw(const glm::mat4& proj, const glm::mat4& view, bool skipbind) //remove skip bind??? 
 {
     for (auto* c : m_children) {
         c->draw(proj, view);
@@ -68,8 +68,6 @@ glm::mat4 Node::getWorldTransform() const
     }
     return m_localTransform;
 }
-
-
 
 BoundingVolume* Node::GetBoundingVolume() const { return m_boundingVolume; }
 
@@ -104,6 +102,7 @@ void Node::UpdateBoundingVolume()
         m_boundingVolume->ExpandToFit(*childVol, childWorld);
         
     }
+    
     m_boundingVolume->UpdateVolume(getWorldTransform());
 
 }

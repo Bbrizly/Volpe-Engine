@@ -14,11 +14,11 @@ Program::~Program()
     delete fpsCamera;
 }
 
-int amount = 100; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
+int amount = 5; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
 int bounds = 10;
 void RecreateSceneHelper(int bounds)
 {
-    Scene::Instance().createGrid(bounds);
+    Scene::Instance().SetBounds(bounds);
     /* GRID like pattern
     int gridSize = std::ceil(std::cbrt(amount)); // Determine the grid dimensions (N x N x N)
     float spacing = (2.0f * bounds) / gridSize; // Adjust spacing to fit within bounds
@@ -62,24 +62,43 @@ void RecreateSceneHelper(int bounds)
     
     // /*
     random_device rd;
-    mt19937 gen(12673);
+    mt19937 gen(10242);
     uniform_real_distribution<float> distPos(-bounds, bounds);
     uniform_real_distribution<float> rgb(0.0f, 255.0f);
     // rgb = new vec3(rgb(gen),rgb(gen),rgb(gen));
     
+    Node* obj;
 
-    for (int i = 1; i <= amount; ++i)
+    for (int i = 1; i <= amount/*amount*/; ++i)
     {
-        DebugCube* newCube = new DebugCube("cube_" + to_string(i));
-        glm::vec3 randomPos(distPos(gen), distPos(gen), distPos(gen));
-        newCube->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
-        GLubyte r = rgb(gen)
-                ,g = rgb(gen)
-                ,b = rgb(gen);
-        newCube->setColor(r,g,b);
+        cout<<"numb: "<<i<<endl;
+        // if(i % 2 == 0)
+        //     continue;
+        //     // obj = new DebugSphere("sphere_" + to_string(i), 0.5);
+        // else
+        obj = new DebugCube("cube_" + to_string(i));
+
+        glm::vec3 randomPos(distPos(gen), distPos(gen) / 4, distPos(gen));
+        obj->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
         
-        // DebugRender::Instance().DrawCircle(randomPos, 0.2f, glm::vec3(1.0f));
-        Scene::Instance().AddNode(newCube);
+        GLubyte r = rgb(gen)
+               ,g = rgb(gen)
+               ,b = rgb(gen);
+        auto x = dynamic_cast<DebugSphere*>(obj);
+        auto z = dynamic_cast<DebugCube*>(obj);
+        
+        // if(i % 2 == 0)
+        // {
+        //     x->setColor(r,g,b);
+        //     Scene::Instance().AddNode(x);
+        // }
+        // else
+        // {
+            z->setColor(r,g,b);
+            Scene::Instance().AddNode(z);
+        // }
+        
+        
     }
     for (int i = 0; i < 2; i++)
     {
@@ -155,6 +174,7 @@ void Program::update(float dt)
     if(m_pApp->isKeyJustDown('E') || m_pApp->isKeyJustDown('e'))
     {
         //Toggle between quadtree and octtree
+        // Scene::Instance().Clear();
         if(Scene::Instance().getWhichTree()) //true is quad, false is oct. here theyre swapped to switch
             Scene::Instance().BuildOctTree();
         else
@@ -172,8 +192,8 @@ void Program::update(float dt)
             Scene::Instance().SetActiveCamera(orbitCamera);
         else
             Scene::Instance().SetActiveCamera(fpsCamera);
-
     }
+
 
     Scene::Instance().Update(dt, m_pApp->getScreenSize().x, m_pApp->getScreenSize().y);
 }

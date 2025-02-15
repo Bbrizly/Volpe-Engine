@@ -3,6 +3,7 @@
 #include "AABBVolume.h"
 #include <glm/glm.hpp>
 #include <cmath>
+#include "DebugRender.h"
 
 class AABBVolume;
 
@@ -33,6 +34,9 @@ public:
     
     virtual void ExpandToFit(const BoundingVolume& childVolume,
         const glm::mat4& childWorldTransform) override;
+
+        
+    void DrawMe(const glm::mat4& proj, const glm::mat4& view);
 
     virtual void UpdateVolume(const glm::mat4& worldTransform) override
     {

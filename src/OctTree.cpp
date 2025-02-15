@@ -5,7 +5,6 @@ OctTree::OctTree(const AABBVolume& bounds, int level)//= 0)
     : m_bounds(bounds)
     , m_level(level)
 {
-    // make sure there arent any children yet
     for (int i=0; i<NUM_CHILDREN; i++){
         m_children[i] = nullptr;
     }
@@ -28,28 +27,16 @@ bool OctTree::Contains(const glm::vec3& point) const
             point.z >= m_bounds.min.z && point.z < m_bounds.max.z);
 }
 
-
-//////////////////////////////////////////////////////////////////////////////////
-static bool Overlaps3D(const AABBVolume& r1, const AABBVolume& r2)
-{
-    if(r1.max.x < r2.min.x || r1.min.x > r2.max.x) return false;
-    if(r1.max.y < r2.min.y || r1.min.y > r2.max.y) return false;
-    if(r1.max.z < r2.min.z || r1.min.z > r2.max.z) return false;
-    return true;
-}
-//////////////////////////////////////////////////////////////////////////////////
 void OctTree::Insert(Node* node)
 {
     if(!node) return;
 
-    DebugCube* cube = dynamic_cast<DebugCube*>(node);
-    if(!cube) return;
+    BoundingVolume* boundingVol = node->GetBoundingVolume();
+    if(!boundingVol) return;
 
-    AABBVolume nodeBox = cube->getWorldAABB3D();
-
-    if(!Overlaps3D(m_bounds, nodeBox)) {
-        return; // no overlap
-    }
+    if(!boundingVol->OverlapsAABB(m_bounds))
+        return;
+    
 
     if(!m_children[0] && (m_nodes.size()<MAX_OBJECTS || m_level==MAX_LEVELS))
     {
@@ -60,13 +47,12 @@ void OctTree::Insert(Node* node)
     if(!m_children[0]) {
         Subdivide();
 
-        // push existing down
         for(auto* existing : m_nodes) {
-            DebugCube* ec = dynamic_cast<DebugCube*>(existing);
-            if(!ec) continue;
-            AABBVolume eBox = ec->getWorldAABB3D();
+            BoundingVolume* childBV = existing->GetBoundingVolume();
+            if(!childBV) continue;
+
             for(int i=0; i<NUM_CHILDREN; i++){
-                if(Overlaps3D(m_children[i]->m_bounds, eBox)){
+                if(m_children[i]->m_bounds.Overlaps(*childBV)) {
                     m_children[i]->Insert(existing);
                     break;
                 }
@@ -77,31 +63,28 @@ void OctTree::Insert(Node* node)
 
     // insert new
     for(int i=0; i<NUM_CHILDREN; i++){
-        if(Overlaps3D(m_children[i]->m_bounds, nodeBox)){
+        if(m_children[i]->m_bounds.Overlaps(*boundingVol)) {
             m_children[i]->Insert(node);
             return;
         }
     }
 }
+
 void OctTree::Query(const Frustum& frustum, std::vector<Node*>& results)
 {
     //Bounding box fully outside
-    if(m_level != 0)
-    {
-        if (!m_bounds.IntersectsFrustum(frustum)) {
-            return;
-        }    
-    }
+    if (!m_bounds.IntersectsFrustum(frustum)) {
+        return;
+    }    
+    
 
-    // Check each node stored at this level
     for (auto* node : m_nodes) {
-        // If bounding sphere of node is inside frustum, add it
+        // If bounding vol of node is inside frustum it gets added
         if (node->GetBoundingVolume()->IntersectsFrustum(frustum)){
             results.push_back(node);
         }
     }
 
-    // 3) Recurse children
     for (int i=0; i<NUM_CHILDREN; i++){
         if (m_children[i]) {
             m_children[i]->Query(frustum, results);
@@ -111,17 +94,19 @@ void OctTree::Query(const Frustum& frustum, std::vector<Node*>& results)
 
 static bool AABBvsSphere(const AABBVolume& box, const glm::vec3& c, float r)
 {
-    float distSq = 0.f;
-    if(c.x < box.min.x) distSq += (box.min.x - c.x)*(box.min.x - c.x);
-    else if(c.x > box.max.x) distSq += (c.x - box.max.x)*(c.x - box.max.x);
+    SphereVolume* sphere = new SphereVolume(c, r);
+    return sphere->OverlapsAABB(box);
+    // float distSq = 0.f;
+    // if(c.x < box.min.x) distSq += (box.min.x - c.x)*(box.min.x - c.x);
+    // else if(c.x > box.max.x) distSq += (c.x - box.max.x)*(c.x - box.max.x);
 
-    if(c.y < box.min.y) distSq += (box.min.y - c.y)*(box.min.y - c.y);
-    else if(c.y > box.max.y) distSq += (c.y - box.max.y)*(c.y - box.max.y);
+    // if(c.y < box.min.y) distSq += (box.min.y - c.y)*(box.min.y - c.y);
+    // else if(c.y > box.max.y) distSq += (c.y - box.max.y)*(c.y - box.max.y);
 
-    if(c.z < box.min.z) distSq += (box.min.z - c.z)*(box.min.z - c.z);
-    else if(c.z > box.max.z) distSq += (c.z - box.max.z)*(c.z - box.max.z);
+    // if(c.z < box.min.z) distSq += (box.min.z - c.z)*(box.min.z - c.z);
+    // else if(c.z > box.max.z) distSq += (c.z - box.max.z)*(c.z - box.max.z);
 
-    return (distSq <= r*r);
+    // return (distSq <= r*r);
 }
 
 void OctTree::QueryLight(const glm::vec3& lightPos, float lightRadius, std::vector<Node*>& results)
@@ -133,15 +118,12 @@ void OctTree::QueryLight(const glm::vec3& lightPos, float lightRadius, std::vect
     // check each node
     for(auto* node : m_nodes)
     {
-        DebugCube* c = dynamic_cast<DebugCube*>(node);
-        if(!c) continue;
+        SphereVolume lightSphere(lightPos, lightRadius);        
+        BoundingVolume* boundingVol = node->GetBoundingVolume();
+        if(!boundingVol) return;
 
-        AABBVolume box = c->getWorldAABB3D();
-        SphereVolume lightSphere(lightPos, lightRadius);
-
-        if(box.OverlapsSphere(lightSphere)){
+        if(lightSphere.Overlaps(*boundingVol))
             results.push_back(node);
-        }
     }
 
     // recurse

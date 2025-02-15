@@ -5,7 +5,7 @@
 class Sphere 
 {
     public:
-        Sphere(float radius);
+        Sphere(float radius = 5);
         ~Sphere();
 
         void SetPosition(const glm::vec3& pos) { m_pos = pos; }

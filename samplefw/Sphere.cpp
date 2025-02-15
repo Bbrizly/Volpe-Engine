@@ -1,4 +1,5 @@
 #include "Sphere.h"
+#include "iostream"
 
 volpe::VertexBuffer* Sphere::s_pVB = nullptr;
 volpe::IndexBuffer* Sphere::s_pIB = nullptr;
@@ -17,7 +18,9 @@ Sphere::Sphere(float radius)
     SetRadius(radius);
 
     m_pMat = volpe::MaterialManager::CreateMaterial("__sphereMat");
-    m_pMat->SetProgram("samplefw/data/sphere.vsh", "samplefw/data/sphere.fsh");
+    // m_pMat->SetProgram("samplefw/data/sphere.vsh", "samplefw/data/sphere.fsh");
+    // m_pMat->SetProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
+    m_pMat->SetProgram("data/PointLights.vsh","data/PointLights.fsh");
     m_pMat->SetDepthTest(true);
     m_pMat->SetDepthWrite(true);
 
@@ -136,6 +139,6 @@ void Sphere::_genVerts(int sectorCount, int stackCount)
     s_pDecl->SetIndexBuffer(s_pIB);
     s_pDecl->AppendAttribute(volpe::AT_Position, 3, volpe::CT_Float);
     s_pDecl->AppendAttribute(volpe::AT_Normal, 3, volpe::CT_Float);
-    s_pDecl->AppendAttribute(volpe::AT_TexCoord1, 2, volpe::CT_Float);
+    s_pDecl->AppendAttribute(volpe::AT_TexCoord1, 2, volpe::CT_Float); //uv
     s_pDecl->End();
 }

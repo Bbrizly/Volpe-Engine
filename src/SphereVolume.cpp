@@ -1,7 +1,7 @@
 #include "SphereVolume.h"
 #include "iostream"
 // For culling
-bool SphereVolume::IntersectsFrustum(const Frustum& frustum) const 
+/*bool SphereVolume::IntersectsFrustum(const Frustum& frustum) const 
 {
     std::cout<<"SPHERE\n";
     for (int i = 0; i < 6; ++i)
@@ -11,6 +11,15 @@ bool SphereVolume::IntersectsFrustum(const Frustum& frustum) const
         float dist = glm::dot(normal, center) + plane.w;
         if(dist < -radius)
             return false;
+    }
+    return true;
+}
+*/
+bool SphereVolume::IntersectsFrustum(const Frustum& frustum) const {
+    for (int i = 0; i < 6; ++i) {
+        const glm::vec4& plane = frustum.planes[i];
+        float distance = glm::dot(glm::vec3(plane), center) + plane.w;
+        if (distance < -radius) return false;
     }
     return true;
 }
@@ -81,3 +90,20 @@ void SphereVolume::ExpandToFit(const BoundingVolume& childVolume,
             radius = dist;
     }
 }
+
+void SphereVolume::DrawMe(const glm::mat4& proj, const glm::mat4& view) {
+    int segments = 16;
+    float angleStep = 2.0f * glm::pi<float>() / segments;
+    glm::vec3 debugColor(0.0f, 1.0f, 0.0f); // Green color
+
+    glm::vec3 c = center;
+
+    for (int i = 0; i < segments; ++i) {
+        float a = i * angleStep;
+        float b = (i + 1) * angleStep;
+        glm::vec3 p1 = c + glm::vec3(radius * cos(a), 0.0f, radius * sin(a));
+        glm::vec3 p2 = c + glm::vec3(radius * cos(b), 0.0f, radius * sin(b));
+        DebugRender::Instance().DrawLine(p1, p2, debugColor, "BoundingVolumes");
+    }
+}
+

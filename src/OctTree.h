@@ -28,7 +28,6 @@ private:
     AABBVolume m_bounds;
     int    m_level;
 
-    // Store child pointers. If not subdivided, children are nullptr
     static const int NUM_CHILDREN = 8;
     OctTree* m_children[NUM_CHILDREN] = { nullptr };
 

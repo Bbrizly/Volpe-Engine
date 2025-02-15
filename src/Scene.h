@@ -2,11 +2,13 @@
 #include <vector>
 #include "Node.h"
 #include "DebugCube.h"
+#include "DebugSphere.h"
 #include "QuadTree.h"
 #include "OctTree.h"
 #include "Light.h"
 #include "../samplefw/Camera.h"
 #include "../samplefw/Grid3D.h"
+#include "../samplefw/Sphere.h"
 
 #include "DebugRender.h"
 #include <algorithm>
@@ -33,6 +35,7 @@ private:
     vector<Node*> m_nodesToRender;
     vector<Light> m_lights; 
     Camera* m_activeCamera;
+    Camera* m_movemenetCamera;
     QuadTree* m_quadTree;
     OctTree* m_octTree;
     bool m_ShowDebug = true;
@@ -69,7 +72,7 @@ private:
     float m_avgLightQuery           = 0.0f;
 
     //BOUNDS
-    float bounds = 10.0f;
+    float m_bounds = 10.0f;
 
     bool reDebug = false;
     
@@ -82,7 +85,6 @@ public:
     void AddNode(Node* node);
 
     void RandomInitScene(int amount);
-    void HighlightNodesForCube(DebugCube* cube);
 
     void SetActiveCamera(Camera* cam) { m_activeCamera = cam; }
     void BuildQuadTree();
@@ -103,6 +105,8 @@ public:
 
     void createGrid(int bounds) {m_pGrid = new Grid3D(bounds);}
 
+    void SetBounds(int b) { m_bounds = b; createGrid(b);}
+
     void ShowDebugText();
     void DebugDrawFrustum(const Frustum& frustum);
 
@@ -116,6 +120,7 @@ public:
 
     void Clear();
 
+    bool fuck = true;
     
     void drawSingleLight(const glm::mat4& viewProj);
     void drawTwoLightsPerObject(const glm::mat4& viewProj);

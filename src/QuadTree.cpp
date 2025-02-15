@@ -1,26 +1,44 @@
 #include "QuadTree.h"
+#include "AABBVolume.h"
+#include "SphereVolume.h"
 
+// This method projects a 3D bounding volume (either an AABB or Sphere) into a 2D AABB on the XZ plane.
+AABB2D QuadTree::FlattenBoundingVolume(const BoundingVolume* bv) const {
+    AABB2D result;
+    // Try AABBVolume first.
+    if (const AABBVolume* aabb = dynamic_cast<const AABBVolume*>(bv)) {
+        result.min = glm::vec2(aabb->min.x, aabb->min.z);
+        result.max = glm::vec2(aabb->max.x, aabb->max.z);
+    }
+    else if (const SphereVolume* sphere = dynamic_cast<const SphereVolume*>(bv)) {
+        result.min = glm::vec2(sphere->center.x - sphere->radius, sphere->center.z - sphere->radius);
+        result.max = glm::vec2(sphere->center.x + sphere->radius, sphere->center.z + sphere->radius);
+    }
+    else {
+        // Fallback: if no specialized type, assume the bounding volume provides an AABBVolume.
+        // (You might add a virtual method to BoundingVolume that returns its AABB.)
+        result.min = glm::vec2(0.0f);
+        result.max = glm::vec2(0.0f);
+    }
+    return result;
+}
+
+// AABB2D method
 bool AABB2D::IntersectsFrustum(const Frustum& frustum) const {
+    // For simplicity, we treat the 2D box as an AABB in the XZ plane with y=0.
     glm::vec3 min3D(min.x, 0.0f, min.y);
+    
     glm::vec3 max3D(max.x, 0.0f, max.y);
-
-    // Check each frustum plane against the AABB
+    
     for (int i = 0; i < 6; ++i) {
         const glm::vec4& plane = frustum.planes[i];
         glm::vec3 normal(plane.x, plane.y, plane.z);
         float distance = plane.w;
-
-        // Calculate the AABB's projected interval onto the plane normal
-        float r = 0.5f * (max3D.x - min3D.x) * abs(normal.x) +
-                  0.5f * (max3D.z - min3D.z) * abs(normal.z);
-
-        // Calculate the AABB's center point (y=0)
+        
+        float r = 0.5f * (max3D.x - min3D.x) * fabs(normal.x) +
+                  0.5f * (max3D.z - min3D.z) * fabs(normal.z);
         glm::vec3 center = (min3D + max3D) * 0.5f;
-
-        // Signed distance from center to plane
         float d = glm::dot(normal, center) + distance;
-
-        // If the distance is outside the projected interval, the AABB is outside the frustum
         if (d < -r)
             return false;
     }
@@ -33,198 +51,137 @@ QuadTree::QuadTree(const AABB2D& bounds, int level)
 QuadTree::~QuadTree() {
     for (auto child : m_children)
         delete child;
-
     m_children.clear();
-
-    // DebugRender::Instance().Clear();
 }
 
-static bool Overlaps2D(const AABB2D& quadRegion, const AABBVolume& box3D)
-{
-    // flatten box3D onto XZ plane
-    float minX = box3D.min.x;
-    float maxX = box3D.max.x;
-    float minZ = box3D.min.z;
-    float maxZ = box3D.max.z;
-
-    // Compare with quadRegion in XZ
-    if (maxX < quadRegion.min.x || minX > quadRegion.max.x) return false;
-    if (maxZ < quadRegion.min.y || minZ > quadRegion.max.y) return false;
-    return true;
+bool QuadTree::Contains(const glm::vec2& point) const {
+    return (point.x >= m_bounds.min.x && point.x < m_bounds.max.x &&
+            point.y >= m_bounds.min.y && point.y < m_bounds.max.y);
 }
 
+// Insert a node into the quadtree.
 void QuadTree::Insert(Node* node)
 {
-    if(!node) return;
-
-    DebugCube* cube = dynamic_cast<DebugCube*>(node);
-    if(!cube) {
-        // If you only have cubes, that’s fine; or handle other node types
-        return;
-    }
-
-    // 1) get the node's 3D bounding box
-    AABBVolume nodeBox = cube->getWorldAABB3D();
-
-    // 2) flatten to see if it overlaps this 2D region
-    if(!Overlaps2D(m_bounds, nodeBox)) {
-        // no overlap => skip
-        return;
-    }
-
-    // 3) if no children and not at capacity, store it
-    if(m_children.empty() && (m_nodes.size() < MAX_OBJECTS || m_level == MAX_LEVELS))
-    {
-        m_nodes.push_back(node);
-        return;
-    }
-
-    // if no children yet, subdiv
-    if(m_children.empty()) {
-        Subdivide();
-
-        // push existing nodes down
-        for(auto* existing : m_nodes)
-        {
-            DebugCube* ec = dynamic_cast<DebugCube*>(existing);
-            if(!ec) continue;
-
-            AABBVolume eBox = ec->getWorldAABB3D();
-            for(auto* child : m_children)
-            {
-                if(Overlaps2D(child->m_bounds, eBox)) {
-                    child->Insert(existing);
-                    break;
-                }
-            }
-        }
-        m_nodes.clear();
-    }
-
-    // now insert the new node
-    for(auto* child : m_children)
-    {
-        if(Overlaps2D(child->m_bounds, nodeBox)) {
-            child->Insert(node);
-            return; // or store multiple if partial overlap
-        }
-    }
-}
-
-/*void QuadTree::Insert(Node* node)
-{
     if (!node) return;
-
-    // Get node 2D position (x, z)
-    glm::mat4 world = node->getWorldTransform();
-    glm::vec3 pos3D = glm::vec3(world[3]);
-    glm::vec2 pos2D(pos3D.x, pos3D.z);
     
-    // std::cout << "Inserting Node: " << node->getName() << " at (" << pos2D.x << ", " << pos2D.y << ")\n";
-
-    // If this node not in quad, move on
-    if (!Contains(pos2D)) {
-        return;
+    // Get the node’s bounding volume and flatten it.
+    BoundingVolume* bv = node->GetBoundingVolume();
+    if (!bv) return;
+    AABB2D nodeAABB = FlattenBoundingVolume(bv);
+    
+    // Test for overlap with this quadtree region.
+    if (nodeAABB.max.x < m_bounds.min.x || nodeAABB.min.x > m_bounds.max.x ||
+        nodeAABB.max.y < m_bounds.min.y || nodeAABB.min.y > m_bounds.max.y)
+    {
+        return; // no overlap
     }
     
-    if (m_children.empty() &&
-        (m_nodes.size() < MAX_OBJECTS || m_level == MAX_LEVELS))
-    {
+    // If we haven’t subdivided yet and are under capacity, store this node.
+    if (m_children.empty() && (m_nodes.size() < MAX_OBJECTS || m_level == MAX_LEVELS)) {
         m_nodes.push_back(node);
         return;
     }
-
+    
+    // If no children yet, subdivide and push down current nodes.
     if (m_children.empty()) {
         Subdivide();
-
-        // push all existing nodes down to the children
         for (auto* existing : m_nodes) {
-            glm::vec3 exPos3D = glm::vec3(existing->getWorldTransform()[3]);
-            glm::vec2 exPos2D(exPos3D.x, exPos3D.z);
-
-            // Cross ref parent quad nodes with children and assign them
+            BoundingVolume* existingBV = existing->GetBoundingVolume();
+            if (!existingBV) continue;
+            AABB2D existingAABB = FlattenBoundingVolume(existingBV);
             for (auto* child : m_children) {
-                if (child->Contains(exPos2D)) {
+                if (!(existingAABB.max.x < child->m_bounds.min.x ||
+                      existingAABB.min.x > child->m_bounds.max.x ||
+                      existingAABB.max.y < child->m_bounds.min.y ||
+                      existingAABB.min.y > child->m_bounds.max.y))
+                {
                     child->Insert(existing);
                     break;
                 }
             }
         }
-        // Parent has nothing
         m_nodes.clear();
     }
-
-    // insert the new node into whichever child contains it
+    
+    // Insert the new node into the appropriate child.
     for (auto* child : m_children) {
-        if (child->Contains(pos2D)) {
+        if (!(nodeAABB.max.x < child->m_bounds.min.x ||
+              nodeAABB.min.x > child->m_bounds.max.x ||
+              nodeAABB.max.y < child->m_bounds.min.y ||
+              nodeAABB.min.y > child->m_bounds.max.y))
+        {
             child->Insert(node);
-            break; 
+            return;
         }
     }
 }
-*/
 
+// Query the quadtree for nodes whose bounding volumes intersect the given frustum.
 void QuadTree::Query(const Frustum& frustum, std::vector<Node*>& results)
 {
-    // AABB vs. frustum check
-    if (!m_bounds.IntersectsFrustum(frustum)) {
+    if (!m_bounds.IntersectsFrustum(frustum))
         return;
-    }
-
-    // Check each node stored here
-    for (auto node : m_nodes) {
-        if(node->GetBoundingVolume()->IntersectsFrustum(frustum)){
-        // if (SphereIntersectsFrustum(node->GetBoundingVolume(), frustum)) {
+    
+    for (auto* node : m_nodes) {
+        if (node->GetBoundingVolume()->IntersectsFrustum(frustum))
             results.push_back(node);
-        }
     }
-
-    // Recurse children
-    for (auto child : m_children) {
+    
+    for (auto* child : m_children) {
         child->Query(frustum, results);
     }
 }
 
-// A “light sphere” query that uses bounding-sphere vs. bounding-box
-static bool AABBvsSphere(const AABBVolume& box, const glm::vec3& center, float radius)
-{
-    float distSq = 0.f;
-    if(center.x < box.min.x) distSq += (box.min.x - center.x)*(box.min.x - center.x);
-    else if(center.x > box.max.x) distSq += (center.x - box.max.x)*(center.x - box.max.x);
-
-    if(center.y < box.min.y) distSq += (box.min.y - center.y)*(box.min.y - center.y);
-    else if(center.y > box.max.y) distSq += (center.y - box.max.y)*(center.y - box.max.y);
-
-    if(center.z < box.min.z) distSq += (box.min.z - center.z)*(box.min.z - center.z);
-    else if(center.z > box.max.z) distSq += (center.z - box.max.z)*(center.z - box.max.z);
-
-    return (distSq <= radius*radius);
-}
-
+// Query nodes that intersect a light sphere.
 void QuadTree::QueryLight(const glm::vec3& lightPos, float lightRadius, std::vector<Node*>& results)
 {
-    // If 2D region doesn't overlap the sphere (flatten?), do a quick test
-    // For a more advanced approach, we do bounding-sphere vs region. 
-    // We'll skip for brevity or do Overlaps2D(...)? 
-    // If you want to be thorough, flatten the sphere to a bounding circle in XZ, compare with m_bounds.
-    // Let’s just assume we proceed if partial overlap is possible.
-
-    // check each node
-    for(auto* node : m_nodes)
+    // Create a temporary 2D AABB for the light (projected on XZ)
+    AABB2D lightAABB;
+    lightAABB.min = glm::vec2(lightPos.x - lightRadius, lightPos.z - lightRadius);
+    lightAABB.max = glm::vec2(lightPos.x + lightRadius, lightPos.z + lightRadius);
+    
+    // If this quadtree region does not overlap the light’s projection, skip.
+    if (m_bounds.max.x < lightAABB.min.x || m_bounds.min.x > lightAABB.max.x ||
+        m_bounds.max.y < lightAABB.min.y || m_bounds.min.y > lightAABB.max.y)
     {
-        DebugCube* cube = dynamic_cast<DebugCube*>(node);
-        if(!cube) continue;
-        AABBVolume box = cube->getWorldAABB3D();
-        if(AABBvsSphere(box, lightPos, lightRadius)) {
+        return;
+    }
+    
+    // Check nodes at this level.
+    for (auto* node : m_nodes) {
+        // Here we simply test the node’s 2D projection for overlap with the light’s AABB.
+        AABB2D nodeAABB = FlattenBoundingVolume(node->GetBoundingVolume());
+        if (!(nodeAABB.max.x < lightAABB.min.x || nodeAABB.min.x > lightAABB.max.x ||
+              nodeAABB.max.y < lightAABB.min.y || nodeAABB.min.y > lightAABB.max.y))
+        {
             results.push_back(node);
         }
     }
-
-    // recurse children
-    for(auto* child : m_children)
+    
+    // Recurse into children.
+    for (auto* child : m_children) {
         child->QueryLight(lightPos, lightRadius, results);
+    }
 }
 
+void QuadTree::Subdivide()
+{
+    float midX = (m_bounds.min.x + m_bounds.max.x) * 0.5f;
+    float midY = (m_bounds.min.y + m_bounds.max.y) * 0.5f;
+    
+    AABB2D topLeft(glm::vec2(m_bounds.min.x, midY), glm::vec2(midX, m_bounds.max.y));
+    AABB2D topRight(glm::vec2(midX, midY), glm::vec2(m_bounds.max.x, m_bounds.max.y));
+    AABB2D bottomLeft(glm::vec2(m_bounds.min.x, m_bounds.min.y), glm::vec2(midX, midY));
+    AABB2D bottomRight(glm::vec2(midX, m_bounds.min.y), glm::vec2(m_bounds.max.x, midY));
+    
+    // Create child nodes.
+    m_children.push_back(new QuadTree(topLeft, m_level + 1));
+    m_children.push_back(new QuadTree(topRight, m_level + 1));
+    m_children.push_back(new QuadTree(bottomLeft, m_level + 1));
+    m_children.push_back(new QuadTree(bottomRight, m_level + 1));
+    
+    // Note: You may choose to also move current m_nodes into children here (done in Insert).
+}
 
 void QuadTree::BuildDebugLines() {
     float fixedY = 0.0f;
@@ -233,118 +190,13 @@ void QuadTree::BuildDebugLines() {
     glm::vec3 p3(m_bounds.max.x, fixedY, m_bounds.max.y);
     glm::vec3 p4(m_bounds.min.x, fixedY, m_bounds.max.y);
     
-    // std::cout << "m_bounds.min: (" << m_bounds.min.x << ", " << m_bounds.min.y << ")" << std::endl;
-    // std::cout << "m_bounds.max: (" << m_bounds.max.x << ", " << m_bounds.max.y << ")" << std::endl;
-
-    DebugRender::Instance().DrawSquare(p1,p2,p3,p4,glm::vec3(1.0f), "Tree");
+    DebugRender::Instance().DrawSquare(p1, p2, p3, p4, glm::vec3(1.0f), "Tree");
     
-    for (auto child : m_children)
-    {
+    for (auto* child : m_children)
         child->BuildDebugLines();
-    }
 }
 
-bool QuadTree::Contains(const glm::vec2& point) const {
-    return (point.x >= m_bounds.min.x && point.x < m_bounds.max.x &&
-            point.y >= m_bounds.min.y && point.y < m_bounds.max.y);
+void QuadTree::Render(const glm::mat4& proj, const glm::mat4& view) {
+    // Optionally, call BuildDebugLines() and then draw them via DebugRender.
+    DebugRender::Instance().Render(proj, view);
 }
-void QuadTree::Subdivide()
-{
-    float midX = (m_bounds.min.x + m_bounds.max.x) * 0.5f;
-    float midY = (m_bounds.min.y + m_bounds.max.y) * 0.5f;
-
-    // Create four candidate AABBs for child regions
-    AABB2D topLeft(     glm::vec2(m_bounds.min.x, midY),            glm::vec2(midX, m_bounds.max.y));
-    AABB2D topRight(    glm::vec2(midX, midY),                      glm::vec2(m_bounds.max.x, m_bounds.max.y));
-    AABB2D bottomLeft(  glm::vec2(m_bounds.min.x, m_bounds.min.y),  glm::vec2(midX, midY));
-    AABB2D bottomRight( glm::vec2(midX, m_bounds.min.y),            glm::vec2(m_bounds.max.x, midY));
-
-    // We’ll gather the objects that belong in each quadrant
-    std::vector<Node*> tlNodes;
-    std::vector<Node*> trNodes;
-    std::vector<Node*> blNodes;
-    std::vector<Node*> brNodes;
-
-    // Sort existing m_nodes into whichever quadrant they belong
-    for (auto* node : m_nodes) {
-        glm::vec3 pos3D = glm::vec3(node->getWorldTransform()[3]);
-        glm::vec2 p(pos3D.x, pos3D.z);
-
-        if (p.x >= m_bounds.min.x && p.x < midX &&
-            p.y >= midY          && p.y < m_bounds.max.y)
-        {
-            tlNodes.push_back(node);
-        }
-        else if (p.x >= midX          && p.x < m_bounds.max.x &&
-                 p.y >= midY          && p.y < m_bounds.max.y)
-        {
-            trNodes.push_back(node);
-        }
-        else if (p.x >= m_bounds.min.x && p.x < midX &&
-                 p.y >= m_bounds.min.y && p.y < midY)
-        {
-            blNodes.push_back(node);
-        }
-        else if (p.x >= midX          && p.x < m_bounds.max.x &&
-                 p.y >= m_bounds.min.y && p.y < midY)
-        {
-            brNodes.push_back(node);
-        }
-    }
-
-    // Clear the parent’s node list so we don’t store them twice
-    m_nodes.clear();
-
-    // Now create children ONLY for those quadrants that actually hold objects
-    // or if you want to allow further splits later. Typically, you can do:
-    if (!tlNodes.empty()|| true) {
-        auto* child = new QuadTree(topLeft, m_level + 1);
-        child->m_nodes = std::move(tlNodes);  // hand over its objects
-        m_children.push_back(child);
-    }
-    if (!trNodes.empty()|| true) {
-        auto* child = new QuadTree(topRight, m_level + 1);
-        child->m_nodes = std::move(trNodes);
-        m_children.push_back(child);
-    }
-    if (!blNodes.empty()|| true) {
-        auto* child = new QuadTree(bottomLeft, m_level + 1);
-        child->m_nodes = std::move(blNodes);
-        m_children.push_back(child);
-    }
-    if (!brNodes.empty()|| true) {
-        auto* child = new QuadTree(bottomRight, m_level + 1);
-        child->m_nodes = std::move(brNodes);
-        m_children.push_back(child);
-    }
-}
-
-/*
-void QuadTree::Subdivide() {
-    float midX = (m_bounds.min.x + m_bounds.max.x) * 0.5f;
-    float midY = (m_bounds.min.y + m_bounds.max.y) * 0.5f;
-    
-    AABB2D childBounds;
-    // Top-left
-    childBounds.min = glm::vec2(m_bounds.min.x, midY);
-    childBounds.max = glm::vec2(midX, m_bounds.max.y);
-    m_children.push_back(new QuadTree(childBounds, m_level + 1));
-    
-    // Top-right
-    childBounds.min = glm::vec2(midX, midY);
-    childBounds.max = glm::vec2(m_bounds.max.x, m_bounds.max.y);
-    m_children.push_back(new QuadTree(childBounds, m_level + 1));
-    
-    // Bottom-left
-    childBounds.min = glm::vec2(m_bounds.min.x, m_bounds.min.y);
-    childBounds.max = glm::vec2(midX, midY);
-    m_children.push_back(new QuadTree(childBounds, m_level + 1));
-    
-    // Bottom-right
-    childBounds.min = glm::vec2(midX, m_bounds.min.y);
-    childBounds.max = glm::vec2(m_bounds.max.x, midY);
-    m_children.push_back(new QuadTree(childBounds, m_level + 1));
-}
-*/
-
-

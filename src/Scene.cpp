@@ -3,40 +3,6 @@
 using namespace chrono;
 using namespace std;
 
-// Helper function to extract a frustum from a clip matrix.
-static Frustum ExtractFrustum(const glm::mat4& clip) {
-    Frustum frustum;
-    frustum.planes[0] = glm::vec4(clip[0][3] + clip[0][0],
-                                  clip[1][3] + clip[1][0],
-                                  clip[2][3] + clip[2][0],
-                                  clip[3][3] + clip[3][0]);
-    frustum.planes[1] = glm::vec4(clip[0][3] - clip[0][0],
-                                  clip[1][3] - clip[1][0],
-                                  clip[2][3] - clip[2][0],
-                                  clip[3][3] - clip[3][0]);
-    frustum.planes[2] = glm::vec4(clip[0][3] + clip[0][1],
-                                  clip[1][3] + clip[1][1],
-                                  clip[2][3] + clip[2][1],
-                                  clip[3][3] + clip[3][1]);
-    frustum.planes[3] = glm::vec4(clip[0][3] - clip[0][1],
-                                  clip[1][3] - clip[1][1],
-                                  clip[2][3] - clip[2][1],
-                                  clip[3][3] - clip[3][1]);
-    frustum.planes[4] = glm::vec4(clip[0][3] + clip[0][2],
-                                  clip[1][3] + clip[1][2],
-                                  clip[2][3] + clip[2][2],
-                                  clip[3][3] + clip[3][2]);
-    frustum.planes[5] = glm::vec4(clip[0][3] - clip[0][2],
-                                  clip[1][3] - clip[1][2],
-                                  clip[2][3] - clip[2][2],
-                                  clip[3][3] - clip[3][2]);
-    for (int i = 0; i < 6; ++i) {
-        float length = glm::length(glm::vec3(frustum.planes[i]));
-        frustum.planes[i] /= length;
-    }
-    return frustum;
-}
-
 Scene& Scene::Instance() {
     static Scene instance;
     return instance;
@@ -64,7 +30,6 @@ void Scene::AddNode(Node* node) {
     if(node)
         m_nodes.push_back(node);
 }
-
 
 void Scene::AddLight(Light l)
 {
@@ -118,19 +83,6 @@ void Scene::DebugDrawFrustum(const Frustum& frustum)
     }
 }
 
-void Scene::HighlightNodesForCube(DebugCube* cube) {
-    if (!cube) return;
-    glm::vec3 center = glm::vec3(cube->getWorldTransform()[3]);
-    float queryRadius = 5.0f; // Adjust this value as needed.
-    std::vector<Node*> results;
-    if (m_useQuadTreeOrOct && m_quadTree) {
-        m_quadTree->QueryLight(center, queryRadius, results);
-    } else if (!m_useQuadTreeOrOct && m_octTree) {
-        m_octTree->QueryLight(center, queryRadius, results);
-    }
-    m_nodesToRender = results;
-}
-
 void Scene::ToggleUseDebugFrustum(Camera* c)
 {
     m_debugCamera = c;
@@ -157,8 +109,8 @@ void Scene::BuildOctTree()
 
     m_useQuadTreeOrOct = false;
     AABBVolume sceneBounds3D;
-    sceneBounds3D.min = glm::vec3(-bounds, -bounds, -bounds);
-    sceneBounds3D.max = glm::vec3(bounds, bounds, bounds);
+    sceneBounds3D.min = glm::vec3(-m_bounds, -m_bounds, -m_bounds);
+    sceneBounds3D.max = glm::vec3(m_bounds, m_bounds, m_bounds);
     if(m_octTree)
         delete m_octTree;
 
@@ -177,13 +129,14 @@ void Scene::BuildOctTree()
 }
 
 void Scene::BuildQuadTree() {
+
     using namespace chrono;
     auto t0 = high_resolution_clock::now();
 
     m_useQuadTreeOrOct = true;
     AABB2D sceneBounds;
-    sceneBounds.min = glm::vec2(-bounds, -bounds);
-    sceneBounds.max = glm::vec2(bounds, bounds);
+    sceneBounds.min = glm::vec2(-m_bounds, -m_bounds);
+    sceneBounds.max = glm::vec2(m_bounds, m_bounds);
     if(m_quadTree) {
         delete m_quadTree;
     }
@@ -206,15 +159,15 @@ void Scene::RandomInitScene(int amount)
 {
     auto t0 = high_resolution_clock::now();
     Clear();
-    m_pGrid = new Grid3D(bounds);
+    m_pGrid = new Grid3D(m_bounds);
     // /* GRID 
     int gridSize = std::ceil(std::cbrt(amount)); // Determine the grid dimensions (N x N x N)
-    float spacing = (2.0f * bounds) / gridSize; // Adjust spacing to fit within bounds
+    float spacing = (2.0f * m_bounds) / gridSize; // Adjust spacing to fit within bounds
 
     random_device rd;
     // mt19937 gen(rd());
     mt19937 gen(100);
-    uniform_real_distribution<float> distPos(-bounds, bounds);
+    uniform_real_distribution<float> distPos(-m_bounds, m_bounds);
     uniform_real_distribution<float> rgb(0.0f, 255.0f);
 
     int cubeCount = 0;
@@ -222,9 +175,9 @@ void Scene::RandomInitScene(int amount)
         for (int y = 0; y < gridSize && cubeCount < amount; y++) {
             for (int z = 0; z < gridSize && cubeCount < amount; z++) {
                 // Map (x, y, z) to a position within -bounds to bounds
-                float posX = -bounds + x * spacing;
-                float posY = -bounds + y * spacing;
-                float posZ = -bounds + z * spacing;
+                float posX = -m_bounds + x * spacing;
+                float posY = -m_bounds + y * spacing;
+                float posZ = -m_bounds + z * spacing;
 
                 glm::vec3 position = glm::vec3(posX, posY, posZ);
 
@@ -379,18 +332,19 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     // Frustum realFrustum = ExtractFrustum(clip);
 
     Frustum realFrustum = m_activeCamera->getFrustum(screenWidth, screenHeight);
-    if(m_debugCamera != NULL)
+    if(m_debugCamera != NULL && m_useDebugFrustum)
+    {
         m_debugFrustum = m_debugCamera->getFrustum(screenWidth, screenHeight);
-
+        m_debugCamera->update(dt);
+    }
+        
     Frustum frustumToUse = m_useDebugFrustum ? m_debugFrustum : realFrustum;
     t1 = high_resolution_clock::now();
     float frustumExtractMS = duration<float, milli>(t1 - t0).count();
 
     // ========== QuadTree Query ==========
     t0 = high_resolution_clock::now();
-    // m_nodesToRender.clear();
-
-    // for(auto& x : m_nodes)
+    // for(auto& x : m_nodes) //Making sure bounding volumes function
     // {
     //     if(x->GetBoundingVolume()->IntersectsFrustum(frustumToUse))
     //     {
@@ -439,11 +393,11 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
 
     string activeTreeName = m_useQuadTreeOrOct ? "Quad" : "Oct";
 
-    int cubesAffectedByLight = 0;
-    for(auto* node : m_nodes) {
-        DebugCube* c = dynamic_cast<DebugCube*>(node);
-        if(c->m_affectingLights.size() > 0)
-            cubesAffectedByLight++; 
+    int nodesAffectedByLight = 0;
+    for(auto* node : m_nodes) { //ONLY WORKS FOR DEBUG CUBE, NOT GOOD. FIX NOWWW
+        // DebugCube* c = dynamic_cast<DebugCube*>(node);
+        if(node->m_affectingLights.size() > 0)
+            nodesAffectedByLight++; 
     }
 
     string info;
@@ -457,7 +411,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     info += "Existing Cubes : " + to_string(m_nodes.size()) + "\n";
     info += "Cubes Visible  : " + to_string(m_nodesToRender.size()) + "\n";
     info += "Lights In Scene: " + to_string(m_lights.size()) + "\n";
-    info += "Cubes Affected by light: " + to_string(cubesAffectedByLight) + "\n";
+    info += "Cubes Affected by light: " + to_string(nodesAffectedByLight) + "\n";
     info += "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
     info += "Camera Update      : " + to_string(m_avgCameraUpdateMs)    + " ms\n";
     info += "Nodes Update       : " + to_string(m_avgNodeUpdateMs)       + " ms\n";
@@ -477,7 +431,13 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
 void Scene::InitLights()
 {
     m_unlitProgram  = volpe::ProgramManager::CreateProgram("data/Unlit3d.vsh",  "data/Unlit3d.fsh");
+    if (!m_unlitProgram) {
+        std::cerr << "Failed to create Unlit3d shader program!\n";
+    }
     m_pointProgram  = volpe::ProgramManager::CreateProgram("data/PointLights.vsh","data/PointLights.fsh");
+    if (!m_pointProgram) {
+        std::cerr << "Failed to create PointLights shader program!\n";
+    }
 }
 
 void Scene::UpdateLighting()
@@ -533,7 +493,7 @@ void Scene::MoveLights()
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> distPos(-bounds, bounds);
+    std::uniform_real_distribution<float> distPos(-m_bounds, m_bounds);
 
     for(auto& light : m_lights)
     {
@@ -565,34 +525,27 @@ void Scene::Render(int screenWidth, int screenHeight) {
     glm::mat4 view = m_activeCamera->getViewMatrix();
     
     m_pGrid->render(view,proj);
-    
-    for(auto* n : m_nodesToRender)
-    {
-        DebugCube* c = dynamic_cast<DebugCube*>(n);
-        if(!c) {
-            // If not a DebugCube, draw normally.
-            n->draw(proj, view);
-            continue;
-        }
 
-        volpe::Program* prog = c->GetProgram();
+    // /*
+    for(auto* n : m_nodesToRender) //m_nodesToRender //m_nodes
+    {
+        volpe::Program* prog = n->GetProgram();
         if(prog == m_pointProgram)
         {
-            // Bind the point–light shader and push the lighting uniforms.
+            // Bind the point–light shader and push the lighting uniforms
             prog->Bind();
             ////////////////////////////////////////////////////////////////
-            int lightCount = c->m_numLightsAffecting; 
+            int lightCount = n->m_affectingLights.size(); 
             int maximumLights = 5;
             if(lightCount > maximumLights)
                 lightCount = maximumLights;  // clamp
 
-            // Set how many we actually pass
             prog->SetUniform("lightsInRange", lightCount);
 
             // fill up test[ i ] for each light in c->m_affectingLights
             for(int i=0; i<lightCount; i++)
             {
-                int lightIdx = c->m_affectingLights[i]; 
+                int lightIdx = n->m_affectingLights[i]; 
                 Light& L     = m_lights[lightIdx];
 
                 std::string base = "pointLights[" + std::to_string(i) + "]";
@@ -608,27 +561,27 @@ void Scene::Render(int screenWidth, int screenHeight) {
             }
 
             prog->SetUniform("fade", 1.0f);
-            ////////////////////////////////////////////////////////////////
+
+            auto z = dynamic_cast<DebugCube*>(n);
+            auto x = dynamic_cast<DebugSphere*>(n);
             
-            //Make it so it only sets Uniform for the Lights that affect the cubes
-            //These lights are found during the UpdateLighting()
+            if(z)
+                z->draw(proj, view, true);
+            else if(x)
+                x->draw(proj, view, true);
+            else
+                n->draw(proj, view);
 
-            // prog->SetUniform(("test[0].PositionRange"), glm::vec4(m_lights[0].position, m_lights[0].radius));
-            // prog->SetUniform(("test[0].Color"), m_lights[0].color);
-            // prog->SetUniform(("test[0].Strength"), m_lights[0].intensity);
-            // prog->SetUniform(("lightsInRange"), 3);
-            // prog->SetUniform("fade", 1.0f); // normal shit
-
-            // Draw the cube WITHOUT rebinding the shader.
-            c->draw(proj, view, true);
         }
         else
         {
-            // For cubes using the unlit shader, just draw normally.
-            c->draw(proj, view);
+            //Unlit objects
+            n->draw(proj, view);
         }
     }
+    // */
     
+    #pragma region debug
     if(m_ShowDebug)
     {
         if(reDebug) // if there was a change
@@ -650,14 +603,12 @@ void Scene::Render(int screenWidth, int screenHeight) {
         DebugRender::Instance().Render(proj, view);
         glEnable(GL_DEPTH_TEST);
     }
-
-    // DebugRender::Instance().DrawFrustum(proj, view);
-    if(m_debugCamera != NULL)
+    if(m_debugCamera != NULL && m_useDebugFrustum)
     {
         DebugRender::Instance().GetLayer("frustum")->Clear();
         DebugRender::Instance().DrawFrustumFromCamera(m_debugCamera, screenWidth, screenHeight, "frustum");
     }
-
+    #pragma endregion
     // Render text
     if(m_textRenderer && textBox)
     {
@@ -666,12 +617,23 @@ void Scene::Render(int screenWidth, int screenHeight) {
         m_textRenderer->render(proj,view);
         glEnable(GL_DEPTH_TEST);
     }
-    
 
-    // for (Node* n : m_nodesToRender)
-    // {
-    //     // n->GetBoundingVolume();
-    //     AABBVolume* aabb = dynamic_cast<AABBVolume*>(n->GetBoundingVolume());
-    //     aabb->DrawMe(proj,view);
-    // }
+    for (Node* n : m_nodes)
+    {
+        // n->GetBoundingVolume();
+        mat4 x = n->getWorldTransform();
+        
+        if(fuck)
+            std::cout<<x[3].x<<", "<<x[3].y<<", "<<x[3].z<<std::endl;
+        
+            AABBVolume* aabb = dynamic_cast<AABBVolume*>(n->GetBoundingVolume());
+        if(aabb)
+            aabb->DrawMe(proj,view);
+    }
+    
+    if(fuck)
+    {
+        fuck = false;
+    }
+
 }
