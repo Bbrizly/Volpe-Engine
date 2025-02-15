@@ -129,8 +129,7 @@ glm::vec3 OrbitCamera::getViewPosition() const
 {
     return m_position;
 }
-/*
-Frustum OrbitCamera::getFrustum(int width, int height)
+/* Frustum OrbitCamera::getFrustum(int width, int height)
 {
     glm::mat4 proj = getProjMatrix(width, height);
     glm::mat4 view = getViewMatrix();

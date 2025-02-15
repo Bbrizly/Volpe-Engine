@@ -8,6 +8,9 @@
 #include "../volpe/Volpe.h"
 #include "Frustum.h"
 #include "DebugLayer.h"
+#include "../samplefw/Camera.h"
+#include "../samplefw/FirstPersonCamera.h"
+#include "../samplefw/OrbitCamera.h"
 
 class DebugRender {
 public:
@@ -25,7 +28,7 @@ public:
     DebugLayer* GetLayer(const std::string& name);
     void CreateLayer(const std::string& name);
     void SetLayerEnabled(const std::string& name, bool enabled);
-
+    void DrawFrustumFromCamera(Camera* cam, int screenWidth, int screenHeight, const std::string& layerName);
     // Clear all debug layers.
     void Clear();
 

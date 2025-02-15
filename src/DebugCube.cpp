@@ -41,10 +41,51 @@ static const glm::vec3 localCorners[8] = {
     {  0.5f,  0.5f,  0.5f }
 };
 
+void DebugCube::DrawBoundingVolume(const glm::mat4& proj, const glm::mat4& view)
+{
+    // Get the current world-space AABB
+    AABBVolume box = getWorldAABB3D();
+    glm::vec3 min = box.min;
+    glm::vec3 max = box.max;
+
+    // Compute the eight corners of the AABB
+    glm::vec3 corners[8] = {
+        glm::vec3(min.x, min.y, min.z), // 0
+        glm::vec3(max.x, min.y, min.z), // 1
+        glm::vec3(max.x, max.y, min.z), // 2
+        glm::vec3(min.x, max.y, min.z), // 3
+        glm::vec3(min.x, min.y, max.z), // 4
+        glm::vec3(max.x, min.y, max.z), // 5
+        glm::vec3(max.x, max.y, max.z), // 6
+        glm::vec3(min.x, max.y, max.z)  // 7
+    };
+
+    // Choose a color for the bounding box (green)
+    glm::vec3 color(0.0f, 1.0f, 0.0f);
+
+    // Draw bottom face
+    DebugRender::Instance().DrawLine(corners[0], corners[1], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[1], corners[2], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[2], corners[3], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[3], corners[0], color, "BoundingVolumes");
+
+    // Draw top face
+    DebugRender::Instance().DrawLine(corners[4], corners[5], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[5], corners[6], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[6], corners[7], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[7], corners[4], color, "BoundingVolumes");
+
+    // Draw vertical edges
+    DebugRender::Instance().DrawLine(corners[0], corners[4], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[1], corners[5], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[2], corners[6], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[3], corners[7], color, "BoundingVolumes");
+}
+
 DebugCube::DebugCube(const std::string& name)
 : Node(name)
 {
-    std::cout << "CUBE INIT\n";
+    // std::cout << "CUBE INIT\n";
     
     glm::vec3 minv(+cubeSize), maxv(-cubeSize); //create cube boundingbox size
     for(int i=0; i<8; i++)
@@ -59,6 +100,7 @@ DebugCube::DebugCube(const std::string& name)
     }
 
     AABBVolume* localBox = new AABBVolume(minv, maxv);
+    m_boundingVolume = localBox;
     SetBoundingVolume(localBox);
     
     //Sphere init
@@ -143,7 +185,7 @@ void DebugCube::pushVertexData(volpe::VertexBuffer*& vBuffer, volpe::VertexDecla
 
     m_numVertices = (int)inVerts.size();
 
-    std::cout << "DebugCube created with " << m_numVertices << " vertices.\n";
+    // std::cout << "DebugCube created with " << m_numVertices << " vertices.\n";
 }
 
 void DebugCube::Render(const glm::mat4& proj, const glm::mat4& view, bool skipBind)

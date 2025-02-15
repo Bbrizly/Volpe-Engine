@@ -124,7 +124,6 @@ void Scene::HighlightNodesForCube(DebugCube* cube) {
     m_nodesToRender = results;
 }
 
-
 void Scene::ToggleUseDebugFrustum(Camera* c)
 {
     m_debugCamera = c;
@@ -206,7 +205,8 @@ void Scene::RandomInitScene(int amount)
     float spacing = (2.0f * bounds) / gridSize; // Adjust spacing to fit within bounds
 
     random_device rd;
-    mt19937 gen(rd());
+    // mt19937 gen(rd());
+    mt19937 gen(100);
     uniform_real_distribution<float> distPos(-bounds, bounds);
     uniform_real_distribution<float> rgb(0.0f, 255.0f);
 
@@ -223,6 +223,10 @@ void Scene::RandomInitScene(int amount)
 
                 DebugCube* cube = new DebugCube("Cube_" + to_string(cubeCount));
                 cube->setTransform(glm::translate(glm::mat4(1.0f), position));
+
+                glm::vec4 trans = cube->getTransform()[3];
+                std::cout << "Cube_" << cubeCount << " location: ("
+                      << trans.x << ", " << trans.y << ", " << trans.z << ")\n";
                 
                 GLubyte r = rgb(gen)
                 ,g = rgb(gen)
@@ -380,6 +384,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
             m_nodesToRender = m_nodes;
         }
     }
+    
     t1 = high_resolution_clock::now();
     float quadTreeQueryMS = duration<float, milli>(t1 - t0).count();
 
@@ -638,8 +643,19 @@ void Scene::Render(int screenWidth, int screenHeight) {
     // DebugRender::Instance().DrawFrustum(proj, view);
     if(m_debugCamera != NULL)
     {
-        Frustum camFrustum = m_debugCamera->getFrustum(screenWidth, screenHeight);
-        DebugRender::Instance().DrawFrustum(camFrustum);
+        // Frustum camFrustum = m_debugCamera->getFrustum(screenWidth, screenHeight);
+        // DebugRender::Instance().DrawFrustum(camFrustum);
+        DebugRender::Instance().DrawFrustumFromCamera(m_debugCamera, screenWidth, screenHeight, "frustum");
+
+    }
+
+    for (Node* n : m_nodesToRender)
+    {
+        DebugCube* cube = dynamic_cast<DebugCube*>(n);
+        if (cube)
+        {
+            // cube->DrawBoundingVolume(proj, view);
+        }
     }
 
     // Render text

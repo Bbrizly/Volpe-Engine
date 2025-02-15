@@ -104,8 +104,78 @@ glm::mat4 FirstPersonCamera::getProjMatrix(int width, int height)
     
     return glm::perspective(glm::radians(m_fov), aspectRatio, m_near, m_far);
 }
+/* accurate get frustum
+Frustum FirstPersonCamera::getFrustum(int width, int height)
+{
+    // Assume m_fov is in radians; if it's in degrees, convert with glm::radians().
+    float aspect = float(width) / float(height);
+    
+    // Retrieve near and far distances from the camera.
+    float n = m_near; // e.g. 0.1f
+    float f = m_far;  // e.g. 1000.0f
 
-/*
+    // Compute near and far plane dimensions.
+    float nearHeight = 2.0f * n * tan(m_fov / 2.0f);
+    float nearWidth  = nearHeight * aspect;
+    float farHeight  = 2.0f * f * tan(m_fov / 2.0f);
+    float farWidth   = farHeight * aspect;
+    
+    // Get the camera’s position and view direction.
+    // (For FirstPersonCamera, use getPosition() and getDirection();
+    //  for OrbitCamera, use getViewPosition() and getViewDirection().)
+    glm::vec3 camPos, camDir;
+    // Here we assume your camera class provides these methods:
+    camPos = getPosition();
+    camDir = glm::normalize(getDirection());
+    
+    // Compute the camera's right and up vectors.
+    // We assume a world-up of (0,1,0); if your camera uses a different up, adjust accordingly.
+    glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
+    glm::vec3 camRight = glm::normalize(glm::cross(camDir, worldUp));
+    glm::vec3 camUp    = glm::normalize(glm::cross(camRight, camDir));
+    
+    // Compute the centers of the near and far planes.
+    glm::vec3 nearCenter = camPos + camDir * n;
+    glm::vec3 farCenter  = camPos + camDir * f;
+    
+    // Compute the 4 corners of the near plane.
+    glm::vec3 ntl = nearCenter + camUp * (nearHeight / 2.0f) - camRight * (nearWidth / 2.0f);
+    glm::vec3 ntr = nearCenter + camUp * (nearHeight / 2.0f) + camRight * (nearWidth / 2.0f);
+    glm::vec3 nbl = nearCenter - camUp * (nearHeight / 2.0f) - camRight * (nearWidth / 2.0f);
+    glm::vec3 nbr = nearCenter - camUp * (nearHeight / 2.0f) + camRight * (nearWidth / 2.0f);
+    
+    // Compute the 4 corners of the far plane.
+    glm::vec3 ftl = farCenter + camUp * (farHeight / 2.0f) - camRight * (farWidth / 2.0f);
+    glm::vec3 ftr = farCenter + camUp * (farHeight / 2.0f) + camRight * (farWidth / 2.0f);
+    glm::vec3 fbl = farCenter - camUp * (farHeight / 2.0f) - camRight * (farWidth / 2.0f);
+    glm::vec3 fbr = farCenter - camUp * (farHeight / 2.0f) + camRight * (farWidth / 2.0f);
+    
+    // Helper lambda: compute a plane (in form Ax+By+Cz+D=0) from 3 points.
+    auto planeFromPoints = [](const glm::vec3& a, const glm::vec3& b, const glm::vec3& c) -> glm::vec4 {
+        glm::vec3 normal = glm::normalize(glm::cross(b - a, c - a));
+        float d = -glm::dot(normal, a);
+        return glm::vec4(normal, d);
+    };
+    
+    // Build the 6 planes using three corners per plane.
+    Frustum frustum;
+    // Left plane: use near-top-left, near-bottom-left, far-bottom-left.
+    frustum.planes[0] = planeFromPoints(ntl, nbl, fbl);
+    // Right plane: use near-bottom-right, near-top-right, far-bottom-right.
+    frustum.planes[1] = planeFromPoints(nbr, ntr, fbr);
+    // Bottom plane: use near-bottom-left, near-bottom-right, far-bottom-right.
+    frustum.planes[2] = planeFromPoints(nbl, nbr, fbr);
+    // Top plane: use near-top-right, near-top-left, far-top-left.
+    frustum.planes[3] = planeFromPoints(ntr, ntl, ftl);
+    // Near plane: use near-top-left, near-top-right, near-bottom-right.
+    frustum.planes[4] = planeFromPoints(ntl, ntr, nbr);
+    // Far plane: use far-top-right, far-top-left, far-bottom-left.
+    frustum.planes[5] = planeFromPoints(ftr, ftl, fbl);
+    
+    return frustum;
+}
+*/
+/* getfrustum 
 Frustum FirstPersonCamera::getFrustum(int width, int height)
 {
     glm::mat4 proj = getProjMatrix(width, height);

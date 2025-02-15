@@ -86,14 +86,21 @@ void OctTree::Insert(Node* node)
 void OctTree::Query(const Frustum& frustum, std::vector<Node*>& results)
 {
     //Bounding box fully outside
-    if (!m_bounds.IntersectsFrustum(frustum)) {
-        return;
+    if(m_level != 0)
+    {
+        if (!m_bounds.IntersectsFrustum(frustum)) {
+            std::cout<<"\n\n\n--"<<m_level << " --FUlly outside\n";
+            return;
+        }    
     }
 
     // Check each node stored at this level
     for (auto* node : m_nodes) {
+        std::cout<<"Checking Node\n";
         // If bounding sphere of node is inside frustum, add it
+        node->GetBoundingVolume()->PrintBoundingVolumeType(node->GetBoundingVolume());
         if (node->GetBoundingVolume()->IntersectsFrustum(frustum)){
+            std::cout<<"Node is in\n";
         // if (SphereIntersectsFrustum(node->GetBoundingVolume(), frustum)) {
             results.push_back(node);
         }

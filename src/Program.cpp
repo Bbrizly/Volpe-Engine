@@ -14,7 +14,7 @@ Program::~Program()
     delete fpsCamera;
 }
 
-int amount = 100; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
+int amount = 200; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
 
 void RecreateSceneHelper(int bounds)
 {
@@ -56,7 +56,7 @@ void RecreateSceneHelper(int bounds)
     for (int     x = 0; x < gridSize && cubeCount < amount; x++) {
         for (int y = 0; y < gridSize && cubeCount < amount; y++) {
             for (int z = 0; z < gridSize && cubeCount < amount; z++) {
-                // Map (x, y, z) to a position within -bounds to bounds
+                
                 float posX = -bounds + x * spacing;
                 float posY = -bounds + y * spacing;
                 float posZ = -bounds + z * spacing;
@@ -65,7 +65,13 @@ void RecreateSceneHelper(int bounds)
 
                 DebugCube* cube = new DebugCube("Cube_" + to_string(cubeCount));
                 cube->setTransform(glm::translate(glm::mat4(1.0f), position));
+
+                // std::cout << "Cube_" << cubeCount << " location: ("
+                //           << trans.x << ", " << trans.y << ", " << trans.z << ")\n";
                 
+                // std::cout << " worldTransform location: ("
+                //     << transa <<")\n";
+
                 GLubyte r = rgb(gen)
                 ,g = rgb(gen)
                 ,b = rgb(gen);
@@ -137,11 +143,11 @@ void Program::init()
     
     Scene::Instance().InitLights();
 
+    bounds = 30;
     Scene::Instance().RandomInitScene(amount);
     /////////////////////////////////////////////////////////
 
-    bounds = 30;
-    RecreateSceneHelper(bounds);
+    // RecreateSceneHelper(bounds);
 
     /////////////////////////////////////////////////////////
 
@@ -171,7 +177,8 @@ void Program::update(float dt)
     if(m_pApp->isKeyJustDown('R') || m_pApp->isKeyJustDown('r'))
     {
         Scene::Instance().Clear();
-        RecreateSceneHelper(bounds);
+        // RecreateSceneHelper(bounds);
+        Scene::Instance().RandomInitScene(amount);
 
         if(Scene::Instance().getWhichTree())
             Scene::Instance().BuildQuadTree();

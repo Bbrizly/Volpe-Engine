@@ -9,6 +9,7 @@
 #include "iostream"
 #include "AABBVolume.h"
 #include "BoundingVolume.h"
+#include "DebugRender.h"
 #include <random>
 
 using namespace std;
@@ -40,6 +41,8 @@ private:
 public:
     DebugCube(const std::string& name);
     virtual ~DebugCube();
+    
+    void DrawBoundingVolume(const glm::mat4& proj, const glm::mat4& view); //DEBUG DELETE LATEr
     
     AABBVolume getWorldAABB3D() const;
     

@@ -1,5 +1,6 @@
 #pragma once
 #include "Frustum.h"
+#include "iostream"
 
 class AABBVolume;  
 class SphereVolume;
@@ -9,6 +10,7 @@ class BoundingVolume
 public:
     virtual ~BoundingVolume() {}
 
+    void PrintBoundingVolumeType(const BoundingVolume* volume);
     // for culling
     virtual bool IntersectsFrustum(const Frustum& frustum) const = 0;
 
