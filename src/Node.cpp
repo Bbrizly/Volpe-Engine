@@ -6,9 +6,7 @@ Node::Node(const std::string& name)
   m_parent(nullptr),
   m_boundingVolume(nullptr)
 {
-    // Bounding sphere w radius 1
-    // m_boundingSphere.center = glm::vec3(0,0,0);
-    // m_boundingSphere.radius = 1.0f;
+    
 }
 
 Node::~Node()
@@ -97,13 +95,17 @@ void Node::UpdateBoundingVolume()
 
     for (auto* c : m_children)
     {
+
         BoundingVolume* childVol = c->GetBoundingVolume();
         if(!childVol) continue;
 
         glm::mat4 childWorld = c->getWorldTransform();
 
         m_boundingVolume->ExpandToFit(*childVol, childWorld);
+        
     }
+    m_boundingVolume->UpdateVolume(getWorldTransform());
+
 }
 
 

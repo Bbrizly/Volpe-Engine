@@ -85,27 +85,10 @@ void DebugCube::DrawBoundingVolume(const glm::mat4& proj, const glm::mat4& view)
 DebugCube::DebugCube(const std::string& name)
 : Node(name)
 {
-    // std::cout << "CUBE INIT\n";
-    
-    glm::vec3 minv(+cubeSize), maxv(-cubeSize); //create cube boundingbox size
-    for(int i=0; i<8; i++)
-    {
-        minv.x = std::min(minv.x, localCorners[i].x);
-        minv.y = std::min(minv.y, localCorners[i].y);
-        minv.z = std::min(minv.z, localCorners[i].z);
-
-        maxv.x = std::max(maxv.x, localCorners[i].x);
-        maxv.y = std::max(maxv.y, localCorners[i].y);
-        maxv.z = std::max(maxv.z, localCorners[i].z);
-    }
-
-    AABBVolume* localBox = new AABBVolume(minv, maxv);
+    glm::vec3 localMin(-0.5f), localMax(0.5f);
+    AABBVolume* localBox = new AABBVolume(localMin, localMax);
     m_boundingVolume = localBox;
     SetBoundingVolume(localBox);
-    
-    //Sphere init
-    //SphereVolume* localSphere = new SphereVolume(glm::vec3(0,0,0), 0.8f);
-    //SetBoundingVolume(localSphere);
 
     m_pProgram = volpe::ProgramManager::CreateProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
     genVertexData();
@@ -214,17 +197,14 @@ void DebugCube::Render(const glm::mat4& proj, const glm::mat4& view, bool skipBi
     m_vertexDecl->Bind();
     glDrawArrays(GL_TRIANGLES, 0, m_numVertices); //GL_TRIANGLES //GL_LINES
 
-    // std::cout << "DebugCube Draw Call Executed.\n";
 }
 
 void DebugCube::draw(const glm::mat4& proj, const glm::mat4& view, bool skipBind)
 {
-    // glm::mat4 world = getWorldTransform();
-    // glm::mat4 mvp   = proj * view * world;
     if(skipBind)
         Render(proj,view, skipBind);
     else
         Render(proj,view);
-    // Now children draw themselves
+        
     Node::draw(proj,view);
 }

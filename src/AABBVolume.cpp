@@ -1,98 +1,62 @@
 #include "AABBVolume.h"
+#include "iostream"
+#include "DebugRender.h"
+
+void AABBVolume::DrawMe(const glm::mat4& proj, const glm::mat4& view) //DEBUGGGGGGGGGG
+{
+    glm::vec3 corners[8] = {
+        glm::vec3(min.x, min.y, min.z), // 0
+        glm::vec3(max.x, min.y, min.z), // 1
+        glm::vec3(max.x, max.y, min.z), // 2
+        glm::vec3(min.x, max.y, min.z), // 3
+        glm::vec3(min.x, min.y, max.z), // 4
+        glm::vec3(max.x, min.y, max.z), // 5
+        glm::vec3(max.x, max.y, max.z), // 6
+        glm::vec3(min.x, max.y, max.z)  // 7
+    };
+    glm::vec3 color(0.0f, 1.0f, 0.0f);
+
+    // Draw bottom face
+    DebugRender::Instance().DrawLine(corners[0], corners[1], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[1], corners[2], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[2], corners[3], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[3], corners[0], color, "BoundingVolumes");
+
+    // Draw top face
+    DebugRender::Instance().DrawLine(corners[4], corners[5], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[5], corners[6], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[6], corners[7], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[7], corners[4], color, "BoundingVolumes");
+
+    // Draw vertical edges
+    DebugRender::Instance().DrawLine(corners[0], corners[4], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[1], corners[5], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[2], corners[6], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[3], corners[7], color, "BoundingVolumes");
+    std::cout<<"DRAWING\n\n";
+
+
+}
+
+
 bool AABBVolume::IntersectsFrustum(const Frustum& frustum) const 
 {
     glm::vec3 center = (min + max) * 0.5f;
-    glm::vec3 extents = (max - min) * 0.5f;  // Half-size extents (fixing incorrect calculation)
+    glm::vec3 halfExtents = (max - min) * 0.5f;
 
     for (int i = 0; i < 6; ++i) {
         const glm::vec4& plane = frustum.planes[i];
-
-        glm::vec3 normal(plane.x, plane.y, plane.z);
+        glm::vec3 normal(plane);
         float distance = glm::dot(normal, center) + plane.w;
-        float radius = glm::dot(extents, glm::abs(normal)); 
-
-        if (distance < -radius) {
-            return false; // Fully outside
-        }
-    }
-    return true; // Inside or intersecting
-}
-
-/*
-bool AABBVolume::IntersectsFrustum(const Frustum& frustum) const 
-{
-    glm::vec3 center = (min + max) * 0.5f;
-    glm::vec3 extents = max - center;
-    const float epsilon = 0.001f; // tweak this value as needed
-
-    for (int i = 0; i < 6; ++i) {
-        const glm::vec4& plane = frustum.planes[i];
-        float distance = glm::dot(glm::vec3(plane), center) + plane.w;
-        float radius = glm::dot(extents, glm::abs(glm::vec3(plane)));
-        if (distance < -radius - epsilon)
-            return false;
-    }
-    return true;
-}
-*/
-
-
-/*
-bool AABBVolume::IntersectsFrustum(const Frustum& frustum) const 
-{
-    glm::vec3 center = (min + max) * 0.5f;
-    glm::vec3 extents = max - center;
-    
-    for (int i = 0; i < 6; ++i) {
-        const glm::vec4& plane = frustum.planes[i];
-        float distance = glm::dot(glm::vec3(plane), center) + plane.w;
-        float radius = glm::dot(extents, glm::abs(glm::vec3(plane)));
-        
+        float radius = glm::dot(halfExtents, glm::abs(normal));
         if (distance < -radius)
             return false;
     }
     return true;
 }
-*/
-
-// */
-/* //culling
-bool AABBVolume::IntersectsFrustum(const Frustum& frustum) const 
-{
-    glm::vec3 center = 0.5f*(min + max);
-    glm::vec3 extents= 0.5f*(max - min);
-    for (int i = 0; i < 6; ++i)
-    {
-        const glm::vec4& plane = frustum.planes[i];
-        glm::vec3 normal(plane.x, plane.y, plane.z);
-        float d = plane.w;
-        float r = extents.x * std::fabs(normal.x)
-                + extents.y * std::fabs(normal.y)
-                + extents.z * std::fabs(normal.z);
-        float dist = glm::dot(normal, center) + d;
-        if (dist < -r)
-            return false;
-    }
-    return true;
-
-    // glm::vec3 center = (min + max) * 0.5f;
-    // glm::vec3 extents = max - center;
-    
-    // for(int i = 0; i < 6; ++i) {
-    //     const glm::vec4& plane = frustum.planes[i];
-    //     float distance = glm::dot(glm::vec3(plane), center) + plane.w;
-    //     float radius = glm::dot(extents, glm::abs(glm::vec3(plane)));
-        
-    //     if(distance < -radius) return false;
-    // }
-    // return true;
-}
-*/
-
 
 bool AABBVolume::Overlaps(const BoundingVolume& other) const 
 {
-    //Makes sure it uses correct function in other bounding volume
     return other.OverlapsAABB(*this);
 }
 

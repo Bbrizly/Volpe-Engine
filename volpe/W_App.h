@@ -21,8 +21,8 @@ namespace volpe
         bool isRMBDown() const;
         bool isMMBDown() const;
         
-        void App::UnlockCursor();
-        void App::LockCursor();
+        void UnlockCursor();
+        void LockCursor();
         glm::vec2 getMousePos() const;
         glm::vec2 getScreenSize() const;
         glm::vec2 getMouseScroll() const { return m_mouseScroll; }

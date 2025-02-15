@@ -10,19 +10,18 @@ class BoundingVolume
 public:
     virtual ~BoundingVolume() {}
 
-    void PrintBoundingVolumeType(const BoundingVolume* volume);
-    // for culling
+    virtual void UpdateVolume(const glm::mat4& worldTransform) = 0;
+
     virtual bool IntersectsFrustum(const Frustum& frustum) const = 0;
 
-    // Overlap tests
+    // voeralaps whatev
     virtual bool Overlaps(const BoundingVolume& other) const = 0;
 
-    // for Overlaps(AABB) 
+    // for Overlaps AABB
     virtual bool OverlapsAABB(const AABBVolume& aabb) const = 0;
-    // for Overlaps(Sphere)
+    // for Overlaps Sphere
     virtual bool OverlapsSphere(const SphereVolume& sphere) const = 0;
     
-    // Based on childern the bounding box will expand to fit them all
     virtual void ExpandToFit(const BoundingVolume& childVolume, 
         const glm::mat4& childWorldTransform) = 0;
 };

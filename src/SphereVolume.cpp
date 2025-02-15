@@ -1,8 +1,9 @@
 #include "SphereVolume.h"
-
+#include "iostream"
 // For culling
 bool SphereVolume::IntersectsFrustum(const Frustum& frustum) const 
 {
+    std::cout<<"SPHERE\n";
     for (int i = 0; i < 6; ++i)
     {
         const glm::vec4& plane = frustum.planes[i];

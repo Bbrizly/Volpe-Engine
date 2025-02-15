@@ -65,6 +65,13 @@ void Scene::AddNode(Node* node) {
         m_nodes.push_back(node);
 }
 
+
+void Scene::AddLight(Light l)
+{
+    
+    m_lights.push_back(l);
+}
+
 void Scene::DebugDrawFrustum(const Frustum& frustum)
 {
     // For demonstration, let’s just show each plane as a square.
@@ -272,9 +279,7 @@ void Scene::RandomInitScene(int amount)
     // DebugCube* cube = new DebugCube("Cube_");// + to_string(cubeCount));
     // cube->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0,2,0)));
     // AddNode(cube); // Add cube to scene
-
     // m_lights.push_back( Light(glm::vec3(0, 5, 0),  glm::vec3(1,1,1), 10.0f, 10.0f));
-
     // m_lights.push_back( Light(glm::vec3(-5, 0, 0), glm::vec3(0,1,0), 1.0f, 10.0f));
     // m_lights.push_back( Light(glm::vec3(0, 0, 5), glm::vec3(0,0,1), 1.0f, 10.0f));
 
@@ -287,8 +292,25 @@ void Scene::ShowDebugText()
 {
     m_textRenderer = new TextRenderer();
     m_textRenderer->init();
+
+    const GLubyte* renderer = glGetString(GL_RENDERER);
+    std::string rendererStr = reinterpret_cast<const char*>(renderer);
+    const GLubyte* vendor = glGetString(GL_VENDOR);
+    std::string vendorStr = reinterpret_cast<const char*>(vendor);
+
     Font* fontArial   = m_textRenderer->createFont("Arial");
-    TextBox* textBoc   = m_textRenderer->createTextBox(fontArial,"Press Q to visualize Quad Tree.\nPress R To randomly Generate Nodes.\nPress F to toggle Debug Frustum.\nPress A to Switch Trees\nPress L to randomize Light Locations.", 640.0f - 400, 360.0f, 400, 200);
+    TextBox* textBoc = m_textRenderer->createTextBox(fontArial,
+        "Press Q to visualize Quad Tree.\n"
+        "Press R To randomly Generate Nodes.\n"
+        "Press F to toggle FPS Camera's Frustum.\n"
+        "Press E to Switch between Trees\n"
+        "Press C to Switch between CAMERAS\n"
+        "Press L to randomize Light Locations.\n"
+        "Renderer: " + rendererStr + "\nVendor: " + vendorStr,
+        640.0f - 400, 360.0f, 400, 200);
+    
+
+         
     textBoc->SetColor(0,0,0,255);
     textBoc->SetVisualization(false); //remove bg box
     textBoc->SetAlignment(2);
@@ -366,6 +388,15 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
 
     // ========== QuadTree Query ==========
     t0 = high_resolution_clock::now();
+    // m_nodesToRender.clear();
+
+    // for(auto& x : m_nodes)
+    // {
+    //     if(x->GetBoundingVolume()->IntersectsFrustum(frustumToUse))
+    //     {
+    //         m_nodesToRender.push_back(x);
+    //     }
+    // }
     m_nodesToRender.clear();
 
     if(m_useQuadTreeOrOct)
@@ -423,6 +454,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     info += "CURRENT TREE   : " + activeTreeName + "\n";
     info += "Scene Creation Time: " + to_string(m_avgCreation) + " ms\n";
     info += "Tree Build Time: " + to_string(m_lastQuadTreeBuildTimeMs) + " ms\n";
+    info += "Existing Cubes : " + to_string(m_nodes.size()) + "\n";
     info += "Cubes Visible  : " + to_string(m_nodesToRender.size()) + "\n";
     info += "Lights In Scene: " + to_string(m_lights.size()) + "\n";
     info += "Cubes Affected by light: " + to_string(cubesAffectedByLight) + "\n";
@@ -444,10 +476,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
 
 void Scene::InitLights()
 {
-
-    // load the GPU programs
     m_unlitProgram  = volpe::ProgramManager::CreateProgram("data/Unlit3d.vsh",  "data/Unlit3d.fsh");
-    // m_pointProgram  = volpe::ProgramManager::CreateProgram("data/Unlit3d.vsh","data/Unlit3d.fsh");
     m_pointProgram  = volpe::ProgramManager::CreateProgram("data/PointLights.vsh","data/PointLights.fsh");
 }
 
@@ -553,6 +582,8 @@ void Scene::Render(int screenWidth, int screenHeight) {
     glm::mat4 proj = m_activeCamera->getProjMatrix(screenWidth, screenHeight);
     glm::mat4 view = m_activeCamera->getViewMatrix();
     
+    
+    
     m_pGrid->render(view,proj);
     
     for(auto* n : m_nodesToRender)
@@ -643,19 +674,8 @@ void Scene::Render(int screenWidth, int screenHeight) {
     // DebugRender::Instance().DrawFrustum(proj, view);
     if(m_debugCamera != NULL)
     {
-        // Frustum camFrustum = m_debugCamera->getFrustum(screenWidth, screenHeight);
-        // DebugRender::Instance().DrawFrustum(camFrustum);
+        DebugRender::Instance().GetLayer("frustum")->Clear();
         DebugRender::Instance().DrawFrustumFromCamera(m_debugCamera, screenWidth, screenHeight, "frustum");
-
-    }
-
-    for (Node* n : m_nodesToRender)
-    {
-        DebugCube* cube = dynamic_cast<DebugCube*>(n);
-        if (cube)
-        {
-            // cube->DrawBoundingVolume(proj, view);
-        }
     }
 
     // Render text
@@ -665,4 +685,12 @@ void Scene::Render(int screenWidth, int screenHeight) {
         m_textRenderer->render(proj,view);
         glEnable(GL_DEPTH_TEST);
     }
+    
+
+    // for (Node* n : m_nodesToRender)
+    // {
+    //     // n->GetBoundingVolume();
+    //     AABBVolume* aabb = dynamic_cast<AABBVolume*>(n->GetBoundingVolume());
+    //     aabb->DrawMe(proj,view);
+    // }
 }

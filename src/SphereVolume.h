@@ -33,4 +33,17 @@ public:
     
     virtual void ExpandToFit(const BoundingVolume& childVolume,
         const glm::mat4& childWorldTransform) override;
+
+    virtual void UpdateVolume(const glm::mat4& worldTransform) override
+    {
+        glm::vec4 transformedCenter = worldTransform * glm::vec4(center, 1.0f);
+        center = glm::vec3(transformedCenter);
+
+        float scaleX = glm::length(glm::vec3(worldTransform[0]));
+        float scaleY = glm::length(glm::vec3(worldTransform[1]));
+        float scaleZ = glm::length(glm::vec3(worldTransform[2]));
+        float maxScale = std::max(scaleX, std::max(scaleY, scaleZ));
+
+        radius = radius * maxScale;
+    }
 };

@@ -14,44 +14,18 @@ Program::~Program()
     delete fpsCamera;
 }
 
-int amount = 200; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
-
+int amount = 100; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
+int bounds = 10;
 void RecreateSceneHelper(int bounds)
 {
     Scene::Instance().createGrid(bounds);
-    // /* GRID 
+    /* GRID like pattern
     int gridSize = std::ceil(std::cbrt(amount)); // Determine the grid dimensions (N x N x N)
     float spacing = (2.0f * bounds) / gridSize; // Adjust spacing to fit within bounds
 
     random_device rd;
     mt19937 gen(rd());
     uniform_real_distribution<float> rgb(0.0f, 255.0f);
-    /*
-    int cubeCount = 0;
-    for (int     x = 0; x < gridSize && cubeCount < amount; x++) {
-        for (int y = 0; y < gridSize && cubeCount < amount; y++) {
-            for (int z = 0; z < gridSize && cubeCount < amount; z++) {
-                // Map (x, y, z) to a position within -bounds to bounds
-                float posX = -bounds + x * spacing;
-                float posY = -bounds + y * spacing;
-                float posZ = -bounds + z * spacing;
-
-                glm::vec3 position = glm::vec3(posX, posY, posZ);
-
-                DebugCube* cube = new DebugCube("Cube_" + to_string(cubeCount));
-                cube->setTransform(glm::translate(glm::mat4(1.0f), position));
-                
-                GLubyte r = rgb(gen)
-                       ,g = rgb(gen)
-                       ,b = rgb(gen);
-                cube->setColor(r,g,b);
-
-                Scene::Instance().AddNode(cube); // Add cube to scene
-                cubeCount++;
-            }
-        }
-    }
-    */
     int cubeCount = 0;
     for (int     x = 0; x < gridSize && cubeCount < amount; x++) {
         for (int y = 0; y < gridSize && cubeCount < amount; y++) {
@@ -84,11 +58,11 @@ void RecreateSceneHelper(int bounds)
     }
 
 
-    // */
+    */
     
-    /*
+    // /*
     random_device rd;
-    mt19937 gen(rd());
+    mt19937 gen(12673);
     uniform_real_distribution<float> distPos(-bounds, bounds);
     uniform_real_distribution<float> rgb(0.0f, 255.0f);
     // rgb = new vec3(rgb(gen),rgb(gen),rgb(gen));
@@ -105,22 +79,13 @@ void RecreateSceneHelper(int bounds)
         newCube->setColor(r,g,b);
         
         // DebugRender::Instance().DrawCircle(randomPos, 0.2f, glm::vec3(1.0f));
-        AddNode(newCube);
+        Scene::Instance().AddNode(newCube);
     }
     for (int i = 0; i < 2; i++)
     {
         glm::vec3 pos = glm::vec3(distPos(gen), distPos(gen), distPos(gen));
-        m_lights.push_back( Light(pos,  glm::vec3(1,1,1), 1.0f, 10.0f));
-        // DebugRender::Instance().DrawCircle(pos, 0.2f, glm::vec3(1.0f));
+        Scene::Instance().AddLight(Light(pos,  glm::vec3(1,1,1), 1.0f, 10.0f));
     }
-    
-    */
-    // DebugCube* cube = new DebugCube("Cube_");// + to_string(cubeCount));
-        // cube->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0,2,0)));
-        // AddNode(cube); // Add cube to scene   
-        // m_lights.push_back( Light(glm::vec3(0, 5, 0),  glm::vec3(1,1,1), 10.0f, 10.0f));   
-        // m_lights.push_back( Light(glm::vec3(-5, 0, 0), glm::vec3(0,1,0), 1.0f, 10.0f));
-        // m_lights.push_back( Light(glm::vec3(0, 0, 5), glm::vec3(0,0,1), 1.0f, 10.0f));
     
 }
 
@@ -143,11 +108,7 @@ void Program::init()
     
     Scene::Instance().InitLights();
 
-    bounds = 30;
-    Scene::Instance().RandomInitScene(amount);
-    /////////////////////////////////////////////////////////
-
-    // RecreateSceneHelper(bounds);
+    RecreateSceneHelper(bounds);
 
     /////////////////////////////////////////////////////////
 
@@ -177,8 +138,8 @@ void Program::update(float dt)
     if(m_pApp->isKeyJustDown('R') || m_pApp->isKeyJustDown('r'))
     {
         Scene::Instance().Clear();
-        // RecreateSceneHelper(bounds);
-        Scene::Instance().RandomInitScene(amount);
+        RecreateSceneHelper(bounds);
+        // Scene::Instance().RandomInitScene(amount);
 
         if(Scene::Instance().getWhichTree())
             Scene::Instance().BuildQuadTree();

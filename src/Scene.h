@@ -90,6 +90,7 @@ public:
     void Update(float dt, int screenWidth, int screenHeight);
     void Render(int screenWidth, int screenHeight);
 
+    void AddLight(Light l);
     void InitLights();         // rando lgihts
     void UpdateLighting();     // choose which cubes get which program
     void MoveLights();

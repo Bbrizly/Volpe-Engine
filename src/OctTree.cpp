@@ -89,19 +89,14 @@ void OctTree::Query(const Frustum& frustum, std::vector<Node*>& results)
     if(m_level != 0)
     {
         if (!m_bounds.IntersectsFrustum(frustum)) {
-            std::cout<<"\n\n\n--"<<m_level << " --FUlly outside\n";
             return;
         }    
     }
 
     // Check each node stored at this level
     for (auto* node : m_nodes) {
-        std::cout<<"Checking Node\n";
         // If bounding sphere of node is inside frustum, add it
-        node->GetBoundingVolume()->PrintBoundingVolumeType(node->GetBoundingVolume());
         if (node->GetBoundingVolume()->IntersectsFrustum(frustum)){
-            std::cout<<"Node is in\n";
-        // if (SphereIntersectsFrustum(node->GetBoundingVolume(), frustum)) {
             results.push_back(node);
         }
     }
@@ -145,7 +140,6 @@ void OctTree::QueryLight(const glm::vec3& lightPos, float lightRadius, std::vect
         SphereVolume lightSphere(lightPos, lightRadius);
 
         if(box.OverlapsSphere(lightSphere)){
-        // if(AABBvsSphere(box, lightPos, lightRadius)) { // 
             results.push_back(node);
         }
     }
@@ -167,15 +161,9 @@ void OctTree::Subdivide()
 {
     // We create 8 sub-boxes
     glm::vec3 size = m_bounds.max - m_bounds.min;
-    glm::vec3 half = size * 0.5f; // half the extent
-    glm::vec3 mid  = m_bounds.min + half; // midpoint
+    glm::vec3 half = size * 0.5f;
+    glm::vec3 mid  = m_bounds.min + half;
 
-    // Now each child is one "octant" of the parent bounding box
-    // child 0: min        -> mid
-    // child 1: (x-mid)    -> (x-max, y-mid, z-mid), etc.
-    // We'll systematically define them:
-
-    // We'll create a small helper lambda to quickly build AABBVolume
     auto makeAABB = [&](float minX, float minY, float minZ, float maxX, float maxY, float maxZ){
         AABBVolume box;
         box.min = glm::vec3(minX, minY, minZ);
@@ -183,7 +171,7 @@ void OctTree::Subdivide()
         return box;
     };
 
-    glm::vec3 minP = m_bounds.min; // for convenience
+    glm::vec3 minP = m_bounds.min;
     glm::vec3 maxP = m_bounds.max;
 
     // Child 0 (left/bottom/back)
@@ -223,20 +211,6 @@ void OctTree::Subdivide()
     m_children[7] = new OctTree(c7, m_level + 1);
 }
 
-// void OctTree::Render(const glm::mat4& proj, const glm::mat4& view)
-// {
-//     if (keepOld) {
-//         keepOld = false;
-//         DebugRender::Instance().Clear();
-//         BuildDebugLines();
-//     }
- 
-//     glDisable(GL_DEPTH_TEST);
-//     DebugRender::Instance().Render(proj, view);
-//     glEnable(GL_DEPTH_TEST);
-// }
-
-
 
 void OctTree::BuildDebugLines()
 {
@@ -250,11 +224,9 @@ void OctTree::BuildDebugLines()
     }
 
     if (isLeaf && !m_nodes.empty()) {
-        // Draw the bounding box edges as lines
         glm::vec3 pMin = m_bounds.min;
         glm::vec3 pMax = m_bounds.max;
 
-        // Define the 8 corners of the cube
         glm::vec3 c[8] = {
             glm::vec3(pMin.x, pMin.y, pMin.z),  // 0
             glm::vec3(pMax.x, pMin.y, pMin.z),  // 1
@@ -266,86 +238,29 @@ void OctTree::BuildDebugLines()
             glm::vec3(pMax.x, pMax.y, pMax.z)   // 7
         };
 
-        // Draw edges using helper lambda
         auto drawEdge = [&](int a, int b) {
             DebugRender::Instance().DrawLine(c[a], c[b], glm::vec3(0.0f, 1.0f, 0.0f), "Tree");
         };
 
-        // Bottom face
         drawEdge(0, 1);
         drawEdge(1, 3);
         drawEdge(3, 2);
         drawEdge(2, 0);
-        // Top face
+        
         drawEdge(4, 5);
         drawEdge(5, 7);
         drawEdge(7, 6);
         drawEdge(6, 4);
-        // Vertical edges
+        
         drawEdge(0, 4);
         drawEdge(1, 5);
         drawEdge(2, 6);
         drawEdge(3, 7);
     }
 
-    // Recurse into children to check if they should be rendered
     for (int i = 0; i < NUM_CHILDREN; i++) {
         if (m_children[i]) {
             m_children[i]->BuildDebugLines();
         }
     }
 }
-
-/*void OctTree::BuildDebugLines()
-{
-    // DebugRender::Instance().Clear();
-    // Draw the bounding box edges as lines
-    // We'll do 12 lines of the cuboid
-    glm::vec3 pMin = m_bounds.min;
-    glm::vec3 pMax = m_bounds.max;
-
-    // We'll define 8 corners of the cube:
-    glm::vec3 c[8] = {
-        glm::vec3(pMin.x, pMin.y, pMin.z),  // 0
-        glm::vec3(pMax.x, pMin.y, pMin.z),  // 1
-        glm::vec3(pMin.x, pMax.y, pMin.z),  // 2
-        glm::vec3(pMax.x, pMax.y, pMin.z),  // 3
-        glm::vec3(pMin.x, pMin.y, pMax.z),  // 4
-        glm::vec3(pMax.x, pMin.y, pMax.z),  // 5
-        glm::vec3(pMin.x, pMax.y, pMax.z),  // 6
-        glm::vec3(pMax.x, pMax.y, pMax.z)   // 7
-    };
-
-    // We connect edges: (0->1,1->3,3->2,2->0) = bottom face
-    // (4->5,5->7,7->6,6->4) = top face
-    // vertical edges (0->4,1->5,2->6,3->7)
-
-    auto drawEdge = [&](int a, int b) {
-        DebugRender::Instance().DrawLine(c[a], c[b], glm::vec3(0.0f,1.0f,0.0f));
-    };
-
-    // bottom
-    drawEdge(0,1);
-    drawEdge(1,3);
-    drawEdge(3,2);
-    drawEdge(2,0);
-    // top
-    drawEdge(4,5);
-    drawEdge(5,7);
-    drawEdge(7,6);
-    drawEdge(6,4);
-    // vertical edges
-    drawEdge(0,4);
-    drawEdge(1,5);
-    drawEdge(2,6);
-    drawEdge(3,7);
-
-    // Recurse
-    for (int i=0; i<NUM_CHILDREN; i++){
-        if (m_children[i]) {
-            m_children[i]->BuildDebugLines();
-        }
-    }
-}
-
-*/
