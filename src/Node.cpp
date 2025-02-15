@@ -82,7 +82,7 @@ void Node::SetBoundingVolume(BoundingVolume* volume)
     m_boundingVolume = volume;
 }
 
-// EXpanding the bounding volume to encompass children
+// EXpanding the bounding volume to cover dem children
 void Node::UpdateBoundingVolume()
 {
     for (auto* c : m_children)

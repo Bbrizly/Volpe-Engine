@@ -529,27 +529,10 @@ void Scene::UpdateLighting()
 
 void Scene::MoveLights()
 {
-    // DebugRender::Instance().Clear();
-    // Move all existing lights randomly
     if(m_lights.empty()) return;
-    // m_lights.clear();
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    /*
-    std::uniform_real_distribution<float> distDelta(-0.05f, 0.05f);
-
-    for(auto& light : m_lights)
-    {
-        // Add a small random offset to each coordinate.
-        light.position.x += distDelta(gen);
-        light.position.y += distDelta(gen);
-        light.position.z += distDelta(gen);
-        
-        // (Optionally: Clamp or wrap the position if it goes out of desired bounds.)
-    }
-    */
-    // /*
     std::uniform_real_distribution<float> distPos(-bounds, bounds);
 
     for(auto& light : m_lights)
@@ -558,7 +541,6 @@ void Scene::MoveLights()
         light.position.y = distPos(gen);
         light.position.z = distPos(gen);
     }
-    // */
 }
 
 void Scene::Clear()
@@ -581,8 +563,6 @@ void Scene::Render(int screenWidth, int screenHeight) {
         return;
     glm::mat4 proj = m_activeCamera->getProjMatrix(screenWidth, screenHeight);
     glm::mat4 view = m_activeCamera->getViewMatrix();
-    
-    
     
     m_pGrid->render(view,proj);
     
@@ -682,6 +662,7 @@ void Scene::Render(int screenWidth, int screenHeight) {
     if(m_textRenderer && textBox)
     {
         glDisable(GL_DEPTH_TEST);
+        m_textRenderer->setScreenSize(screenWidth,screenHeight);
         m_textRenderer->render(proj,view);
         glEnable(GL_DEPTH_TEST);
     }

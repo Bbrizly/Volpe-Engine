@@ -22,7 +22,6 @@ private:
     FirstPersonCamera* fpsCamera = nullptr;
     OrbitCamera* orbitCamera = nullptr;
     bool whichCamera = false; //true = orbit, false = fps
-    // int bounds = 3000;
 
 public:
     Program(volpe::App* pApp);

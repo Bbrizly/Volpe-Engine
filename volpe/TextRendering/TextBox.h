@@ -24,6 +24,8 @@ public:
             const string& text,
             float width,
             float height,
+            float x,
+            float y,
             volpe::Program* shader,
             TextTable* pTable);
     ~TextBox();
@@ -40,6 +42,8 @@ public:
 
     void SetTextTable(TextTable* pTable);
     void SetPosition(float x, float y);
+    glm::vec2 GetPosition() {return glm::vec2(m_positionX,m_positionY);}
+    glm::vec2 GetBasePosition() {return glm::vec2(m_basePositionX, m_basePositionY);}
     void SetColor(float r, float g, float b, float a);
     void SetAlignment(int alignment);          // 0=left,1=center,2=right
     void SetVerticalAlignment(int vAlignment); // 0=top,1=middle,2=bottom
@@ -107,6 +111,7 @@ private:
     string m_observeID;  // if non-empty, we auto-get the text from the table
 
     float m_positionX, m_positionY;
+    float m_basePositionX, m_basePositionY;
     float m_width, m_height;
 
     // alignment
