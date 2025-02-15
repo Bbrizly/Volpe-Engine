@@ -36,10 +36,10 @@ void OrbitCamera::update(float dt)
     m_far = volpe::max(150.0f, m_distance * 2.0f);
     m_near = m_distance / 10.0f;
 
-    if(m_pApp->isKeyDown('f'))
-    {
-        focusOn(m_focusMin,m_focusMax);
-    }
+    // if(m_pApp->isKeyDown('f'))
+    // {
+    //     focusOn(m_focusMin,m_focusMax);
+    // }
 
     m_lastMousePos = mousePos;
 }

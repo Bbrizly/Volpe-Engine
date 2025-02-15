@@ -63,12 +63,18 @@ public:
             clip[3][3] - clip[3][2]
         );
         
-        // Normalize all planes
-        for (int i = 0; i < 6; ++i) {
-            float length = glm::length(glm::vec3(frustum.planes[i]));
-            frustum.planes[i] /= length;
-        }
+        // // Normalize all planes
+        // for (int i = 0; i < 6; ++i) {
+        //     float length = glm::length(glm::vec3(frustum.planes[i]));
+        //     frustum.planes[i] /= length;
+        // }
         
+        // return frustum;
+        for(int i=0; i<6; i++){
+            float len = glm::length(glm::vec3(frustum.planes[i]));
+            if(fabs(len) > 0.00001f)
+                frustum.planes[i] /= len;
+        }
         return frustum;
     }
     

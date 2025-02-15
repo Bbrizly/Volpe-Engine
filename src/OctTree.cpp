@@ -261,7 +261,7 @@ void OctTree::BuildDebugLines()
 
         // Draw edges using helper lambda
         auto drawEdge = [&](int a, int b) {
-            DebugRender::Instance().DrawLine(c[a], c[b], glm::vec3(0.0f, 1.0f, 0.0f));
+            DebugRender::Instance().DrawLine(c[a], c[b], glm::vec3(0.0f, 1.0f, 0.0f), "Tree");
         };
 
         // Bottom face

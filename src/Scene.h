@@ -35,7 +35,7 @@ private:
     Camera* m_activeCamera;
     QuadTree* m_quadTree;
     OctTree* m_octTree;
-    bool m_renderTree = true;
+    bool m_ShowDebug = true;
 
     volpe::Program* m_unlitProgram = nullptr;    // "Unlit3d.vsh" / "Unlit3d.fsh"
     volpe::Program* m_pointProgram = nullptr;    // "PointLight.vsh" / "PointLight.fsh"
@@ -82,6 +82,7 @@ public:
     void AddNode(Node* node);
 
     void RandomInitScene(int amount);
+    void HighlightNodesForCube(DebugCube* cube);
 
     void SetActiveCamera(Camera* cam) { m_activeCamera = cam; }
     void BuildQuadTree();
@@ -99,10 +100,12 @@ public:
         textBox->SetPosition(x,y);
     }
 
+    void createGrid(int bounds) {m_pGrid = new Grid3D(bounds);}
+
     void ShowDebugText();
     void DebugDrawFrustum(const Frustum& frustum);
 
-    void ToggleQuadTreeRender() { m_renderTree = !m_renderTree; }
+    void ToggleQuadTreeRender() { m_ShowDebug = !m_ShowDebug; }
     void ToggleUseDebugFrustum(Camera* c);
 
     bool getWhichTree() {return m_useQuadTreeOrOct;} //true quadtree, false octree

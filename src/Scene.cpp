@@ -42,7 +42,7 @@ Scene& Scene::Instance() {
     return instance;
 }
 
-Scene::Scene() : m_activeCamera(nullptr), m_quadTree(nullptr), m_octTree(nullptr), m_renderTree(false) {}
+Scene::Scene() : m_activeCamera(nullptr), m_quadTree(nullptr), m_octTree(nullptr), m_ShowDebug(false) {}
 
 Scene::~Scene() {
     // for (auto node : m_nodes)
@@ -110,6 +110,20 @@ void Scene::DebugDrawFrustum(const Frustum& frustum)
         DebugRender::Instance().DrawLine(corner4, corner1, glm::vec3(1,1,0));
     }
 }
+
+void Scene::HighlightNodesForCube(DebugCube* cube) {
+    if (!cube) return;
+    glm::vec3 center = glm::vec3(cube->getWorldTransform()[3]);
+    float queryRadius = 5.0f; // Adjust this value as needed.
+    std::vector<Node*> results;
+    if (m_useQuadTreeOrOct && m_quadTree) {
+        m_quadTree->QueryLight(center, queryRadius, results);
+    } else if (!m_useQuadTreeOrOct && m_octTree) {
+        m_octTree->QueryLight(center, queryRadius, results);
+    }
+    m_nodesToRender = results;
+}
+
 
 void Scene::ToggleUseDebugFrustum(Camera* c)
 {
@@ -187,8 +201,14 @@ void Scene::RandomInitScene(int amount)
     auto t0 = high_resolution_clock::now();
     Clear();
     m_pGrid = new Grid3D(bounds);
-    /*int gridSize = std::ceil(std::cbrt(amount)); // Determine the grid dimensions (N x N x N)
+    // /* GRID 
+    int gridSize = std::ceil(std::cbrt(amount)); // Determine the grid dimensions (N x N x N)
     float spacing = (2.0f * bounds) / gridSize; // Adjust spacing to fit within bounds
+
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<float> distPos(-bounds, bounds);
+    uniform_real_distribution<float> rgb(0.0f, 255.0f);
 
     int cubeCount = 0;
     for (int     x = 0; x < gridSize && cubeCount < amount; x++) {
@@ -203,14 +223,20 @@ void Scene::RandomInitScene(int amount)
 
                 DebugCube* cube = new DebugCube("Cube_" + to_string(cubeCount));
                 cube->setTransform(glm::translate(glm::mat4(1.0f), position));
+                
+                GLubyte r = rgb(gen)
+                ,g = rgb(gen)
+                ,b = rgb(gen);
+                cube->setColor(r,g,b);
 
                 AddNode(cube); // Add cube to scene
                 cubeCount++;
             }
         }
     }
-    */
+    // */
     
+    /*
     random_device rd;
     mt19937 gen(rd());
     uniform_real_distribution<float> distPos(-bounds, bounds);
@@ -238,7 +264,7 @@ void Scene::RandomInitScene(int amount)
         // DebugRender::Instance().DrawCircle(pos, 0.2f, glm::vec3(1.0f));
     }
     
-
+    */
     // DebugCube* cube = new DebugCube("Cube_");// + to_string(cubeCount));
     // cube->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0,2,0)));
     // AddNode(cube); // Add cube to scene
@@ -387,7 +413,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     string info;
     info += "FPS: " + to_string((int)lastKnownFps) + "\n";
     info += "\n";
-    info += "QuadTree Render: "  + string(m_renderTree   ? "ON" : "OFF") + "\n";
+    info += "QuadTree Render: "  + string(m_ShowDebug   ? "ON" : "OFF") + "\n";
     info += "Debug Frustum  : "  + string(m_useDebugFrustum  ? "ON" : "OFF") + "\n";
     info += "CURRENT TREE   : " + activeTreeName + "\n";
     info += "Scene Creation Time: " + to_string(m_avgCreation) + " ms\n";
@@ -587,7 +613,7 @@ void Scene::Render(int screenWidth, int screenHeight) {
         }
     }
     
-    if(m_renderTree)
+    if(m_ShowDebug)
     {
         if(reDebug) // if there was a change
         {

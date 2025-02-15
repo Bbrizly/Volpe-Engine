@@ -236,7 +236,7 @@ void QuadTree::BuildDebugLines() {
     // std::cout << "m_bounds.min: (" << m_bounds.min.x << ", " << m_bounds.min.y << ")" << std::endl;
     // std::cout << "m_bounds.max: (" << m_bounds.max.x << ", " << m_bounds.max.y << ")" << std::endl;
 
-    DebugRender::Instance().DrawSquare(p1,p2,p3,p4,glm::vec3(1.0f));
+    DebugRender::Instance().DrawSquare(p1,p2,p3,p4,glm::vec3(1.0f), "Tree");
     
     for (auto child : m_children)
     {

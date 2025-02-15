@@ -100,11 +100,9 @@ glm::mat4 FirstPersonCamera::getViewMatrix()
 
 glm::mat4 FirstPersonCamera::getProjMatrix(int width, int height)
 {
-    float fov = 60.0f;
     float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
-    float nearPlane = 0.01f;
-    float farPlane = 5000.0f;
-    return glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
+    
+    return glm::perspective(glm::radians(m_fov), aspectRatio, m_near, m_far);
 }
 
 /*

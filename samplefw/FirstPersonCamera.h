@@ -31,10 +31,13 @@ private:
     float m_yaw;
     float m_pitch;
     bool m_invertY;
+    float m_fov = 60.0f;
+    float m_near = 0.1f;
+    float m_far  = 1000.0f;
     bool lockMouse = true;
 
     float m_normalSpeed = 20.0f;
-    float m_SprintSpeed = 50.0f;
+    float m_SprintSpeed = 100.0f;
 
     glm::vec2 m_lastMousePos;
     float m_movementSpeed;

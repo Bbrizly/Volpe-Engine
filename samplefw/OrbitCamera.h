@@ -37,5 +37,6 @@ private:
     float m_near                = 0.1f;
     float m_far                 = 1000.0f;
     glm::vec2 m_lastMousePos    = glm::vec2(0.0f,0.0f);
+    bool lockMouse = true;
     volpe::App* m_pApp           = nullptr;
 };
