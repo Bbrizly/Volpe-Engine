@@ -40,9 +40,9 @@ private:
     QuadTree* m_quadTree;
     OctTree* m_octTree;
     bool m_ShowDebug = true;
-
-    volpe::Material* m_unlitProgram = nullptr;    // "Unlit3d.vsh" / "Unlit3d.fsh"
-    volpe::Material* m_pointProgram = nullptr;    // "PointLight.vsh" / "PointLight.fsh"
+    
+    volpe::Material* m_matUnlit     = nullptr; // For zero-lights  "Unlit3d.vsh" / "Unlit3d.fsh"
+    volpe::Material* m_matPoint     = nullptr; // For 1+ lights    "PointLight.vsh" / "PointLight.fsh"
 
 
     Grid3D* m_pGrid = nullptr;

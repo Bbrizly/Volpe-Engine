@@ -62,7 +62,7 @@ void RecreateSceneHelper(int bounds)
 
     // /*
     random_device rd;
-    mt19937 gen(20);
+    mt19937 gen(rd());
     uniform_real_distribution<float> distPos(-bounds, bounds);
     uniform_real_distribution<float> rgb(0.0f, 255.0f);
 
@@ -73,11 +73,16 @@ void RecreateSceneHelper(int bounds)
         glm::vec3 randomPos(distPos(gen), distPos(gen) / 4, distPos(gen));
         cube->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
         
-        GLubyte color = i * 20;
+        // GLubyte color = rgb(gen);//i * 20;
 
-        GLubyte r = color
-               ,g = color
-               ,b = color;
+        // GLubyte r = color
+        //        ,g = color
+        //        ,b = color;
+
+        
+        GLubyte r = rgb(gen)
+               ,g = rgb(gen)
+               ,b = rgb(gen);
         
         cube->setColor(r,g,b);
         Scene::Instance().AddNode(cube);
@@ -90,12 +95,17 @@ void RecreateSceneHelper(int bounds)
         glm::vec3 randomPos(distPos(gen), distPos(gen) / 4, distPos(gen));
         sphere->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
         
-        GLubyte color = i * 20;
+        // GLubyte color = rgb(gen);//i * 20;
 
-        GLubyte r = color
-               ,g = color
-               ,b = color;
+        // GLubyte r = color
+        //        ,g = color
+        //        ,b = color;
         
+        
+        GLubyte r = rgb(gen)
+               ,g = rgb(gen)
+               ,b = rgb(gen);
+
         sphere->setColor(r,g,b);
         Scene::Instance().AddNode(sphere);
     }
@@ -104,6 +114,7 @@ void RecreateSceneHelper(int bounds)
     {
         glm::vec3 pos = glm::vec3(distPos(gen), distPos(gen), distPos(gen));
         Scene::Instance().AddLight(Light(pos,  glm::vec3(1,1,1), 1.0f, 10.0f));
+        DebugRender::Instance().DrawCircle(pos, 10.0f, vec3(1,1,0));
     }
     
 }
@@ -146,7 +157,6 @@ void Program::update(float dt)
     //     std::mt19937 gen(rd());
     //     // -640.0f, 360.0f
     //     std::uniform_real_distribution<float> distPos(0.0f, 20.0f);
-
     //     Scene::Instance().setTextBoxPos(-640.0f + distPos(gen), 360.0f - distPos(gen));
     // }
 

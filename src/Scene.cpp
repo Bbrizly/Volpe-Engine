@@ -398,7 +398,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
 
     //LIGHT QUERY
     t0 = high_resolution_clock::now();
-    // UpdateLighting();
+    UpdateLighting();
 
     t1 = high_resolution_clock::now();
     float lightQueryMS = duration<float, milli>(t1 - t0).count();
@@ -440,10 +440,10 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     info += "CURRENT TREE   : " + activeTreeName + "\n";
     info += "Scene Creation Time: " + to_string(m_avgCreation) + " ms\n";
     info += "Tree Build Time: " + to_string(m_lastQuadTreeBuildTimeMs) + " ms\n";
-    info += "Existing Cubes : " + to_string(m_nodes.size()) + "\n";
-    info += "Cubes Visible  : " + to_string(m_nodesToRender.size()) + "\n";
+    info += "Existing Nodes : " + to_string(m_nodes.size()) + "\n";
+    info += "Nodes Visible  : " + to_string(m_nodesToRender.size()) + "\n";
     info += "Lights In Scene: " + to_string(m_lights.size()) + "\n";
-    info += "Cubes Affected by light: " + to_string(nodesAffectedByLight) + "\n";
+    info += "Nodes Affected by light: " + to_string(nodesAffectedByLight) + "\n";
     info += "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
     info += "Camera Update      : " + to_string(m_avgCameraUpdateMs)    + " ms\n";
     info += "Nodes Update       : " + to_string(m_avgNodeUpdateMs)       + " ms\n";
@@ -462,16 +462,74 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
 
 void Scene::InitLights()
 {
-    // m_unlitProgram  = volpe::ProgramManager::CreateProgram("data/Unlit3d.vsh",  "data/Unlit3d.fsh");
-    // if (!m_unlitProgram) {
-    //     std::cerr << "Failed to create Unlit3d shader program!\n";
-    // }
-    // m_pointProgram  = volpe::ProgramManager::CreateProgram("data/PointLights.vsh","data/PointLights.fsh");
-    // if (!m_pointProgram) {
-    //     std::cerr << "Failed to create PointLights shader program!\n";
-    // }
+    m_matUnlit = volpe::MaterialManager::CreateMaterial("UnlitMaterial");
+    m_matUnlit->SetProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
+    m_matUnlit->SetDepthTest(true);
+    m_matUnlit->SetDepthWrite(true);
+
+    m_matPoint = volpe::MaterialManager::CreateMaterial("PointLightMaterial");
+    m_matPoint->SetProgram("data/PointLights.vsh", "data/PointLights.fsh"); 
+    m_matPoint->SetDepthTest(true);
+    m_matPoint->SetDepthWrite(true);
 }
 
+void Scene::UpdateLighting()
+{
+    // 1) Clear old info
+    for(auto* node : m_nodes)
+    {
+        node->m_affectingLights.clear(); 
+    }
+
+    // 2) For each light, find which nodes are in range
+    for(int i=0; i < (int)m_lights.size(); i++)
+    {
+        Light& L = m_lights[i];
+        float range = L.intensity * 10.f; // Example range
+
+        // Collect all nodes that pass the “light-sphere vs node’s bounding volume” test
+        std::vector<Node*> inRange;
+        if(m_useQuadTreeOrOct && m_quadTree)
+        {
+            m_quadTree->QueryLight(L.position, range, inRange);
+        }
+        else if(!m_useQuadTreeOrOct && m_octTree)
+        {
+            m_octTree->QueryLight(L.position, range, inRange);
+        }
+        else
+        {
+            // fallback: do a brute force
+            for(auto* nd : m_nodes)
+            {
+                if(nd->GetBoundingVolume() 
+                   && SphereVolume(L.position, range).Overlaps(*nd->GetBoundingVolume()))
+                {
+                    inRange.push_back(nd);
+                }
+            }
+        }
+
+        for(auto* n : inRange)
+        {
+            n->m_affectingLights.push_back(i);
+        }
+    }
+
+    for(auto* node : m_nodes)
+    {
+        if(node->m_affectingLights.size() > 0)
+        {
+            node->SetMaterial(m_matPoint);
+        }
+        else
+        {
+            node->SetMaterial(m_matUnlit);
+        }
+    }
+}
+
+/*
 void Scene::UpdateLighting()
 {
     // reset cubes
@@ -512,6 +570,7 @@ void Scene::UpdateLighting()
         // }
     }
 }
+*/
 
 void Scene::MoveLights()
 {
@@ -560,46 +619,36 @@ void Scene::Render(int screenWidth, int screenHeight) {
 
     for(auto* n : m_nodesToRender) //m_nodesToRender //m_nodes
     {
-        // volpe::Material* mat = n->GetMaterial();
-        // if(type(mat) == type(m_pointProgram))
-        // {
-        //     // Bind the point–light shader and push the lighting uniforms
-        //     mat->Bind();
-        //     ////////////////////////////////////////////////////////////////
-        //     int lightCount = n->m_affectingLights.size(); 
-        //     int maximumLights = 5;
-        //     if(lightCount > maximumLights)
-        //         lightCount = maximumLights;  // clamp
-        //     mat->SetUniform("lightsInRange", lightCount);
-        //     // fill up test[ i ] for each light in c->m_affectingLights
-        //     for(int i=0; i<lightCount; i++)
-        //     {
-        //         int lightIdx = n->m_affectingLights[i]; 
-        //         Light& L     = m_lights[lightIdx];
-        //         std::string base = "pointLights[" + std::to_string(i) + "]";
-        //         glm::vec3 pos  =  L.position;
-        //         float radius   =  L.radius;
-        //         glm::vec3 col  =  L.color;
-        //         float strength =  L.intensity;
-        //         mat->SetUniform(base+".PositionRange", glm::vec4(pos, radius));
-        //         mat->SetUniform(base+".Color",         col);
-        //         mat->SetUniform(base+".Strength",      strength);
-        //     }
-        //     mat->SetUniform("fade", 1.0f);
-        //     auto z = dynamic_cast<DebugCube*>(n);
-        //     auto x = dynamic_cast<DebugSphere*>(n);  
-        //     if(z)
-        //         z->draw(proj, view, true);
-        //     else if(x)
-        //         x->draw(proj, view, true);
-        //     else
-        //         n->draw(proj, view);
-        // }
-        // else
-        // {
-            //Unlit objects
-            n->draw(proj, view);
-        // }
+        volpe::Material* mat = n->GetMaterial();
+
+        if(mat == m_matPoint)
+        {
+            int lightCount = n->m_affectingLights.size(); 
+            int maxLights = 5;
+            if(lightCount > maxLights)
+                lightCount = maxLights;
+            
+            mat->SetUniform("lightsInRange", lightCount);
+            
+            for(int i=0; i<lightCount; i++)
+            {
+                int lightIdx = n->m_affectingLights[i]; 
+                Light& L     = m_lights[lightIdx];
+                
+                std::string base = "pointLights[" + std::to_string(i) + "]";
+
+                glm::vec3 pos  =  L.position;
+                float radius   =  L.radius;
+                glm::vec3 col  =  L.color;
+                float strength =  L.intensity;
+
+                mat->SetUniform(base+".PositionRange", vec4(pos, radius));
+                mat->SetUniform(base+".Color",              col);
+                mat->SetUniform(base+".Strength",           strength);
+            }
+            mat->SetUniform("fade", 10.0f);
+        }
+        n->draw(proj, view);
     }
     
     #pragma region debug
@@ -616,6 +665,10 @@ void Scene::Render(int screenWidth, int screenHeight) {
         {
             if(n->GetBoundingVolume())
             {  n->GetBoundingVolume()->DrawMe();  }
+        }
+        for (Light l : m_lights)
+        {
+            DebugRender::Instance().DrawSphere(l.position,l.radius,vec3(1));
         }
 
         if(reDebug) // if there was a change

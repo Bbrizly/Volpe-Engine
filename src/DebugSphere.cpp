@@ -3,6 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
 #include <vector>
+#include "Vertex.h"
 
 // Static members
 bool DebugSphere::s_inited               = false;
@@ -48,11 +49,11 @@ void DebugSphere::setRadius(float r)
     }
 }
 
-void DebugSphere::draw(const glm::mat4& proj, const glm::mat4& view, bool skipBind)
+void DebugSphere::draw(const glm::mat4& proj, const glm::mat4& view)
 {
     Render(proj, view);
 
-    Node::draw(proj, view, skipBind);
+    Node::draw(proj, view);
 }
 
 void DebugSphere::Render(const glm::mat4& proj, const glm::mat4& view)
@@ -64,6 +65,7 @@ void DebugSphere::Render(const glm::mat4& proj, const glm::mat4& view)
         return;
 
     glm::mat4 world = getWorldTransform();
+    world = world * glm::scale(glm::mat4(1.0f), glm::vec3(m_radius));
     glm::mat4 worldIT = glm::transpose(glm::inverse(world));
 
     mat->SetUniform("projection", proj);
@@ -77,32 +79,19 @@ void DebugSphere::Render(const glm::mat4& proj, const glm::mat4& view)
     glDrawElements(GL_TRIANGLES, s_numIndices, GL_UNSIGNED_SHORT, 0);
 }
 
-///////////////////////////////////////////////
-// static method: create geometry if not yet
-///////////////////////////////////////////////
 void DebugSphere::initGeometry(int sectorCount, int stackCount)
 {
     if(s_inited)
         return;
 
-    // We'll build a typical sphere with "sectorCount" slices around 
-    // the equator, and "stackCount" from top to bottom.
-
-    struct SphereVtx {
-        float x,y,z;
-        float nx,ny,nz;
-        float u,v;
-    };
-
-    std::vector<SphereVtx> verts;
+    std::vector<Vertex> verts;
     std::vector<unsigned short> idx;
 
-    // float PI = 3.14159f;
     float sectorStep = 2.f * PI / sectorCount;
     float stackStep  = PI / stackCount;
     for(int i=0; i<=stackCount; i++)
     {
-        float stackAngle = PI/2.f - i*stackStep; // from +PI/2 down to -PI/2
+        float stackAngle = PI/2.f - i*stackStep;
         float xy = cosf(stackAngle);
         float z  = sinf(stackAngle);
 
@@ -112,16 +101,16 @@ void DebugSphere::initGeometry(int sectorCount, int stackCount)
             float x = xy*cosf(sectorAngle);
             float y = xy*sinf(sectorAngle);
 
-            SphereVtx v;
-            // position (unit sphere for now)
+            Vertex v;
+            
             v.x = x;
             v.y = y;
             v.z = z;
-            // normal is the same as position for a unit sphere
+            
             v.nx = x;
             v.ny = y;
             v.nz = z;
-            // uv
+            
             v.u  = (float)j / sectorCount;
             v.v  = (float)i / stackCount;
 
@@ -129,7 +118,6 @@ void DebugSphere::initGeometry(int sectorCount, int stackCount)
         }
     }
 
-    // generate indices
     for(int i=0; i<stackCount; i++)
     {
         int k1 = i*(sectorCount+1);
@@ -150,8 +138,7 @@ void DebugSphere::initGeometry(int sectorCount, int stackCount)
     }
     s_numIndices = (int) idx.size();
 
-    // Now create the GPU buffers
-    s_vb = volpe::BufferManager::CreateVertexBuffer(verts.data(), (unsigned int)(sizeof(SphereVtx)*verts.size()));
+    s_vb = volpe::BufferManager::CreateVertexBuffer(verts.data(), (unsigned int)(sizeof(Vertex)*verts.size()));
     s_ib = volpe::BufferManager::CreateIndexBuffer(idx.data(), (unsigned int)idx.size());
 
     s_decl = new volpe::VertexDeclaration();

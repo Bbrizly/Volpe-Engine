@@ -48,7 +48,7 @@ void Node::update(float dt)
     }
 }
 
-void Node::draw(const glm::mat4& proj, const glm::mat4& view, bool skipbind) //remove skip bind??? 
+void Node::draw(const glm::mat4& proj, const glm::mat4& view) //remove skip bind??? 
 {
     for (auto* c : m_children) {
         c->draw(proj, view);

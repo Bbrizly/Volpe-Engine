@@ -30,7 +30,7 @@ public:
     void removeChild(Node* child);
 
     virtual void update(float dt);
-    virtual void draw(const glm::mat4& proj, const glm::mat4& view, bool skipbind = false);
+    virtual void draw(const glm::mat4& proj, const glm::mat4& view);
 
     std::vector<int> m_affectingLights;
     

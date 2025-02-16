@@ -14,7 +14,7 @@ public:
     void setColor(GLubyte r, GLubyte g, GLubyte b);
     void setRadius(float r);
 
-    virtual void draw(const glm::mat4& proj, const glm::mat4& view, bool skipBind=false) override;
+    virtual void draw(const glm::mat4& proj, const glm::mat4& view) override;
 
 private:
     glm::vec3 m_color;
