@@ -1,209 +1,209 @@
 #include "DebugCube.h"
+#include "../volpe/Volpe.h"
+#include <glm/gtc/matrix_transform.hpp>
+#include <cmath>
+#include <vector>
+#include <algorithm>
 
-using namespace std;
-static const glm::vec3 cubeVertices[] = {
-    {-0.5f, -0.5f,  0.5f}, {0.5f, -0.5f,  0.5f}, {0.5f,  0.5f,  0.5f}, {-0.5f,  0.5f,  0.5f}, // Front face
-    {-0.5f, -0.5f, -0.5f}, {0.5f, -0.5f, -0.5f}, {0.5f,  0.5f, -0.5f}, {-0.5f,  0.5f, -0.5f}  // Back face
-};
+// Static members
+bool DebugCube::s_inited              = false;
+volpe::VertexBuffer* DebugCube::s_vb  = nullptr;
+volpe::IndexBuffer*  DebugCube::s_ib  = nullptr;
+volpe::VertexDeclaration* DebugCube::s_decl = nullptr;
+int DebugCube::s_numIndices           = 0;
 
-static const glm::vec3 cubeNormals[] = {
-    { 0.0f,  0.0f,  1.0f}, { 1.0f,  0.0f,  0.0f}, { 0.0f,  0.0f, -1.0f}, 
-    {-1.0f,  0.0f,  0.0f}, { 0.0f,  1.0f,  0.0f}, { 0.0f, -1.0f,  0.0f}
-};
-
-static const glm::vec2 cubeUVs[] = {
-    {0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f}
-};
-
-static unsigned int cubeIndices[] = {
-    // front face
-    0,1,2,  2,3,0,
-    // right face
-    1,5,6,  6,2,1,
-    // back face
-    5,4,7,  7,6,5,
-    // left face
-    4,0,3,  3,7,4,
-    // top face
-    3,2,6,  6,7,3,
-    // bottom face
-    4,5,1,  1,0,4
-};
-
-static const glm::vec3 localCorners[8] = {
-    { -0.5f, -0.5f, -0.5f },
-    {  0.5f, -0.5f, -0.5f },
-    { -0.5f,  0.5f, -0.5f },
-    {  0.5f,  0.5f, -0.5f },
-    { -0.5f, -0.5f,  0.5f },
-    {  0.5f, -0.5f,  0.5f },
-    { -0.5f,  0.5f,  0.5f },
-    {  0.5f,  0.5f,  0.5f }
-};
-
-void DebugCube::DrawBoundingVolume(const glm::mat4& proj, const glm::mat4& view)
-{
-    // Get the current world-space AABB
-    AABBVolume box = getWorldAABB3D();
-    glm::vec3 min = box.min;
-    glm::vec3 max = box.max;
-
-    // Compute the eight corners of the AABB
-    glm::vec3 corners[8] = {
-        glm::vec3(min.x, min.y, min.z), // 0
-        glm::vec3(max.x, min.y, min.z), // 1
-        glm::vec3(max.x, max.y, min.z), // 2
-        glm::vec3(min.x, max.y, min.z), // 3
-        glm::vec3(min.x, min.y, max.z), // 4
-        glm::vec3(max.x, min.y, max.z), // 5
-        glm::vec3(max.x, max.y, max.z), // 6
-        glm::vec3(min.x, max.y, max.z)  // 7
-    };
-
-    // Choose a color for the bounding box (green)
-    glm::vec3 color(0.0f, 1.0f, 0.0f);
-
-    // Draw bottom face
-    DebugRender::Instance().DrawLine(corners[0], corners[1], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[1], corners[2], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[2], corners[3], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[3], corners[0], color, "BoundingVolumes");
-
-    // Draw top face
-    DebugRender::Instance().DrawLine(corners[4], corners[5], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[5], corners[6], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[6], corners[7], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[7], corners[4], color, "BoundingVolumes");
-
-    // Draw vertical edges
-    DebugRender::Instance().DrawLine(corners[0], corners[4], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[1], corners[5], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[2], corners[6], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[3], corners[7], color, "BoundingVolumes");
-}
-
+////////////////////////////////////////////////////
+// Constructor / Destructor
+////////////////////////////////////////////////////
 DebugCube::DebugCube(const std::string& name)
-: Node(name)
+: Node(name), m_color(1.0f, 1.0f, 1.0f)
 {
-    glm::vec3 localMin(-0.5f), localMax(0.5f);
-    AABBVolume* localBox = new AABBVolume(localMin, localMax);
-    m_boundingVolume = localBox;
-    SetBoundingVolume(localBox);
+    // 1) Create the bounding volume: an AABB from -0.5..+0.5
+    AABBVolume* box = new AABBVolume(glm::vec3(-0.5f), glm::vec3(0.5f));
+    // SetBoundingVolume(box);
 
-    m_pProgram = volpe::ProgramManager::CreateProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
-    genVertexData();
+    // 2) Create a volpe::Material for this shape
+    volpe::Material* mat = volpe::MaterialManager::CreateMaterial("DebugCubeMat");
+    mat->SetProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
+    mat->SetDepthTest(true);
+    mat->SetDepthWrite(true);
+    // Store in Node's m_pMaterial
+    SetMaterial(mat);
+
+    // 3) Build static geometry once
+    initGeometry();
 }
 
-DebugCube::~DebugCube(){}
-
-void DebugCube::genVertexData() {
-
-    std::vector<Vertex> vertices;
-    for (int i = 0; i < 6; ++i) {
-        for (int j = 0; j < 6; ++j) {
-            unsigned int idx = cubeIndices[i * 6 + j];
-            glm::vec3 pos = cubeVertices[idx];
-            glm::vec2 uv = cubeUVs[j % 4];
-            glm::vec3 norm = cubeNormals[i];
-            
-            vertices.emplace_back(
-                pos.x, pos.y, pos.z,
-                r, g, b, 255,
-                uv.x, uv.y,
-                norm.x, norm.y, norm.z
-            );
-        }
-    }
-    pushVertexData(m_vertexBuffer, m_vertexDecl, vertices);
-}
-
-AABBVolume DebugCube::getWorldAABB3D() const
+DebugCube::~DebugCube()
 {
-    AABBVolume box;
-    glm::vec3 minV(1e9f), maxV(-1e9f);
-
-    glm::mat4 world = getWorldTransform();
-    for(int i=0; i<8; i++)
+    // Node destructor won't automatically do it, so let's do it here
+    if(GetMaterial()) 
     {
-        glm::vec4 wPos = world * glm::vec4(localCorners[i], 1.0f);
-        minV.x = std::min(minV.x, wPos.x);
-        minV.y = std::min(minV.y, wPos.y);
-        minV.z = std::min(minV.z, wPos.z);
-
-        maxV.x = std::max(maxV.x, wPos.x);
-        maxV.y = std::max(maxV.y, wPos.y);
-        maxV.z = std::max(maxV.z, wPos.z);
+        volpe::MaterialManager::DestroyMaterial(GetMaterial());
+        SetMaterial(nullptr);
     }
-    box.min = minV;
-    box.max = maxV;
-    return box;
 }
 
-void DebugCube::pushVertexData(volpe::VertexBuffer*& vBuffer, volpe::VertexDeclaration*& vDecl, const vector<Vertex>& inVerts)
+////////////////////////////////////////////////////
+// Public
+////////////////////////////////////////////////////
+void DebugCube::setColor(GLubyte r, GLubyte g, GLubyte b)
 {
-    if(vBuffer) {
-        volpe::BufferManager::DestroyBuffer(vBuffer);
-        vBuffer = nullptr;
-    }
-    if(vDecl) {
-        delete vDecl;
-        vDecl = nullptr;
-    }
-    if(inVerts.empty()) {
-        m_numVertices=0;
-        return;
-    }
-
-    vBuffer = volpe::BufferManager::CreateVertexBuffer(inVerts.data(),inVerts.size()*sizeof(Vertex));
-
-    vDecl = new volpe::VertexDeclaration();
-    vDecl->Begin();
-    vDecl->AppendAttribute(volpe::AT_Position,  3, volpe::CT_Float);
-    vDecl->AppendAttribute(volpe::AT_Color,     4, volpe::CT_UByte);
-    vDecl->AppendAttribute(volpe::AT_TexCoord1, 2, volpe::CT_Float);
-    vDecl->AppendAttribute(volpe::AT_Normal,    3, volpe::CT_Float);
-    // vDecl->AppendAttribute(volpe::AT_TexCoord2,1, volpe::CT_Float);
-    vDecl->SetVertexBuffer(vBuffer);
-    vDecl->End();
-
-    m_numVertices = (int)inVerts.size();
-
-    // std::cout << "DebugCube created with " << m_numVertices << " vertices.\n";
-}
-
-void DebugCube::Render(const glm::mat4& proj, const glm::mat4& view, bool skipBind)
-{
-    if(!m_pProgram || !m_vertexBuffer || !m_vertexDecl || m_numVertices==0) {
-        
-        std::cerr << "RENDER SKIPPED\n";
-        return;
-    }
-
-    glm::mat4 world = getWorldTransform();
-
-    // glm::mat4 modelViewProj = proj * view * world;
-    glm::mat4 worldIT = glm::transpose(glm::inverse(world));
-
-    if(!skipBind)
-        m_pProgram->Bind();
-
-    m_pProgram->Bind();
-    m_pProgram->SetUniform("projection", proj);
-    m_pProgram->SetUniform("view", view);
-    m_pProgram->SetUniform("world", world);
-    m_pProgram->SetUniform("worldIT", worldIT);
-
-
-    m_vertexDecl->Bind();
-    glDrawArrays(GL_TRIANGLES, 0, m_numVertices); //GL_TRIANGLES //GL_LINES
+    m_color = glm::vec3(r/255.f, g/255.f, b/255.f);
 }
 
 void DebugCube::draw(const glm::mat4& proj, const glm::mat4& view, bool skipBind)
 {
-    if(skipBind)
-        Render(proj,view, skipBind);
-    else
-        Render(proj,view);
-        
-    Node::draw(proj,view);
+    // 1) Render the actual cube
+    Render(proj, view);
+
+    // 2) Draw bounding volume lines (if present)
+    if(GetBoundingVolume()) {
+        GetBoundingVolume()->DrawMe(proj, view);
+    }
+
+    // 3) Let Node draw any children
+    Node::draw(proj, view, skipBind);
+}
+
+////////////////////////////////////////////////////
+// Private: The main geometry draw
+////////////////////////////////////////////////////
+void DebugCube::Render(const glm::mat4& proj, const glm::mat4& view)
+{
+    if(!s_inited || s_numIndices <= 0)
+        return;
+    volpe::Material* mat = GetMaterial();
+    if(!mat) 
+        return;
+
+    // Build transform
+    glm::mat4 world = getWorldTransform();
+    glm::mat4 worldIT = glm::transpose(glm::inverse(world));
+
+    // Set uniforms
+    mat->SetUniform("projection", proj);
+    mat->SetUniform("view",       view);
+    mat->SetUniform("world",      world);
+    mat->SetUniform("worldIT",    worldIT);
+
+    // If your Unlit3d.fsh references "u_color"
+    mat->SetUniform("u_color", m_color);
+
+    // apply (bind program, set states)
+    mat->Apply();
+
+    // bind the geometry
+    s_decl->Bind();
+    // draw
+    glDrawElements(GL_TRIANGLES, s_numIndices, GL_UNSIGNED_SHORT, 0);
+}
+
+////////////////////////////////////////////////////
+// Private (static): Create geometry if not built
+////////////////////////////////////////////////////
+void DebugCube::initGeometry()
+{
+    if(s_inited)
+        return;
+
+    // We'll define a typical unit-cube index buffer (36 indices),
+    // plus vertices for each corner. We can do 24-vertex style 
+    // or we can do 8 corners and let each face share them with 
+    // correct normals, etc. For simplicity, we do a 36 index approach.
+
+    // We'll define 8 corners:
+    static const glm::vec3 corners[8] = {
+        {-0.5f,-0.5f,-0.5f}, {+0.5f,-0.5f,-0.5f}, 
+        {-0.5f,+0.5f,-0.5f}, {+0.5f,+0.5f,-0.5f}, 
+        {-0.5f,-0.5f,+0.5f}, {+0.5f,-0.5f,+0.5f}, 
+        {-0.5f,+0.5f,+0.5f}, {+0.5f,+0.5f,+0.5f}
+    };
+    // We'll define these 36 indices (6 faces * 2 triangles * 3 indices):
+    static const unsigned short cubeIndices[36] = {
+        // back face (z=-0.5)
+        0,2,1,   1,2,3,
+        // front face (z=+0.5)
+        4,5,6,   5,7,6,
+        // left face (x=-0.5)
+        0,4,2,   2,4,6,
+        // right face (x=+0.5)
+        1,3,5,   3,7,5,
+        // top face (y=+0.5)
+        2,6,3,   3,6,7,
+        // bottom face (y=-0.5)
+        0,1,4,   1,5,4
+    };
+
+    // We'll store for each index a Vertex that has 
+    // position + normal + uv. We'll compute normal by cross product face by face or 
+    // do a naive approach. Let's do face-based approach: each 6 indices is a face.
+
+    struct Vtx {
+        float x,y,z;
+        float nx, ny, nz;
+        float u, v;
+    };
+    std::vector<Vtx> finalVerts;
+    finalVerts.reserve(36); // 12 triangles = 36 indices => 36 Vtx
+    // We'll read them in sets of 6 => 2 triangles => 1 face normal
+    for(int f=0; f<6; f++)
+    {
+        // each face has 6 indices 
+        int faceStart = f*6;
+        // compute face normal via the first triangle cross 
+        // i.e. (0,2,1) or something
+        unsigned short i0 = cubeIndices[faceStart + 0];
+        unsigned short i1 = cubeIndices[faceStart + 1];
+        unsigned short i2 = cubeIndices[faceStart + 2];
+
+        glm::vec3 p0 = corners[i0];
+        glm::vec3 p1 = corners[i1];
+        glm::vec3 p2 = corners[i2];
+        glm::vec3 faceNormal = glm::normalize(glm::cross(p1-p0, p2-p0));
+
+        // fill these 6 indices with that same normal
+        for(int i=0; i<6; i++)
+        {
+            unsigned short idx = cubeIndices[faceStart + i];
+            glm::vec3 pos = corners[idx];
+            Vtx v;
+            v.x = pos.x; 
+            v.y = pos.y;
+            v.z = pos.z;
+            v.nx = faceNormal.x;
+            v.ny = faceNormal.y;
+            v.nz = faceNormal.z;
+            // Just generate uv trivially
+            v.u = (faceNormal.x != 0.f) ? (pos.y + 0.5f) : (pos.x + 0.5f); 
+            v.v = (faceNormal.z != 0.f) ? (pos.y + 0.5f) : (pos.z + 0.5f);
+            finalVerts.push_back(v);
+        }
+    }
+    // finalVerts now has 36. We'll do draw arrays, or build an index buffer that 
+    // references them. But let's do an index buffer with 36 indices that 
+    // just goes 0..35 if we want, but we can also just do glDrawArrays. 
+    // We'll do an index approach:
+
+    s_numIndices = (int)finalVerts.size(); // 36
+    // We'll build a trivial index [0..35]
+    std::vector<unsigned short> finalIdx;
+    finalIdx.reserve(s_numIndices);
+    for(int i=0; i<s_numIndices; i++)
+        finalIdx.push_back((unsigned short)i);
+
+    // Create the GPU buffers
+    s_vb = volpe::BufferManager::CreateVertexBuffer(finalVerts.data(), (unsigned int) (finalVerts.size()*sizeof(Vtx)));
+    s_ib = volpe::BufferManager::CreateIndexBuffer(finalIdx.data(), (unsigned int)finalIdx.size());
+
+    s_decl = new volpe::VertexDeclaration();
+    s_decl->Begin();
+      s_decl->SetVertexBuffer(s_vb);
+      s_decl->SetIndexBuffer(s_ib);
+      s_decl->AppendAttribute(volpe::AT_Position,   3, volpe::CT_Float);
+      s_decl->AppendAttribute(volpe::AT_Normal,     3, volpe::CT_Float);
+      s_decl->AppendAttribute(volpe::AT_TexCoord1,  2, volpe::CT_Float);
+    s_decl->End();
+
+    s_inited = true;
 }

@@ -1,46 +1,43 @@
 #pragma once
 #include "Node.h"
-#include "Vertex.h"
 #include "SphereVolume.h"
-#include <vector>
+#include "../volpe/Volpe.h"
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include "DebugRender.h"
-#include <iostream>
+#include <vector>
 
-class DebugSphere : public Node {
-private:
-    void Render(const glm::mat4& proj, const glm::mat4& view, bool skipBind);
-    void pushVertexData(volpe::VertexBuffer*& vBuffer,
-                        volpe::VertexDeclaration*& vDecl,
-                        const std::vector<Vertex>& inVerts);
-    void genVertexData(); // generates the sphere geometry
-    void _genVerts(int sectorCount, int stackCount);
-
-    // Data members.
-    volpe::VertexBuffer* m_vertexBuffer = nullptr;
-    volpe::VertexDeclaration* m_vertexDecl = nullptr;
-    volpe::Program* m_pProgram = nullptr;
-    int m_numIndices = 0; // number of indices in the index buffer
-
-    float m_radius;       // Sphere radius.
-    GLubyte r = 255, g = 255, b = 255;
-
-    // We use a sphere volume for bounding volume tests.
-    SphereVolume* m_boundingVolumeSphere = nullptr;
-
+/**
+ * DebugSphere that shares static geometry across all instances,
+ * uses a volpe::Material, and an internal bounding sphere.
+ */
+class DebugSphere : public Node
+{
 public:
-    DebugSphere(const std::string& name, float radius = 0.5f);
+    DebugSphere(const std::string& name, float radius=0.5f);
     virtual ~DebugSphere();
 
-    virtual void draw(const glm::mat4& proj, const glm::mat4& view, bool skipBind = false);
+    void setColor(GLubyte r, GLubyte g, GLubyte b);
+    void setRadius(float r);
 
-    void DrawBoundingVolume(const glm::mat4& proj, const glm::mat4& view);
+    virtual void draw(const glm::mat4& proj, const glm::mat4& view, bool skipBind=false) override;
 
-    void setColor(GLubyte inR, GLubyte inG, GLubyte inB) {
-        r = inR; g = inG; b = inB; 
-        genVertexData();}
+private:
+    // Our chosen color (uniform)
+    glm::vec3 m_color;
+    // Radius used for bounding volume
+    float m_radius;
+    // The bounding volume pointer
+    SphereVolume* m_boundingVolumeSphere;
 
-    void setRadius(float radius) {m_radius = radius;}
+    // Shared geometry
+    static bool s_inited;
+    static volpe::VertexBuffer* s_vb;
+    static volpe::IndexBuffer*  s_ib;
+    static volpe::VertexDeclaration* s_decl;
+    static int s_numIndices;
+
+    // Build geometry if needed
+    static void initGeometry(int sectorCount=20, int stackCount=20);
+
+    // The actual draw call
+    void Render(const glm::mat4& proj, const glm::mat4& view);
 };
-

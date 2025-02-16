@@ -62,7 +62,7 @@ void RecreateSceneHelper(int bounds)
 
     // /*
     random_device rd;
-    mt19937 gen(rd());
+    mt19937 gen(20);
     uniform_real_distribution<float> distPos(-bounds, bounds);
     uniform_real_distribution<float> rgb(0.0f, 255.0f);
 

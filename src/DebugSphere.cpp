@@ -1,181 +1,186 @@
 #include "DebugSphere.h"
-#include "iostream"
+#include "../volpe/Volpe.h"
+#include <glm/gtc/matrix_transform.hpp>
+#include <cmath>
 #include <vector>
-#include <glm/gtx/norm.hpp>
 
-// static const float PI = 3.14159265358979323846f;
-static const float BASE_RADIUS = 0.5f; // base radius used for vertex generation
+// Static members
+bool DebugSphere::s_inited               = false;
+volpe::VertexBuffer* DebugSphere::s_vb   = nullptr;
+volpe::IndexBuffer*  DebugSphere::s_ib   = nullptr;
+volpe::VertexDeclaration* DebugSphere::s_decl = nullptr;
+int DebugSphere::s_numIndices            = 0;
 
+///////////////////////////////////////////////
+// Constructor / Destructor
+///////////////////////////////////////////////
 DebugSphere::DebugSphere(const std::string& name, float radius)
-    : Node(name), m_radius(radius)
+: Node(name), m_color(1.f,1.f,1.f), m_radius(radius), m_boundingVolumeSphere(nullptr)
 {
-    // Create a bounding volume as a SphereVolume centered at (0,0,0)
-    // with the given radius.
+    // 1) Create bounding volume
     m_boundingVolumeSphere = new SphereVolume(glm::vec3(0.0f), m_radius);
-    m_boundingVolume = m_boundingVolumeSphere; // store in the Node base
+    SetBoundingVolume(m_boundingVolumeSphere);
 
-    // Create a shader program.
-    m_pProgram = volpe::ProgramManager::CreateProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
-    // Optionally, enable depth test and write:
-    // m_pProgram->SetDepthTest(true);
-    // m_pProgram->SetDepthWrite(true);
+    // 2) Create the material
+    volpe::Material* mat = volpe::MaterialManager::CreateMaterial("DebugSphereMat");
+    mat->SetProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
+    mat->SetDepthTest(true);
+    mat->SetDepthWrite(true);
+    SetMaterial(mat);
 
-    // Generate the sphere geometry.
-    genVertexData();
+    // 3) Build static geometry if needed
+    initGeometry(20, 20);
 }
 
-DebugSphere::~DebugSphere() {
-    // Note: Depending on your engine, you might need to destroy the shader program.
-    // volpe::MaterialManager::DestroyMaterial(m_pProgram);
-    if(m_vertexBuffer)
-        volpe::BufferManager::DestroyBuffer(m_vertexBuffer);
-    if(m_vertexDecl)
-        delete m_vertexDecl;
-    if(m_boundingVolumeSphere)
-        delete m_boundingVolumeSphere;
+DebugSphere::~DebugSphere()
+{
+    // destroy material
+    if(GetMaterial()) {
+        volpe::MaterialManager::DestroyMaterial(GetMaterial());
+        SetMaterial(nullptr);
+    }
 }
 
-void DebugSphere::pushVertexData(volpe::VertexBuffer*& vBuffer, volpe::VertexDeclaration*& vDecl, const std::vector<Vertex>& inVerts) {
-    if(vBuffer) {
-        volpe::BufferManager::DestroyBuffer(vBuffer);
-        vBuffer = nullptr;
+///////////////////////////////////////////////
+// Public
+///////////////////////////////////////////////
+void DebugSphere::setColor(GLubyte r, GLubyte g, GLubyte b)
+{
+    m_color = glm::vec3(r/255.f, g/255.f, b/255.f);
+}
+
+void DebugSphere::setRadius(float r)
+{
+    m_radius = r;
+    if(m_boundingVolumeSphere) {
+        m_boundingVolumeSphere->radius = r;
     }
-    if(vDecl) {
-        delete vDecl;
-        vDecl = nullptr;
+}
+
+void DebugSphere::draw(const glm::mat4& proj, const glm::mat4& view, bool skipBind)
+{
+    // 1) Actually render the sphere
+    Render(proj, view);
+
+    // 2) draw bounding volume lines
+    if(GetBoundingVolume()) {
+        GetBoundingVolume()->DrawMe(proj, view);
     }
-    if(inVerts.empty()) {
-        m_numIndices = 0;
+
+    // 3) node children
+    Node::draw(proj, view, skipBind);
+}
+
+///////////////////////////////////////////////
+// Private
+///////////////////////////////////////////////
+void DebugSphere::Render(const glm::mat4& proj, const glm::mat4& view)
+{
+    if(!s_inited || s_numIndices<=0) 
         return;
-    }
-    vBuffer = volpe::BufferManager::CreateVertexBuffer(inVerts.data(), inVerts.size() * sizeof(Vertex));
-    vDecl = new volpe::VertexDeclaration();
-    vDecl->Begin();
-    vDecl->AppendAttribute(volpe::AT_Position,  3, volpe::CT_Float);
-    vDecl->AppendAttribute(volpe::AT_Color,     4, volpe::CT_UByte);
-    vDecl->AppendAttribute(volpe::AT_TexCoord1, 2, volpe::CT_Float);
-    vDecl->AppendAttribute(volpe::AT_Normal,    3, volpe::CT_Float);
-    vDecl->SetVertexBuffer(vBuffer);
-    vDecl->End();
+    volpe::Material* mat = GetMaterial();
+    if(!mat)
+        return;
+
+    glm::mat4 world = getWorldTransform();
+    glm::mat4 worldIT = glm::transpose(glm::inverse(world));
+
+    mat->SetUniform("projection", proj);
+    mat->SetUniform("view",       view);
+    mat->SetUniform("world",      world);
+    mat->SetUniform("worldIT",    worldIT);
+    mat->SetUniform("u_color",    m_color);
+    mat->Apply();
+
+    s_decl->Bind();
+    glDrawElements(GL_TRIANGLES, s_numIndices, GL_UNSIGNED_SHORT, 0);
 }
 
-void DebugSphere::_genVerts(int sectorCount, int stackCount) {
-    Vertex v;
-    std::vector<Vertex> verts;
-    std::vector<unsigned short> indices;
+///////////////////////////////////////////////
+// static method: create geometry if not yet
+///////////////////////////////////////////////
+void DebugSphere::initGeometry(int sectorCount, int stackCount)
+{
+    if(s_inited)
+        return;
 
-    float x, y, z, xy;
-    float nx, ny, nz;
-    float lengthInv = 1.0f / m_radius;
-    float s, t;
-    float sectorStep = 2 * PI / sectorCount;
-    float stackStep = PI / stackCount;
-    float sectorAngle, stackAngle;
+    // We'll build a typical sphere with "sectorCount" slices around 
+    // the equator, and "stackCount" from top to bottom.
 
-    for (int i = 0; i <= stackCount; ++i) {
-        stackAngle = PI / 2 - i * stackStep;  // from pi/2 to -pi/2
-        xy = m_radius * cosf(stackAngle);      // r * cos(u)
-        z = m_radius * sinf(stackAngle);       // r * sin(u)
+    struct SphereVtx {
+        float x,y,z;
+        float nx,ny,nz;
+        float u,v;
+    };
 
-        for (int j = 0; j <= sectorCount; ++j) {
-            sectorAngle = j * sectorStep;
-            x = xy * cosf(sectorAngle);
-            y = xy * sinf(sectorAngle);
+    std::vector<SphereVtx> verts;
+    std::vector<unsigned short> idx;
 
-            nx = x * lengthInv;
-            ny = y * lengthInv;
-            nz = z * lengthInv;
-            
+    // float PI = 3.14159f;
+    float sectorStep = 2.f * PI / sectorCount;
+    float stackStep  = PI / stackCount;
+    for(int i=0; i<=stackCount; i++)
+    {
+        float stackAngle = PI/2.f - i*stackStep; // from +PI/2 down to -PI/2
+        float xy = cosf(stackAngle);
+        float z  = sinf(stackAngle);
 
-            s = (float)j / sectorCount;
-            t = (float)i / stackCount;
+        for(int j=0; j<=sectorCount; j++)
+        {
+            float sectorAngle = j*sectorStep;
+            float x = xy*cosf(sectorAngle);
+            float y = xy*sinf(sectorAngle);
 
-            v.x = x; v.y = y; v.z = z;
-            v.nx = nx; v.ny = ny; v.nz = nz;
-            v.u = s; v.v = t;
-            
-            v.r = r;
-            v.g = g;
-            v.b = b;
-            v.a = 255;
+            SphereVtx v;
+            // position (unit sphere for now)
+            v.x = x;
+            v.y = y;
+            v.z = z;
+            // normal is the same as position for a unit sphere
+            v.nx = x;
+            v.ny = y;
+            v.nz = z;
+            // uv
+            v.u  = (float)j / sectorCount;
+            v.v  = (float)i / stackCount;
 
             verts.push_back(v);
         }
     }
 
-    int k1, k2;
-    for (int i = 0; i < stackCount; ++i) {
-        k1 = i * (sectorCount + 1);
-        k2 = k1 + sectorCount + 1;
-        for (int j = 0; j < sectorCount; ++j, ++k1, ++k2) {
-            if (i != 0) {
-                indices.push_back(k1);
-                indices.push_back(k2);
-                indices.push_back(k1 + 1);
+    // generate indices
+    for(int i=0; i<stackCount; i++)
+    {
+        int k1 = i*(sectorCount+1);
+        int k2 = k1 + sectorCount+1;
+        for(int j=0; j<sectorCount; j++, k1++, k2++)
+        {
+            if(i!=0) {
+                idx.push_back((unsigned short)k1);
+                idx.push_back((unsigned short)k2);
+                idx.push_back((unsigned short)(k1+1));
             }
-            if (i != (stackCount - 1)) {
-                indices.push_back(k1 + 1);
-                indices.push_back(k2);
-                indices.push_back(k2 + 1);
+            if(i!=(stackCount-1)) {
+                idx.push_back((unsigned short)(k1+1));
+                idx.push_back((unsigned short)k2);
+                idx.push_back((unsigned short)(k2+1));
             }
         }
     }
-    m_numIndices = (int)indices.size();
+    s_numIndices = (int) idx.size();
 
-    // Instead of manually creating buffers then calling pushVertexData,
-    // simply call pushVertexData with the generated vertex list.
-    pushVertexData(m_vertexBuffer, m_vertexDecl, verts);
+    // Now create the GPU buffers
+    s_vb = volpe::BufferManager::CreateVertexBuffer(verts.data(), (unsigned int)(sizeof(SphereVtx)*verts.size()));
+    s_ib = volpe::BufferManager::CreateIndexBuffer(idx.data(), (unsigned int)idx.size());
 
-    // Create an index buffer and attach it to the vertex declaration.
-    volpe::IndexBuffer* indexBuffer = volpe::BufferManager::CreateIndexBuffer(indices.data(), m_numIndices);
-    m_vertexDecl->Begin();
-    m_vertexDecl->SetIndexBuffer(indexBuffer);
-    m_vertexDecl->End();
-}
+    s_decl = new volpe::VertexDeclaration();
+    s_decl->Begin();
+      s_decl->SetVertexBuffer(s_vb);
+      s_decl->SetIndexBuffer(s_ib);
+      s_decl->AppendAttribute(volpe::AT_Position, 3, volpe::CT_Float);
+      s_decl->AppendAttribute(volpe::AT_Normal,   3, volpe::CT_Float);
+      s_decl->AppendAttribute(volpe::AT_TexCoord1,2, volpe::CT_Float);
+    s_decl->End();
 
-void DebugSphere::genVertexData() {
-    // Generate sphere geometry with 20 sectors and 20 stacks.
-    _genVerts(20, 20);
-}
-
-void DebugSphere::Render(const glm::mat4& proj, const glm::mat4& view, bool skipBind) {
-    if (!m_pProgram || !m_vertexBuffer || !m_vertexDecl || m_numIndices == 0) {
-        std::cerr << "Sphere Render Skipped\n";
-        return;
-    }
-    glm::mat4 world = getWorldTransform();
-    glm::mat4 worldIT = glm::transpose(glm::inverse(world));
-    
-    if (!skipBind)
-        m_pProgram->Bind();
-
-    m_pProgram->Bind();
-    m_pProgram->SetUniform("projection", proj);
-    m_pProgram->SetUniform("view", view);
-    m_pProgram->SetUniform("world", world);
-    m_pProgram->SetUniform("worldIT", worldIT);
-    // m_pProgram->SetUniform("u_color", m_color);
-    m_vertexDecl->Bind();
-    glDrawElements(GL_TRIANGLES, m_numIndices, GL_UNSIGNED_SHORT, 0);
-}
-
-void DebugSphere::draw(const glm::mat4& proj, const glm::mat4& view, bool skipBind) {
-    Render(proj, view, skipBind);
-    Node::draw(proj, view);
-}
-
-void DebugSphere::DrawBoundingVolume(const glm::mat4& proj, const glm::mat4& view) {
-    // return;
-    // Draw a wireframe circle representing the sphere's boundary in the XZ plane.
-    glm::vec3 center = glm::vec3(getWorldTransform()[3]);
-    int segments = 32;
-    float angleStep = 2.0f * PI / segments;
-    glm::vec3 color(0.0f, 1.0f, 0.0f);
-    for (int i = 0; i < segments; ++i) {
-        float a = i * angleStep;
-        float b = (i + 1) * angleStep;
-        glm::vec3 p1 = center + glm::vec3(m_radius * cos(a), 0, m_radius * sin(a));
-        glm::vec3 p2 = center + glm::vec3(m_radius * cos(b), 0, m_radius * sin(b));
-        DebugRender::Instance().DrawLine(p1, p2, color, "BoundingVolumes");
-    }
+    s_inited = true;
 }

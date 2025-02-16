@@ -1,58 +1,46 @@
 #pragma once
-
 #include "Node.h"
-#include "Vertex.h"
-#include "../volpe/Volpe.h"
-#include <vector>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include "iostream"
 #include "AABBVolume.h"
-#include "BoundingVolume.h"
-#include "DebugRender.h"
-#include <random>
+#include "../volpe/Volpe.h"
+#include <glm/glm.hpp>
+#include <vector>
 
-using namespace std;
-using namespace glm;
-
-
-class DebugCube : public Node
+/**
+ * DebugCube that shares static geometry across all instances.
+ * Uses a volpe::Material for shading.
+ */
+class DebugCube : public Node 
 {
-private:
-
-    GLubyte r=255
-           ,g=255
-           ,b=255;
-
-    float cubeSize = 10.0f;
-
-    volpe::VertexBuffer* m_vertexBuffer = nullptr;
-    volpe::VertexDeclaration* m_vertexDecl = nullptr;
-    int m_numVertices=0;
-
-    void Render(const glm::mat4& proj, const glm::mat4& view, bool skipBind = false);
-
-    void pushVertexData(volpe::VertexBuffer*& vBuffer,
-                             volpe::VertexDeclaration*& vDecl,
-                             const vector<Vertex>& inVerts);
-    void genVertexData();
-
 public:
     DebugCube(const std::string& name);
     virtual ~DebugCube();
-    
-    void DrawBoundingVolume(const glm::mat4& proj, const glm::mat4& view); //DEBUG DELETE LATEr
-    
-    AABBVolume getWorldAABB3D() const;
-    
-    // std::vector<int> m_affectingLights;
-    int        m_numLightsAffecting = 0;
 
-    void setColor(GLubyte inR, GLubyte inG, GLubyte inB) {r= inR; g = inG; b = inB; genVertexData();}
+    // Just sets a uniform color
+    void setColor(GLubyte r, GLubyte g, GLubyte b);
 
+    // Override the draw from Node
+    virtual void draw(const glm::mat4& proj, const glm::mat4& view, bool skipBind = false) override;
 
-    // Override draw so we can actually render a cube
-    virtual void draw(const glm::mat4& proj, const glm::mat4& view, bool skipBind = false);
+private:
+    // Our chosen color for the final shape
+    glm::vec3 m_color;
 
+    // We store a bounding volume (AABBVolume) in the constructor
 
+    // The actual geometry is shared via static:
+    static bool s_inited;
+    static volpe::VertexBuffer* s_vb;
+    static volpe::IndexBuffer* s_ib;
+    static volpe::VertexDeclaration* s_decl;
+    static int s_numIndices;
+
+    // We also store a volpe::Material pointer in Node,
+    //  so we do not need a separate pointer here. We'll just 
+    //  call GetMaterial() or SetMaterial() if needed.
+
+    // Build geometry data if not yet built
+    static void initGeometry();
+
+    // Actually draw the cube using the node's material
+    void Render(const glm::mat4& proj, const glm::mat4& view);
 };
