@@ -1,42 +1,5 @@
 #include "AABBVolume.h"
 
-void AABBVolume::DrawMe(const glm::mat4& proj, const glm::mat4& view) //DEBUGGGGGGGGGG
-{
-    glm::vec3 corners[8] = {
-        glm::vec3(min.x, min.y, min.z), // 0
-        glm::vec3(max.x, min.y, min.z), // 1
-        glm::vec3(max.x, max.y, min.z), // 2
-        glm::vec3(min.x, max.y, min.z), // 3
-        glm::vec3(min.x, min.y, max.z), // 4
-        glm::vec3(max.x, min.y, max.z), // 5
-        glm::vec3(max.x, max.y, max.z), // 6
-        glm::vec3(min.x, max.y, max.z)  // 7
-    };
-    glm::vec3 color(0.0f, 1.0f, 0.0f);
-
-    // Draw bottom face
-    DebugRender::Instance().DrawLine(corners[0], corners[1], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[1], corners[2], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[2], corners[3], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[3], corners[0], color, "BoundingVolumes");
-
-    // Draw top face
-    DebugRender::Instance().DrawLine(corners[4], corners[5], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[5], corners[6], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[6], corners[7], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[7], corners[4], color, "BoundingVolumes");
-
-    // Draw vertical edges
-    DebugRender::Instance().DrawLine(corners[0], corners[4], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[1], corners[5], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[2], corners[6], color, "BoundingVolumes");
-    DebugRender::Instance().DrawLine(corners[3], corners[7], color, "BoundingVolumes");
-    // std::cout<<"DRAWING\n\n";
-
-
-}
-
-
 bool AABBVolume::IntersectsFrustum(const Frustum& frustum) const 
 {
     glm::vec3 center = (min + max) * 0.5f;
@@ -139,4 +102,40 @@ void AABBVolume::ExpandToFit(const BoundingVolume& childVolume,
         max.y = std::max(max.y, childMax.y);
         max.z = std::max(max.z, childMax.z);
     }
+}
+
+void AABBVolume::DrawMe() //DEBUGGGGGGGGGG
+{
+    glm::vec3 corners[8] = {
+        glm::vec3(min.x, min.y, min.z), // 0
+        glm::vec3(max.x, min.y, min.z), // 1
+        glm::vec3(max.x, max.y, min.z), // 2
+        glm::vec3(min.x, max.y, min.z), // 3
+        glm::vec3(min.x, min.y, max.z), // 4
+        glm::vec3(max.x, min.y, max.z), // 5
+        glm::vec3(max.x, max.y, max.z), // 6
+        glm::vec3(min.x, max.y, max.z)  // 7
+    };
+    glm::vec3 color(0.0f, 1.0f, 0.0f);
+
+    // Draw bottom face
+    DebugRender::Instance().DrawLine(corners[0], corners[1], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[1], corners[2], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[2], corners[3], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[3], corners[0], color, "BoundingVolumes");
+
+    // Draw top face
+    DebugRender::Instance().DrawLine(corners[4], corners[5], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[5], corners[6], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[6], corners[7], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[7], corners[4], color, "BoundingVolumes");
+
+    // Draw vertical edges
+    DebugRender::Instance().DrawLine(corners[0], corners[4], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[1], corners[5], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[2], corners[6], color, "BoundingVolumes");
+    DebugRender::Instance().DrawLine(corners[3], corners[7], color, "BoundingVolumes");
+    // std::cout<<"DRAWING\n\n";
+
+
 }

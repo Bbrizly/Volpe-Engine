@@ -21,7 +21,7 @@ public:
         : localMin(mn), localMax(mx), min(mn), max(mx) 
     {}
 
-    void DrawMe(const glm::mat4& proj, const glm::mat4& view);
+    virtual std::string getType() const override { return "AABB"; }
 
     bool IntersectsFrustum(const Frustum& frustum) const;
 
@@ -61,4 +61,7 @@ public:
         max = newMax;
         // std::cout<<"min: "<<min.x<<","<<min.y<<","<<min.z<<". max: "<< max.x<<","<<max.y<<","<<max.z<<std::endl;
     }
+
+    
+    virtual void DrawMe() override;
 };

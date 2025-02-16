@@ -22,6 +22,7 @@
 #include "../volpe/TextRendering/TextBox.h"
 
 using namespace std;
+using namespace glm;
 class Scene
 {
 private:

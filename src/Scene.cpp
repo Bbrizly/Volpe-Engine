@@ -320,7 +320,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     // ========== Node Updates ==========
     t0 = high_resolution_clock::now();
     for (auto node : m_nodes) {
-        // node->update(dt);                                    /////////////////////////////                                    /////////////////////////////                                    /////////////////////////////
+        node->update(dt);                                    /////////////////////////////                                    /////////////////////////////                                    /////////////////////////////
     }
     t1 = high_resolution_clock::now();
     float nodeUpdateMS = duration<float, milli>(t1 - t0).count();
@@ -328,7 +328,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     // ========== Bounding Volume Updates ==========
     t0 = high_resolution_clock::now();
     for (auto node : m_nodes) {
-        // node->UpdateBoundingVolume();                                    /////////////////////////////                                    /////////////////////////////                                    /////////////////////////////
+        node->UpdateBoundingVolume();                                    /////////////////////////////                                    /////////////////////////////                                    /////////////////////////////
     }
     t1 = high_resolution_clock::now();
     float boundingVolumeMS = duration<float, milli>(t1 - t0).count();
@@ -356,9 +356,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     // for(auto& x : m_nodes) //Making sure bounding volumes function
     // {
     //     if(x->GetBoundingVolume()->IntersectsFrustum(frustumToUse))
-    //     {
-    //         m_nodesToRender.push_back(x);
-    //     }
+    //     {    m_nodesToRender.push_back(x);   }
     // }
     m_nodesToRender.clear();
 
@@ -464,14 +462,14 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
 
 void Scene::InitLights()
 {
-    m_unlitProgram  = volpe::ProgramManager::CreateProgram("data/Unlit3d.vsh",  "data/Unlit3d.fsh");
-    if (!m_unlitProgram) {
-        std::cerr << "Failed to create Unlit3d shader program!\n";
-    }
-    m_pointProgram  = volpe::ProgramManager::CreateProgram("data/PointLights.vsh","data/PointLights.fsh");
-    if (!m_pointProgram) {
-        std::cerr << "Failed to create PointLights shader program!\n";
-    }
+    // m_unlitProgram  = volpe::ProgramManager::CreateProgram("data/Unlit3d.vsh",  "data/Unlit3d.fsh");
+    // if (!m_unlitProgram) {
+    //     std::cerr << "Failed to create Unlit3d shader program!\n";
+    // }
+    // m_pointProgram  = volpe::ProgramManager::CreateProgram("data/PointLights.vsh","data/PointLights.fsh");
+    // if (!m_pointProgram) {
+    //     std::cerr << "Failed to create PointLights shader program!\n";
+    // }
 }
 
 void Scene::UpdateLighting()
@@ -497,7 +495,7 @@ void Scene::UpdateLighting()
 
         for(auto* n : inRange){
             
-            n.m_affectingLights.push_back(i);  // storing the LIGHT’S INDEX
+            n->m_affectingLights.push_back(i);  // storing the LIGHT’S INDEX
             // c->m_numLightsAffecting++;
         }
     }
@@ -560,64 +558,66 @@ void Scene::Render(int screenWidth, int screenHeight) {
     
     m_pGrid->render(view,proj);
 
-    // /*
-    for(auto* n : m_nodes) //m_nodesToRender //m_nodes
+    for(auto* n : m_nodesToRender) //m_nodesToRender //m_nodes
     {
-        volpe::Material* mat = n->GetMaterial();
-        if(type(mat) == type(m_pointProgram))
-        {
-            // Bind the point–light shader and push the lighting uniforms
-            mat->Bind();
-            ////////////////////////////////////////////////////////////////
-            int lightCount = n->m_affectingLights.size(); 
-            int maximumLights = 5;
-            if(lightCount > maximumLights)
-                lightCount = maximumLights;  // clamp
-
-            mat->SetUniform("lightsInRange", lightCount);
-
-            // fill up test[ i ] for each light in c->m_affectingLights
-            for(int i=0; i<lightCount; i++)
-            {
-                int lightIdx = n->m_affectingLights[i]; 
-                Light& L     = m_lights[lightIdx];
-
-                std::string base = "pointLights[" + std::to_string(i) + "]";
-
-                glm::vec3 pos  =  L.position;
-                float radius   =  L.radius;
-                glm::vec3 col  =  L.color;
-                float strength =  L.intensity;
-
-                mat->SetUniform(base+".PositionRange", glm::vec4(pos, radius));
-                mat->SetUniform(base+".Color",         col);
-                mat->SetUniform(base+".Strength",      strength);
-            }
-
-            mat->SetUniform("fade", 1.0f);
-
-            auto z = dynamic_cast<DebugCube*>(n);
-            auto x = dynamic_cast<DebugSphere*>(n);
-            
-            if(z)
-                z->draw(proj, view, true);
-            else if(x)
-                x->draw(proj, view, true);
-            else
-                n->draw(proj, view);
-
-        }
-        else
-        {
+        // volpe::Material* mat = n->GetMaterial();
+        // if(type(mat) == type(m_pointProgram))
+        // {
+        //     // Bind the point–light shader and push the lighting uniforms
+        //     mat->Bind();
+        //     ////////////////////////////////////////////////////////////////
+        //     int lightCount = n->m_affectingLights.size(); 
+        //     int maximumLights = 5;
+        //     if(lightCount > maximumLights)
+        //         lightCount = maximumLights;  // clamp
+        //     mat->SetUniform("lightsInRange", lightCount);
+        //     // fill up test[ i ] for each light in c->m_affectingLights
+        //     for(int i=0; i<lightCount; i++)
+        //     {
+        //         int lightIdx = n->m_affectingLights[i]; 
+        //         Light& L     = m_lights[lightIdx];
+        //         std::string base = "pointLights[" + std::to_string(i) + "]";
+        //         glm::vec3 pos  =  L.position;
+        //         float radius   =  L.radius;
+        //         glm::vec3 col  =  L.color;
+        //         float strength =  L.intensity;
+        //         mat->SetUniform(base+".PositionRange", glm::vec4(pos, radius));
+        //         mat->SetUniform(base+".Color",         col);
+        //         mat->SetUniform(base+".Strength",      strength);
+        //     }
+        //     mat->SetUniform("fade", 1.0f);
+        //     auto z = dynamic_cast<DebugCube*>(n);
+        //     auto x = dynamic_cast<DebugSphere*>(n);  
+        //     if(z)
+        //         z->draw(proj, view, true);
+        //     else if(x)
+        //         x->draw(proj, view, true);
+        //     else
+        //         n->draw(proj, view);
+        // }
+        // else
+        // {
             //Unlit objects
             n->draw(proj, view);
-        }
+        // }
     }
-    // */
     
     #pragma region debug
+    
+    if(m_debugCamera != NULL && m_useDebugFrustum)
+    {
+        DebugRender::Instance().GetLayer("frustum")->Clear();
+        DebugRender::Instance().DrawFrustumFromCamera(m_debugCamera, screenWidth, screenHeight, "frustum");
+    }
+
     if(m_ShowDebug)
     {
+        for(auto* n : m_nodesToRender)
+        {
+            if(n->GetBoundingVolume())
+            {  n->GetBoundingVolume()->DrawMe();  }
+        }
+
         if(reDebug) // if there was a change
         {
             reDebug = false;
@@ -628,21 +628,17 @@ void Scene::Render(int screenWidth, int screenHeight) {
             }
             else
             {
-                std::cout << "Clear and fuck off?\n";
                 DebugRender::Instance().Clear();
                 m_octTree->BuildDebugLines();
             }
         }
+        
         glDisable(GL_DEPTH_TEST);
         DebugRender::Instance().Render(proj, view);
         glEnable(GL_DEPTH_TEST);
     }
-    if(m_debugCamera != NULL && m_useDebugFrustum)
-    {
-        DebugRender::Instance().GetLayer("frustum")->Clear();
-        DebugRender::Instance().DrawFrustumFromCamera(m_debugCamera, screenWidth, screenHeight, "frustum");
-    }
     #pragma endregion
+    
     // Render text
     if(m_textRenderer && textBox)
     {
@@ -651,28 +647,4 @@ void Scene::Render(int screenWidth, int screenHeight) {
         m_textRenderer->render(proj,view);
         glEnable(GL_DEPTH_TEST);
     }
-
-    for (Node* n : m_nodes) //m_nodes
-    {
-        // n->GetBoundingVolume();
-        mat4 x = n->getWorldTransform();
-        
-        if(debugLocation)
-            std::cout<<x[3].x<<", "<<x[3].y<<", "<<x[3].z<<std::endl;
-
-            
-        auto* sphere = dynamic_cast<SphereVolume*>(n->GetBoundingVolume());
-        if(sphere)
-            sphere->DrawMe(proj,view);
-        
-        auto* aabb = dynamic_cast<AABBVolume*>(n->GetBoundingVolume());
-        if(aabb)
-            aabb->DrawMe(proj,view);
-    }
-    
-    if(debugLocation)
-    {
-        debugLocation = false;
-    }
-
 }

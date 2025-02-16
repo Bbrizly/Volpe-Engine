@@ -10,7 +10,11 @@ class BoundingVolume
 public:
     virtual ~BoundingVolume() {}
 
+    virtual std::string getType() const = 0;
+
     virtual void UpdateVolume(const glm::mat4& worldTransform) = 0;
+
+    virtual void DrawMe() = 0;
 
     virtual bool IntersectsFrustum(const Frustum& frustum) const = 0;
 
@@ -24,4 +28,5 @@ public:
     
     virtual void ExpandToFit(const BoundingVolume& childVolume, 
         const glm::mat4& childWorldTransform) = 0;
+
 };

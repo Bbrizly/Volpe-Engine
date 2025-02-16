@@ -20,7 +20,7 @@ DebugCube::DebugCube(const std::string& name)
 {
     // 1) Create the bounding volume: an AABB from -0.5..+0.5
     AABBVolume* box = new AABBVolume(glm::vec3(-0.5f), glm::vec3(0.5f));
-    // SetBoundingVolume(box);
+    SetBoundingVolume(box);
 
     // 2) Create a volpe::Material for this shape
     volpe::Material* mat = volpe::MaterialManager::CreateMaterial("DebugCubeMat");
@@ -44,9 +44,6 @@ DebugCube::~DebugCube()
     }
 }
 
-////////////////////////////////////////////////////
-// Public
-////////////////////////////////////////////////////
 void DebugCube::setColor(GLubyte r, GLubyte g, GLubyte b)
 {
     m_color = glm::vec3(r/255.f, g/255.f, b/255.f);
@@ -54,15 +51,8 @@ void DebugCube::setColor(GLubyte r, GLubyte g, GLubyte b)
 
 void DebugCube::draw(const glm::mat4& proj, const glm::mat4& view, bool skipBind)
 {
-    // 1) Render the actual cube
     Render(proj, view);
-
-    // 2) Draw bounding volume lines (if present)
-    if(GetBoundingVolume()) {
-        GetBoundingVolume()->DrawMe(proj, view);
-    }
-
-    // 3) Let Node draw any children
+    
     Node::draw(proj, view, skipBind);
 }
 

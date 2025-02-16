@@ -91,7 +91,7 @@ void SphereVolume::ExpandToFit(const BoundingVolume& childVolume,
     }
 }
 
-void SphereVolume::DrawMe(const glm::mat4& proj, const glm::mat4& view) {
+void SphereVolume::DrawMe() {
     int segments = 16;
     float angleStep = 2.0f * glm::pi<float>() / segments;
     glm::vec3 debugColor(0.0f, 1.0f, 0.0f); // Green color

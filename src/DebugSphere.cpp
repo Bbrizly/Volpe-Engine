@@ -11,39 +11,30 @@ volpe::IndexBuffer*  DebugSphere::s_ib   = nullptr;
 volpe::VertexDeclaration* DebugSphere::s_decl = nullptr;
 int DebugSphere::s_numIndices            = 0;
 
-///////////////////////////////////////////////
-// Constructor / Destructor
-///////////////////////////////////////////////
+
 DebugSphere::DebugSphere(const std::string& name, float radius)
 : Node(name), m_color(1.f,1.f,1.f), m_radius(radius), m_boundingVolumeSphere(nullptr)
 {
-    // 1) Create bounding volume
     m_boundingVolumeSphere = new SphereVolume(glm::vec3(0.0f), m_radius);
     SetBoundingVolume(m_boundingVolumeSphere);
 
-    // 2) Create the material
     volpe::Material* mat = volpe::MaterialManager::CreateMaterial("DebugSphereMat");
     mat->SetProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
     mat->SetDepthTest(true);
     mat->SetDepthWrite(true);
     SetMaterial(mat);
 
-    // 3) Build static geometry if needed
     initGeometry(20, 20);
 }
 
 DebugSphere::~DebugSphere()
 {
-    // destroy material
     if(GetMaterial()) {
         volpe::MaterialManager::DestroyMaterial(GetMaterial());
         SetMaterial(nullptr);
     }
 }
 
-///////////////////////////////////////////////
-// Public
-///////////////////////////////////////////////
 void DebugSphere::setColor(GLubyte r, GLubyte g, GLubyte b)
 {
     m_color = glm::vec3(r/255.f, g/255.f, b/255.f);
@@ -59,21 +50,11 @@ void DebugSphere::setRadius(float r)
 
 void DebugSphere::draw(const glm::mat4& proj, const glm::mat4& view, bool skipBind)
 {
-    // 1) Actually render the sphere
     Render(proj, view);
 
-    // 2) draw bounding volume lines
-    if(GetBoundingVolume()) {
-        GetBoundingVolume()->DrawMe(proj, view);
-    }
-
-    // 3) node children
     Node::draw(proj, view, skipBind);
 }
 
-///////////////////////////////////////////////
-// Private
-///////////////////////////////////////////////
 void DebugSphere::Render(const glm::mat4& proj, const glm::mat4& view)
 {
     if(!s_inited || s_numIndices<=0) 

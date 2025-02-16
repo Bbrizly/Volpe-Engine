@@ -19,6 +19,8 @@ public:
     SphereVolume(const glm::vec3& c, float r)
         : center(c), radius(r) {}
 
+    virtual std::string getType() const override { return "Sphere"; }
+
     // For culling
     virtual bool IntersectsFrustum(const Frustum& frustum) const override;
 
@@ -36,7 +38,7 @@ public:
         const glm::mat4& childWorldTransform) override;
 
         
-    void DrawMe(const glm::mat4& proj, const glm::mat4& view);
+    virtual void DrawMe() override;
 
     virtual void UpdateVolume(const glm::mat4& worldTransform) override
     {
