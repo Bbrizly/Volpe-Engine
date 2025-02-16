@@ -478,10 +478,8 @@ void Scene::UpdateLighting()
 {
     // reset cubes
     for(auto* node : m_nodes) {
-        DebugCube* c = dynamic_cast<DebugCube*>(node);
-        if(c) {
-            c->m_numLightsAffecting = 0;
-        }
+        if(node->m_affectingLights.size())
+            node->m_affectingLights.clear();
     }
 
     // For each light, we do QueryLight
@@ -498,26 +496,22 @@ void Scene::UpdateLighting()
             m_octTree->QueryLight(L.position, range, inRange);
 
         for(auto* n : inRange){
-            DebugCube* c = dynamic_cast<DebugCube*>(n);
-            if(!c) continue;
             
-            c->m_affectingLights.push_back(i);  // storing the LIGHT’S INDEX
-            c->m_numLightsAffecting++;
+            n.m_affectingLights.push_back(i);  // storing the LIGHT’S INDEX
+            // c->m_numLightsAffecting++;
         }
     }
 
     // Switch shader
-    for(auto* node : m_nodes)
+    for(auto* n : m_nodes) /////////////////////////                                    /////////////////////////                                    /////////////////////////                                    /////////////////////////                                    
     {
-        DebugCube* c = dynamic_cast<DebugCube*>(node);
-        if(!c) continue;
+        // if(c->m_numLightsAffecting == 0) {
+        //     n->SetMaterial()
+        //     c->SetProgram(m_unlitProgram);
+        // } else {
+        //     c->SetProgram(m_pointProgram); //m_pointProgram
 
-        if(c->m_numLightsAffecting == 0) {
-            c->SetProgram(m_unlitProgram);
-        } else {
-            c->SetProgram(m_pointProgram); //m_pointProgram
-
-        }
+        // }
     }
 }
 
@@ -569,18 +563,18 @@ void Scene::Render(int screenWidth, int screenHeight) {
     // /*
     for(auto* n : m_nodes) //m_nodesToRender //m_nodes
     {
-        volpe::Program* prog = n->GetProgram();
-        if(prog == m_pointProgram)
+        volpe::Material* mat = n->GetMaterial();
+        if(type(mat) == type(m_pointProgram))
         {
             // Bind the point–light shader and push the lighting uniforms
-            prog->Bind();
+            mat->Bind();
             ////////////////////////////////////////////////////////////////
             int lightCount = n->m_affectingLights.size(); 
             int maximumLights = 5;
             if(lightCount > maximumLights)
                 lightCount = maximumLights;  // clamp
 
-            prog->SetUniform("lightsInRange", lightCount);
+            mat->SetUniform("lightsInRange", lightCount);
 
             // fill up test[ i ] for each light in c->m_affectingLights
             for(int i=0; i<lightCount; i++)
@@ -595,12 +589,12 @@ void Scene::Render(int screenWidth, int screenHeight) {
                 glm::vec3 col  =  L.color;
                 float strength =  L.intensity;
 
-                prog->SetUniform(base+".PositionRange", glm::vec4(pos, radius));
-                prog->SetUniform(base+".Color",         col);
-                prog->SetUniform(base+".Strength",      strength);
+                mat->SetUniform(base+".PositionRange", glm::vec4(pos, radius));
+                mat->SetUniform(base+".Color",         col);
+                mat->SetUniform(base+".Strength",      strength);
             }
 
-            prog->SetUniform("fade", 1.0f);
+            mat->SetUniform("fade", 1.0f);
 
             auto z = dynamic_cast<DebugCube*>(n);
             auto x = dynamic_cast<DebugSphere*>(n);
