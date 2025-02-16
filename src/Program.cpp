@@ -59,13 +59,12 @@ void RecreateSceneHelper(int bounds)
 
 
     */
-    
+
     // /*
     random_device rd;
     mt19937 gen(rd());
     uniform_real_distribution<float> distPos(-bounds, bounds);
     uniform_real_distribution<float> rgb(0.0f, 255.0f);
-    // rgb = new vec3(rgb(gen),rgb(gen),rgb(gen));
 
     for (int i = 1; i <= amount/2; ++i)
     {
@@ -74,9 +73,11 @@ void RecreateSceneHelper(int bounds)
         glm::vec3 randomPos(distPos(gen), distPos(gen) / 4, distPos(gen));
         cube->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
         
-        GLubyte r = rgb(gen)
-               ,g = rgb(gen)
-               ,b = rgb(gen);
+        GLubyte color = i * 20;
+
+        GLubyte r = color
+               ,g = color
+               ,b = color;
         
         cube->setColor(r,g,b);
         Scene::Instance().AddNode(cube);
@@ -89,9 +90,11 @@ void RecreateSceneHelper(int bounds)
         glm::vec3 randomPos(distPos(gen), distPos(gen) / 4, distPos(gen));
         sphere->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
         
-        GLubyte r = rgb(gen)
-               ,g = rgb(gen)
-               ,b = rgb(gen);
+        GLubyte color = i * 20;
+
+        GLubyte r = color
+               ,g = color
+               ,b = color;
         
         sphere->setColor(r,g,b);
         Scene::Instance().AddNode(sphere);

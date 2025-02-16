@@ -1,5 +1,10 @@
 #include "Scene.h"
 
+//REMOVE LATERRRR RMEOV EMRO ERMO
+#include <string>
+#include <sstream>
+#include <iomanip>
+
 using namespace chrono;
 using namespace std;
 
@@ -271,6 +276,10 @@ void Scene::ShowDebugText()
     textBox  = m_textRenderer->createTextBox(fontArial,"FPS, Each Process's MS, Other important values", -640.0f, 360.0f, 400, 720);
     textBox->SetColor(0, 0, 0, 255);
     textBox->SetVisualization(false); //remove bg box
+    debugTextBox =  m_textRenderer->createTextBox(fontArial,"FPS, Each Process's MS, Other important values", 640-200.0f, 100.0f, 200, 200);
+    debugTextBox->SetColor(0, 0, 0, 255);
+    
+    m_textRenderer->setTextBox(debugTextBox);
     m_textRenderer->setTextBox(textBoc);
     m_textRenderer->setTextBox(textBox);
 }
@@ -311,7 +320,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     // ========== Node Updates ==========
     t0 = high_resolution_clock::now();
     for (auto node : m_nodes) {
-        node->update(dt);
+        // node->update(dt);                                    /////////////////////////////                                    /////////////////////////////                                    /////////////////////////////
     }
     t1 = high_resolution_clock::now();
     float nodeUpdateMS = duration<float, milli>(t1 - t0).count();
@@ -319,7 +328,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     // ========== Bounding Volume Updates ==========
     t0 = high_resolution_clock::now();
     for (auto node : m_nodes) {
-        node->UpdateBoundingVolume();
+        // node->UpdateBoundingVolume();                                    /////////////////////////////                                    /////////////////////////////                                    /////////////////////////////
     }
     t1 = high_resolution_clock::now();
     float boundingVolumeMS = duration<float, milli>(t1 - t0).count();
@@ -369,13 +378,29 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
             m_nodesToRender = m_nodes;
         }
     }
+
+    std::string shapes = "";
+
+    for (auto& object : m_nodesToRender) {
+        vec3 x = object->getWorldTransform()[3];
+
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(0) << x.x << ", " 
+            << std::fixed << std::setprecision(0) << x.y << ", " 
+            << std::fixed << std::setprecision(0) << x.z;
+
+        shapes += object->getName() + " | " + oss.str() + "\n";
+    }
+
+    // Set text in the debug UI
+    debugTextBox->SetText(shapes);
     
     t1 = high_resolution_clock::now();
     float quadTreeQueryMS = duration<float, milli>(t1 - t0).count();
 
     //LIGHT QUERY
     t0 = high_resolution_clock::now();
-    UpdateLighting();
+    // UpdateLighting();
 
     t1 = high_resolution_clock::now();
     float lightQueryMS = duration<float, milli>(t1 - t0).count();
@@ -522,6 +547,12 @@ void Scene::Clear()
 
     if(!m_nodesToRender.empty())
         m_nodesToRender.clear();
+
+    // if(m_quadTree)
+    //     delete m_quadTree;
+    
+    // if(m_octTree)
+    //     delete m_octTree;
         
     DebugRender::Instance().Clear();
 }
@@ -536,7 +567,7 @@ void Scene::Render(int screenWidth, int screenHeight) {
     m_pGrid->render(view,proj);
 
     // /*
-    for(auto* n : m_nodesToRender) //m_nodesToRender //m_nodes
+    for(auto* n : m_nodes) //m_nodesToRender //m_nodes
     {
         volpe::Program* prog = n->GetProgram();
         if(prog == m_pointProgram)
@@ -627,7 +658,7 @@ void Scene::Render(int screenWidth, int screenHeight) {
         glEnable(GL_DEPTH_TEST);
     }
 
-    for (Node* n : m_nodesToRender) //m_nodes
+    for (Node* n : m_nodes) //m_nodes
     {
         // n->GetBoundingVolume();
         mat4 x = n->getWorldTransform();

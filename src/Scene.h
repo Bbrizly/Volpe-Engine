@@ -48,6 +48,7 @@ private:
 
     TextRenderer* m_textRenderer = nullptr;
     TextBox* textBox = nullptr;
+    TextBox* debugTextBox = nullptr;
 
     vector<Light> pickLightsForNode(const Node* node);
 
