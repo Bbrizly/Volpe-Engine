@@ -120,7 +120,7 @@ public:
 
     void Clear();
 
-    bool fuck = true;
+    bool debugLocation = true;
     
     void drawSingleLight(const glm::mat4& viewProj);
     void drawTwoLightsPerObject(const glm::mat4& viewProj);

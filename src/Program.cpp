@@ -14,7 +14,7 @@ Program::~Program()
     delete fpsCamera;
 }
 
-int amount = 5; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
+int amount = 10; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
 int bounds = 10;
 void RecreateSceneHelper(int bounds)
 {
@@ -62,44 +62,41 @@ void RecreateSceneHelper(int bounds)
     
     // /*
     random_device rd;
-    mt19937 gen(10242);
+    mt19937 gen(rd());
     uniform_real_distribution<float> distPos(-bounds, bounds);
     uniform_real_distribution<float> rgb(0.0f, 255.0f);
     // rgb = new vec3(rgb(gen),rgb(gen),rgb(gen));
-    
-    Node* obj;
 
-    for (int i = 1; i <= amount/*amount*/; ++i)
+    for (int i = 1; i <= amount/2; ++i)
     {
-        cout<<"numb: "<<i<<endl;
-        // if(i % 2 == 0)
-        //     continue;
-        //     // obj = new DebugSphere("sphere_" + to_string(i), 0.5);
-        // else
-        obj = new DebugCube("cube_" + to_string(i));
+        DebugCube* cube = new DebugCube("cube_" + to_string(i));
 
         glm::vec3 randomPos(distPos(gen), distPos(gen) / 4, distPos(gen));
-        obj->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
+        cube->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
         
         GLubyte r = rgb(gen)
                ,g = rgb(gen)
                ,b = rgb(gen);
-        auto x = dynamic_cast<DebugSphere*>(obj);
-        auto z = dynamic_cast<DebugCube*>(obj);
         
-        // if(i % 2 == 0)
-        // {
-        //     x->setColor(r,g,b);
-        //     Scene::Instance().AddNode(x);
-        // }
-        // else
-        // {
-            z->setColor(r,g,b);
-            Scene::Instance().AddNode(z);
-        // }
-        
-        
+        cube->setColor(r,g,b);
+        Scene::Instance().AddNode(cube);
     }
+
+    for (int i = 1; i <= amount/2; ++i)
+    {
+        DebugSphere* sphere = new DebugSphere("sphere_" + to_string(i), 0.5);
+
+        glm::vec3 randomPos(distPos(gen), distPos(gen) / 4, distPos(gen));
+        sphere->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
+        
+        GLubyte r = rgb(gen)
+               ,g = rgb(gen)
+               ,b = rgb(gen);
+        
+        sphere->setColor(r,g,b);
+        Scene::Instance().AddNode(sphere);
+    }
+
     for (int i = 0; i < 2; i++)
     {
         glm::vec3 pos = glm::vec3(distPos(gen), distPos(gen), distPos(gen));

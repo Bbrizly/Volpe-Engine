@@ -58,7 +58,7 @@ void Node::draw(const glm::mat4& proj, const glm::mat4& view, bool skipbind) //r
 void Node::setName(const std::string& name) { m_name = name; }
 std::string Node::getName() const { return m_name; }
 
-void Node::setTransform(const glm::mat4& transform) { m_localTransform = transform; }
+void Node::setTransform(const glm::mat4& transform) { m_localTransform = transform; m_boundingVolume->UpdateVolume(getWorldTransform());} //UPDATING VOLUME TWICE
 glm::mat4 Node::getTransform() const { return m_localTransform; }
 
 glm::mat4 Node::getWorldTransform() const
@@ -73,9 +73,12 @@ BoundingVolume* Node::GetBoundingVolume() const { return m_boundingVolume; }
 
 void Node::SetBoundingVolume(BoundingVolume* volume)
 {
-    if(m_boundingVolume && m_boundingVolume != volume)
-    {
-        delete m_boundingVolume;
+    if(!volume) return;
+
+    if (m_boundingVolume) {
+        if (typeid(*m_boundingVolume) != typeid(*volume)) {
+            delete m_boundingVolume;
+        }
     }
     m_boundingVolume = volume;
 }
@@ -103,8 +106,6 @@ void Node::UpdateBoundingVolume()
         
     }
     
-    m_boundingVolume->UpdateVolume(getWorldTransform());
-
+    // m_boundingVolume->UpdateVolume(getWorldTransform());
 }
-
 

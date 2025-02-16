@@ -21,7 +21,7 @@ protected:
     BoundingVolume* m_boundingVolume;
 
 public:
-    Node(const std::string& name);
+    Node(const std::string& name = "unnamed");
     virtual ~Node();
 
     void addChild(Node* child);

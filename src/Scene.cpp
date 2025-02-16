@@ -381,6 +381,15 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     float lightQueryMS = duration<float, milli>(t1 - t0).count();
     #pragma endregion
 
+    // for (auto* node : m_nodes)
+    // {
+    //     std::cout << node->getName() << " is a " 
+    //               << (dynamic_cast<DebugCube*>(node) ? "Cube" : "Sphere") 
+    //               << " with bounding volume: " 
+    //               << (dynamic_cast<AABBVolume*>(node->GetBoundingVolume()) ? "AABB" : "Sphere")
+    //               << std::endl;
+    // }
+
     #pragma region Statistics
 
     m_avgCameraUpdateMs   = EMA(m_avgCameraUpdateMs,   cameraUpdateMS);
@@ -618,22 +627,27 @@ void Scene::Render(int screenWidth, int screenHeight) {
         glEnable(GL_DEPTH_TEST);
     }
 
-    for (Node* n : m_nodes)
+    for (Node* n : m_nodesToRender) //m_nodes
     {
         // n->GetBoundingVolume();
         mat4 x = n->getWorldTransform();
         
-        if(fuck)
+        if(debugLocation)
             std::cout<<x[3].x<<", "<<x[3].y<<", "<<x[3].z<<std::endl;
+
+            
+        auto* sphere = dynamic_cast<SphereVolume*>(n->GetBoundingVolume());
+        if(sphere)
+            sphere->DrawMe(proj,view);
         
-            AABBVolume* aabb = dynamic_cast<AABBVolume*>(n->GetBoundingVolume());
+        auto* aabb = dynamic_cast<AABBVolume*>(n->GetBoundingVolume());
         if(aabb)
             aabb->DrawMe(proj,view);
     }
     
-    if(fuck)
+    if(debugLocation)
     {
-        fuck = false;
+        debugLocation = false;
     }
 
 }
