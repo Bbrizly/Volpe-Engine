@@ -311,11 +311,8 @@ void Program::init()
 
     // RecreateSceneHelper(bounds);
     BuildSolarSystem(bounds);
-
-    /////////////////////////////////////////////////////////
-
-    Scene::Instance().BuildQuadTree();
-    // Scene::Instance().BuildOctTree();
+    // Scene::Instance().BuildQuadTree();
+    Scene::Instance().BuildOctTree();
 
 }
 
@@ -348,8 +345,6 @@ void Program::update(float dt)
         if(m_pApp->isKeyJustDown('K')) 
             speedMultipler *= 1.2;
         
-
-
         UpdateSolarSystem(dt);
         // Scene::Instance().BuildOctTree();  //REAL TIME CULLING OF MOVING OBJECTS!!! :D
     }
