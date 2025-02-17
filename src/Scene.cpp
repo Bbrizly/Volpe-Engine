@@ -485,9 +485,8 @@ void Scene::UpdateLighting()
     for(int i=0; i < (int)m_lights.size(); i++)
     {
         Light& L = m_lights[i];
-        float range = L.intensity * 10.f; // Example range
+        float range = L.radius;
 
-        // Collect all nodes that pass the “light-sphere vs node’s bounding volume” test
         std::vector<Node*> inRange;
         if(m_useQuadTreeOrOct && m_quadTree)
         {
@@ -499,7 +498,6 @@ void Scene::UpdateLighting()
         }
         else
         {
-            // fallback: do a brute force
             for(auto* nd : m_nodes)
             {
                 if(nd->GetBoundingVolume() 
@@ -621,14 +619,18 @@ void Scene::Render(int screenWidth, int screenHeight) {
     {
         volpe::Material* mat = n->GetMaterial();
 
+        // int lightCount = n->m_affectingLights.size(); 
+
         if(mat == m_matPoint)
         {
-            int lightCount = n->m_affectingLights.size(); 
             int maxLights = 5;
-            if(lightCount > maxLights)
-                lightCount = maxLights;
+            int lightCount = std::min(static_cast<int>(n->m_affectingLights.size()), maxLights);
+
+            // if(lightCount > maxLights)
+            //     lightCount = maxLights;
             
             mat->SetUniform("lightsInRange", lightCount);
+            cout<<lightCount<<", lights in range\n";
             
             for(int i=0; i<lightCount; i++)
             {
@@ -646,7 +648,7 @@ void Scene::Render(int screenWidth, int screenHeight) {
                 mat->SetUniform(base+".Color",              col);
                 mat->SetUniform(base+".Strength",           strength);
             }
-            mat->SetUniform("fade", 10.0f);
+            mat->SetUniform("fade", 1.0f);
         }
         n->draw(proj, view);
     }

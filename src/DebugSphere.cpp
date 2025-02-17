@@ -107,9 +107,14 @@ void DebugSphere::initGeometry(int sectorCount, int stackCount)
             v.y = y;
             v.z = z;
             
-            v.nx = x;
-            v.ny = y;
-            v.nz = z;
+            glm::vec3 normal = glm::normalize(glm::vec3(x, y, z));
+            v.nx = normal.x;
+            v.ny = normal.y;
+            v.nz = normal.z;
+
+            // v.nx = x;
+            // v.ny = y;
+            // v.nz = z;
             
             v.u  = (float)j / sectorCount;
             v.v  = (float)i / stackCount;

@@ -113,7 +113,7 @@ void RecreateSceneHelper(int bounds)
     for (int i = 0; i < 2; i++)
     {
         glm::vec3 pos = glm::vec3(distPos(gen), distPos(gen), distPos(gen));
-        Scene::Instance().AddLight(Light(pos,  glm::vec3(1,1,1), 1.0f, 10.0f));
+        Scene::Instance().AddLight(Light(pos,  glm::vec3(1,1,1), 10.0f, 10.0f));
         DebugRender::Instance().DrawCircle(pos, 10.0f, vec3(1,1,0));
     }
     
