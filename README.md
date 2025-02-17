@@ -1,11 +1,14 @@
 
 # Volpe Engine
 
+![Volpe Engine Demo](https://github.com/Bbrizly/Cityscape/blob/main/volpe/readmeVisuals/gif.gif)
+
 Welcome to **Volpe Engine**, a lightweight game engine framework that demonstrates:
 
 -   A **Scene Manager** for hierarchical scenes
--   A **Quad Tree** for culling optimizations
+-   A **Quad & Oct Tree** for culling optimizations
 -   A **Camera** system (Orbit / First Person) for navigation
+        - **Frustum Culling**
 -   A **Text Rendering** system for overlays and UI
 
 Below you’ll find an overview of how the engine is structured, how the core components interact.
@@ -17,9 +20,11 @@ Volpe Engine aims to provide a small but complete environment for real–time 3D
 
 -   **Scene Graph & Node**: Nodes can have parent–child relationships, maintain local transforms, and propagate updates.
 -   **Camera**: Supports multiple camera styles—First Person and Orbit—through an abstract `Camera` interface.
--   **Quad Tree**: Divides space into quadrants to skip drawing objects that lie outside the camera frustum.
+-   **Quad & Oct Tree**: The engine dynamically switches between a **QuadTree** for 2D spatial partitioning (XZ plane) and an **Octree** for full 3D space division.
+-   **Camera Frustum Culling**: Uses **AABB (Axis-Aligned Bounding Boxes)** and **Sphere Bounding Volumes** to determine if objects are within the camera’s view, optimizing rendering.
+-   **Dynamic Node Lighting**: Nodes are automatically assigned to active lights within their spatial partition, allowing for **dynamic light updates** based on object position.
 -   **Text Rendering**: A robust system for drawing text overlays, powered by an orthographic projection and array textures.
--   **Debug Rendering**: Quick lines, squares, and circles for visualizing bounding volumes or quad tree partitions.
+-   **Debug Rendering**: Quick lines, squares, and circles for visualizing bounding volumes, quad/oct tree partitions, and frustum culling.
 
 ----------
 
@@ -51,21 +56,30 @@ Central to Volpe Engine is the **Scene**. It maintains a list of top–level sce
 
 1.  **Scene Graph**
     
-    -   Each `Node` can have children, forming a hierarchy (parent transforms propagate to children).
+    -   Each `Node` can have children, forming a hierarchy (parent transforms affect children) (ex. Solar-System Scene.)
     -   **update**: Each node’s local and world transformations are recalculated.
     -   **draw**: Each node issues draw calls for itself (e.g. a `DebugCube` can bind a shader and buffer, then call `glDrawArrays`).
-2.  **Quad Tree**
+
+2.  **Quad & Oct Tree**
     
-    -   The engine organizes objects in **XZ** space, subdividing until a max level or until each node holds fewer than some threshold of objects (`MAX_OBJECTS`).
-    -   On **Scene::Update** it extracts the camera frustum, queries the Quad Tree, and gathers only the objects that intersect this frustum.
+    -   The engine organizes objects in **XZ** space using a **QuadTree** but switches to an **Octree** when handling 3D spatial partitioning for more complex scenes.
+    -   **AABB and Sphere Bounding Volumes** are used for fast collision and culling checks.
+    -   On **Scene::Update**, it extracts the camera frustum and queries the **QuadTree (for terrain & 2D elements)** or **Octree (for 3D spatial objects)**, gathering only the objects that intersect the frustum.
     -   This culling significantly reduces the rendering load for large scenes.
-3.  **Active Camera**
+    -   **Dynamic light system** queries efficently using whichever tree you choose.
+
+3.  **Camera Frustum Culling**
     
-    -   The **Scene** holds a pointer to a `Camera` interface.
-    -   Two built-in cameras:
-        -   **OrbitCamera** (rotates around a target, good for debugging)
-        -   **FirstPersonCamera** (typical WASD + mouse–look approach)
-    -   The camera supplies a **view** matrix (`getViewMatrix()`) and a **projection** matrix (`getProjMatrix()`) for culling and rendering.
+    -   The camera calculates **six planes** defining its viewing frustum.
+    -   **Bounding Volumes (AABB & Sphere Tests)** are used to quickly discard objects that lie outside the view.
+    -   Objects fully outside the frustum are skipped, while partially visible objects undergo finer checks.
+
+4. **Dynamic Lighting Assignment**
+    
+    -   Each node dynamically assigns itself to the **nearest active lights** based on its position in the **QuadTree/Octree**.
+    -   The engine updates the **list of affecting lights** per frame to ensure optimal real-time lighting performance.
+    -   Lighting calculations are optimized by limiting the number of lights per node based on proximity and importance.
+    
 
 ----------
 
