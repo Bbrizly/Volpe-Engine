@@ -1,7 +1,7 @@
 
 # Volpe Engine
 
-![Volpe Engine Demo](https://github.com/Bbrizly/Cityscape/blob/main/volpe/readmeVisuals/gif.gif)
+![Volpe Engine Demo](https://github.com/Bbrizly/Volpe-Engine/tree/main/volpe/readmeVisuals/gif.gif)
 
 Welcome to **Volpe Engine**, a lightweight game engine framework that demonstrates:
 
