@@ -20,6 +20,7 @@ Scene::~Scene() {
     //     delete node;
     m_nodes.clear();
     m_lights.clear();
+    delete m_pGrid;
     if(m_quadTree) {
         delete m_quadTree;
         m_quadTree = nullptr;
@@ -281,13 +282,13 @@ void Scene::ShowDebugText()
     solarSysTextBox->SetColor(0,0,0,255);
          
     textBoc->SetColor(0,0,0,255);
-    textBoc->SetVisualization(false); //remove bg box
+    // textBoc->SetVisualization(false); //remove bg box
     textBoc->SetAlignment(2);
 
-    textBox  = m_textRenderer->createTextBox(fontArial,"FPS, Each Process's MS, Other important values", -640.0f, 360.0f, 400, 720);
+    textBox  = m_textRenderer->createTextBox(fontArial,"FPS, Each Process's MS, Other important values", -640.0f, 360.0f, 300, 720);
     textBox->SetColor(0, 0, 0, 255);
-    textBox->SetVisualization(false); //remove bg box
-    debugTextBox =  m_textRenderer->createTextBox(fontArial,"FPS, Each Process's MS, Other important values", 640-200.0f, 100.0f, 200, 200);
+    // textBox->SetVisualization(false); //remove bg box
+    debugTextBox =  m_textRenderer->createTextBox(fontArial,"FPS, Each Process's MS, Other important values", 640-200.0f, 95.0f, 200, 200);
     debugTextBox->SetColor(0, 0, 0, 255);
     
     m_textRenderer->setTextBox(solarSysTextBox);
@@ -562,8 +563,8 @@ void Scene::Render(int screenWidth, int screenHeight) {
         return;
     glm::mat4 proj = m_activeCamera->getProjMatrix(screenWidth, screenHeight);
     glm::mat4 view = m_activeCamera->getViewMatrix();
-    
-    m_pGrid->render(view,proj);
+    if(m_pGrid)
+        m_pGrid->render(view,proj);
 
     for(auto* n : m_nodesToRender) //m_nodesToRender //m_nodes
     {   

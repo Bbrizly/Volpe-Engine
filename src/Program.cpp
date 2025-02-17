@@ -35,7 +35,7 @@ float speedMultipler = 1.0f;
 void RecreateSceneHelper(int bounds)
 {
     bounds = 10;
-    Scene::Instance().SetBounds(bounds);
+    Scene::Instance().SetBounds(bounds, true);
     /* GRID like pattern
     int gridSize = std::ceil(std::cbrt(amount)); // Determine the grid dimensions (N x N x N)
     float spacing = (2.0f * bounds) / gridSize; // Adjust spacing to fit within bounds
@@ -200,7 +200,7 @@ void BuildSolarSystem(int bounds)
 
     //Orbit node for Earth (child of sunn)   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///
     gEarthOrbit = new Node("EarthOrbit");
-    gEarthOrbit->setTransform(glm::mat4(1.0f)); // identity; we'll update its rotation in update()
+    gEarthOrbit->setTransform(glm::mat4(1.0f));
     sun->addChild(gEarthOrbit);
 
     DebugSphere* earth = new DebugSphere("Earth", 1.0f);
@@ -323,7 +323,7 @@ void Program::update(float dt)
 {
     if(solarSystem)
     {
-        //Toggle rotation axis by X Y Z
+        //Toggle rotation axis X Y Z 
         if(m_pApp->isKeyJustDown('I')) {
             if(OrbitAxis.x == 1)
                 OrbitAxis.x = 0;
@@ -343,40 +343,15 @@ void Program::update(float dt)
                 OrbitAxis.z = 1;
         }
         if(m_pApp->isKeyJustDown('J')) 
-            speedMultipler *= 0.;
-        
+            speedMultipler *= 0.8;
+    
         if(m_pApp->isKeyJustDown('K')) 
             speedMultipler *= 1.2;
         
 
 
         UpdateSolarSystem(dt);
-        Scene::Instance().BuildOctTree();  //REAL TIME CULLING OF MOVING OBJECTS!!! :D
-
-        /* old logic
-        static float sunAngle   = 0.0f;
-        static float earthAngle = 0.0f;
-
-        sunAngle   += dt * 10.0f;   // Sun spinning
-        earthAngle += dt * 2.0f;   // Earth spinning
-
-        if (gSun)
-        {
-            glm::mat4 sunRot = glm::rotate(glm::mat4(1.0f),
-                                        glm::radians(sunAngle),
-                                        glm::vec3(0,1,0));
-            gSun->setTransform(sunRot);
-        }
-
-        if (gEarth)
-        {
-            glm::mat4 earthMatrix = glm::rotate(gEarth->getWorldTransform(), //glm::mat4(1.0f)
-                                                glm::radians(earthAngle),
-                                                glm::vec3(0,1,0));
-            // earthMatrix = glm::translate(earthMatrix, glm::vec3(10.0f, 0.0f, 0.0f));
-            gEarth->setTransform(earthMatrix);
-        }
-        */
+        // Scene::Instance().BuildOctTree();  //REAL TIME CULLING OF MOVING OBJECTS!!! :D
     }
     else
     {
@@ -455,5 +430,12 @@ void Program::update(float dt)
 
 void Program::draw(int width, int height)
 {
+    if(solarSystem)
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    else
+        glClearColor(0.0f, 0.5f, 0.5f, 1.0f);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     Scene::Instance().Render(width, height);
 }

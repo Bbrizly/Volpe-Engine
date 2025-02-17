@@ -108,7 +108,7 @@ public:
 
     void createGrid(int bounds) {m_pGrid = new Grid3D(bounds);}
 
-    void SetBounds(int b) { m_bounds = b; createGrid(b);}
+    void SetBounds(int b, bool x= false) { m_bounds = b; if(x)createGrid(b);}
 
     void ShowDebugText();
     void DebugDrawFrustum(const Frustum& frustum);
