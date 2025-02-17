@@ -26,6 +26,7 @@ public:
 
     // deal with a debug layer by name
     DebugLayer* GetLayer(const std::string& name);
+    void ClearLayer(const std::string& name);
     void CreateLayer(const std::string& name);
     void SetLayerEnabled(const std::string& name, bool enabled);
     void DrawFrustumFromCamera(Camera* cam, int screenWidth, int screenHeight, const std::string& layerName);

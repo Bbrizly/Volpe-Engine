@@ -40,6 +40,7 @@ private:
     QuadTree* m_quadTree;
     OctTree* m_octTree;
     bool m_ShowDebug = true;
+    bool m_ShowBoundingVolumes = false;
     
     volpe::Material* m_matUnlit     = nullptr; // For zero-lights  "Unlit3d.vsh" / "Unlit3d.fsh"
     volpe::Material* m_matPoint     = nullptr; // For 1+ lights    "PointLight.vsh" / "PointLight.fsh"
@@ -112,7 +113,8 @@ public:
     void ShowDebugText();
     void DebugDrawFrustum(const Frustum& frustum);
 
-    void ToggleQuadTreeRender() { m_ShowDebug = !m_ShowDebug; }
+    void ToggleBoundingVolumeDebug() { m_ShowBoundingVolumes = !m_ShowBoundingVolumes; }
+    void ToggleQuadTreeRender() { m_ShowDebug = !m_ShowDebug; DebugRender::Instance().ClearLayer("BoundingVolumes");}
     void ToggleUseDebugFrustum(Camera* c);
 
     bool getWhichTree() {return m_useQuadTreeOrOct;} //true quadtree, false octree

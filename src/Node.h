@@ -21,6 +21,8 @@ protected:
     volpe::Material*  m_pMaterial = nullptr;
 
     BoundingVolume* m_boundingVolume;
+    
+    bool reactToLight = true;
 
 public:
     Node(const std::string& name = "unnamed");
@@ -33,6 +35,8 @@ public:
     virtual void draw(const glm::mat4& proj, const glm::mat4& view);
 
     std::vector<int> m_affectingLights;
+    bool GetReactToLight() {return reactToLight;}
+    void SetReactToLight(bool x) {reactToLight = x;}
     
     // Basic getters/setters
     void setName(const std::string& name);

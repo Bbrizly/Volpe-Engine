@@ -113,7 +113,6 @@ void App::_init()
     //KEEP CURSOR IN PLACE AAA
     // glfwSetInputMode(m_pWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-
     GLenum err = glewInit();
     if (GLEW_OK != err)
         _fatalError((const char*)glewGetErrorString(err));
@@ -145,9 +144,7 @@ void App::LockCursor()
 
 void App::UnlockCursor()
 {
-    // Restore normal cursor behavior.
     glfwSetInputMode(m_pWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    // Disable raw mouse motion.
     glfwSetInputMode(m_pWindow, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
 }
 

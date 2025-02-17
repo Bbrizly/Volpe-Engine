@@ -43,7 +43,7 @@ void FirstPersonCamera::update(float dt)
         m_invertY = !m_invertY;
     }
     
-    if (m_pApp->isKeyJustDown('k'))
+    if (m_pApp->isKeyJustDown(GLFW_KEY_TAB))
     {
         lockMouse = !lockMouse;
         if(lockMouse)

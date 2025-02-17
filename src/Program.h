@@ -23,6 +23,7 @@ private:
     FirstPersonCamera* fpsCamera = nullptr;
     OrbitCamera* orbitCamera = nullptr;
     bool whichCamera = false; //true = orbit, false = fps
+    bool solarSystem = true;
 
 public:
     Program(volpe::App* pApp);

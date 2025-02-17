@@ -44,6 +44,11 @@ DebugLayer* DebugRender::GetLayer(const std::string& name) {
     return it->second;
 }
 
+void DebugRender::ClearLayer(const std::string& name) {
+    GetLayer(name)->Clear();
+}
+
+
 void DebugRender::SetLayerEnabled(const std::string& name, bool enabled) {
     DebugLayer* layer = GetLayer(name);
     if (layer) {

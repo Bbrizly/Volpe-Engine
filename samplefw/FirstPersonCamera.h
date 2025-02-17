@@ -23,7 +23,7 @@ public:
     //move to private
     float m_fov= glm::radians(5000.0f);
     float m_near = 0.1f;
-    float m_far  = 40.0f;
+    float m_far  = 80.0f;
 
 private:
     void _updateOrientation(const glm::vec2& mouseMovement);

@@ -121,7 +121,7 @@ void Scene::BuildOctTree()
 
     m_octTree = new OctTree(sceneBounds3D);
 
-    DebugRender::Instance().Clear(); 
+    DebugRender::Instance().ClearLayer("Tree");
     for (Node* n : m_nodes) {
         m_octTree->Insert(n);
     }
@@ -147,7 +147,7 @@ void Scene::BuildQuadTree() {
     }
     m_quadTree = new QuadTree(sceneBounds);
 
-    DebugRender::Instance().Clear(); 
+    DebugRender::Instance().ClearLayer("Tree");
     for(auto node : m_nodes)
     {
         m_quadTree->Insert(node);
@@ -259,15 +259,26 @@ void Scene::ShowDebugText()
     Font* fontArial   = m_textRenderer->createFont("Arial");
     TextBox* textBoc = m_textRenderer->createTextBox(fontArial,
         "Press Q to visualize Quad Tree.\n"
-        "Press R To randomly Generate Nodes.\n"
+        "Press G to visualize Bounding volumes.\n"
+        "Press R To Generate random Nodes.\n"
+        "Press B To Generate Solar System.\n"
         "Press F to toggle FPS Camera's Frustum.\n"
         "Press E to Switch between Trees\n"
         "Press C to Switch between CAMERAS\n"
         "Press L to randomize Light Locations.\n"
+        "Press TAB to unlock mouse.\n"
         "Renderer: " + rendererStr + "\nVendor: " + vendorStr,
-        640.0f - 400, 360.0f, 400, 200);
+        640.0f - 400, 360.0f, 400, 265);
     
-
+    TextBox* solarSysTextBox = m_textRenderer->createTextBox(fontArial,
+        "Solar System Control Scheme:.\n"
+        "Press I to toggle X axis.\n"
+        "Press O To toggle Y axis.\n"
+        "Press P to toggle Z axis.\n"
+        "Press J to Decrement Speed\n"
+        "Press K to Increment Speed\n",
+        640.0f - 400, 0.0f - 200, 400, 200);
+    solarSysTextBox->SetColor(0,0,0,255);
          
     textBoc->SetColor(0,0,0,255);
     textBoc->SetVisualization(false); //remove bg box
@@ -279,6 +290,7 @@ void Scene::ShowDebugText()
     debugTextBox =  m_textRenderer->createTextBox(fontArial,"FPS, Each Process's MS, Other important values", 640-200.0f, 100.0f, 200, 200);
     debugTextBox->SetColor(0, 0, 0, 255);
     
+    m_textRenderer->setTextBox(solarSysTextBox);
     m_textRenderer->setTextBox(debugTextBox);
     m_textRenderer->setTextBox(textBoc);
     m_textRenderer->setTextBox(textBox);
@@ -436,6 +448,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     info += "FPS: " + to_string((int)lastKnownFps) + "\n";
     info += "\n";
     info += "QuadTree Render: "  + string(m_ShowDebug   ? "ON" : "OFF") + "\n";
+    info += "Visual Bounding Vols: "  + string(m_ShowBoundingVolumes   ? "ON" : "OFF") + "\n";
     info += "Debug Frustum  : "  + string(m_useDebugFrustum  ? "ON" : "OFF") + "\n";
     info += "CURRENT TREE   : " + activeTreeName + "\n";
     info += "Scene Creation Time: " + to_string(m_avgCreation) + " ms\n";
@@ -475,13 +488,11 @@ void Scene::InitLights()
 
 void Scene::UpdateLighting()
 {
-    // 1) Clear old info
     for(auto* node : m_nodes)
     {
         node->m_affectingLights.clear(); 
     }
 
-    // 2) For each light, find which nodes are in range
     for(int i=0; i < (int)m_lights.size(); i++)
     {
         Light& L = m_lights[i];
@@ -513,62 +524,7 @@ void Scene::UpdateLighting()
             n->m_affectingLights.push_back(i);
         }
     }
-
-    for(auto* node : m_nodes)
-    {
-        if(node->m_affectingLights.size() > 0)
-        {
-            node->SetMaterial(m_matPoint);
-        }
-        else
-        {
-            node->SetMaterial(m_matUnlit);
-        }
-    }
 }
-
-/*
-void Scene::UpdateLighting()
-{
-    // reset cubes
-    for(auto* node : m_nodes) {
-        if(node->m_affectingLights.size())
-            node->m_affectingLights.clear();
-    }
-
-    // For each light, we do QueryLight
-    // for(auto& L : m_lights)
-    for(int i = 0; i < m_lights.size(); i++)
-    {
-        auto& L = m_lights[i];
-        // DebugRender::Instance().DrawSphere(L.position, L.radius, glm::vec3(1.0f));  //CAUSES CRASHESS WATCH OUTTTTT
-        float range = L.intensity * 10.f; 
-        vector<Node*> inRange;
-        if(m_useQuadTreeOrOct && m_quadTree)
-            m_quadTree->QueryLight(L.position, range, inRange);
-        else if(!m_useQuadTreeOrOct && m_octTree)
-            m_octTree->QueryLight(L.position, range, inRange);
-
-        for(auto* n : inRange){
-            
-            n->m_affectingLights.push_back(i);  // storing the LIGHT’S INDEX
-            // c->m_numLightsAffecting++;
-        }
-    }
-
-    // Switch shader
-    for(auto* n : m_nodes) /////////////////////////                                    /////////////////////////                                    /////////////////////////                                    /////////////////////////                                    
-    {
-        // if(c->m_numLightsAffecting == 0) {
-        //     n->SetMaterial()
-        //     c->SetProgram(m_unlitProgram);
-        // } else {
-        //     c->SetProgram(m_pointProgram); //m_pointProgram
-
-        // }
-    }
-}
-*/
 
 void Scene::MoveLights()
 {
@@ -597,12 +553,6 @@ void Scene::Clear()
     if(!m_nodesToRender.empty())
         m_nodesToRender.clear();
 
-    // if(m_quadTree)
-    //     delete m_quadTree;
-    
-    // if(m_octTree)
-    //     delete m_octTree;
-        
     DebugRender::Instance().Clear();
 }
 
@@ -616,13 +566,12 @@ void Scene::Render(int screenWidth, int screenHeight) {
     m_pGrid->render(view,proj);
 
     for(auto* n : m_nodesToRender) //m_nodesToRender //m_nodes
-    {
-        volpe::Material* mat = n->GetMaterial();
-
-        // int lightCount = n->m_affectingLights.size(); 
-
-        if(mat == m_matPoint)
+    {   
+        if(n->m_affectingLights.size() > 0 && n->GetReactToLight())
         {
+            n->SetMaterial(m_matPoint);
+            volpe::Material* mat = n->GetMaterial();
+
             int maxLights = 5;
             int lightCount = std::min(static_cast<int>(n->m_affectingLights.size()), maxLights);
 
@@ -630,7 +579,7 @@ void Scene::Render(int screenWidth, int screenHeight) {
             //     lightCount = maxLights;
             
             mat->SetUniform("lightsInRange", lightCount);
-            cout<<lightCount<<", lights in range\n";
+            // cout<<lightCount<<", lights in range\n";
             
             for(int i=0; i<lightCount; i++)
             {
@@ -650,6 +599,9 @@ void Scene::Render(int screenWidth, int screenHeight) {
             }
             mat->SetUniform("fade", 1.0f);
         }
+        // else        
+            // n->SetMaterial(m_matUnlit);
+        
         n->draw(proj, view);
     }
     
@@ -657,16 +609,19 @@ void Scene::Render(int screenWidth, int screenHeight) {
     
     if(m_debugCamera != NULL && m_useDebugFrustum)
     {
-        DebugRender::Instance().GetLayer("frustum")->Clear();
+        DebugRender::Instance().ClearLayer("frustum");
         DebugRender::Instance().DrawFrustumFromCamera(m_debugCamera, screenWidth, screenHeight, "frustum");
     }
 
     if(m_ShowDebug)
     {
-        for(auto* n : m_nodesToRender)
+        if(m_ShowBoundingVolumes)
         {
-            if(n->GetBoundingVolume())
-            {  n->GetBoundingVolume()->DrawMe();  }
+            for(auto* n : m_nodesToRender)
+            {
+                if(n->GetBoundingVolume())
+                {  n->GetBoundingVolume()->DrawMe();  }
+            }
         }
         for (Light l : m_lights)
         {
@@ -676,14 +631,14 @@ void Scene::Render(int screenWidth, int screenHeight) {
         if(reDebug) // if there was a change
         {
             reDebug = false;
+            DebugRender::Instance().ClearLayer("Tree");
+
             if(m_useQuadTreeOrOct)
             {
-                DebugRender::Instance().Clear();
                 m_quadTree->BuildDebugLines();
             }
             else
             {
-                DebugRender::Instance().Clear();
                 m_octTree->BuildDebugLines();
             }
         }
