@@ -13,11 +13,16 @@ public:
     glm::vec3 center;
     float     radius;
 
+    glm::vec3 m_localCenter;
+    float m_initialRadius;
+
     SphereVolume()
-        : center(0,0,0), radius(1.0f) {}
+        : center(0,0,0), radius(1.0f),
+        m_localCenter(0, 0, 0), m_initialRadius(1.0f) {}
 
     SphereVolume(const glm::vec3& c, float r)
-        : center(c), radius(r) {}
+        : center(c), radius(r),
+        m_localCenter(c), m_initialRadius(r) {}
 
     virtual std::string getType() const override { return "Sphere"; }
 
@@ -42,14 +47,17 @@ public:
 
     virtual void UpdateVolume(const glm::mat4& worldTransform) override
     {
-        glm::vec4 transformedCenter = worldTransform * glm::vec4(center, 1.0f);
+        glm::vec4 transformedCenter = worldTransform * glm::vec4(m_localCenter, 1.0f);
         center = glm::vec3(transformedCenter);
+
+        // std::cout << "\nLocal center:"<< m_localCenter.x << ", " << m_localCenter.y << ", " << m_localCenter.z <<
+        //              "\nCenter: " << center.x << ", " << center.y << ", " << center.z;
 
         float scaleX = glm::length(glm::vec3(worldTransform[0]));
         float scaleY = glm::length(glm::vec3(worldTransform[1]));
         float scaleZ = glm::length(glm::vec3(worldTransform[2]));
         float maxScale = std::max(scaleX, std::max(scaleY, scaleZ));
 
-        radius = radius * maxScale;
+        radius = m_initialRadius * maxScale;
     }
 };

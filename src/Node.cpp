@@ -86,15 +86,16 @@ void Node::SetBoundingVolume(BoundingVolume* volume)
 // EXpanding the bounding volume to cover dem children
 void Node::UpdateBoundingVolume()
 {
-    // m_boundingVolume->UpdateVolume(getWorldTransform());
+    if(!m_boundingVolume) 
+        return;
+    std::cout<<"NAME: "<<m_name<<std::endl;
+    m_boundingVolume->UpdateVolume(getWorldTransform());
     
     for (auto* c : m_children)
     {
         c->UpdateBoundingVolume();
     }
 
-    if(!m_boundingVolume) 
-        return;
 
     for (auto* c : m_children) // IT WORKS WITH THE SOLAR SYSTEM BUT FUCKS UP DEBUG LINES
     {
