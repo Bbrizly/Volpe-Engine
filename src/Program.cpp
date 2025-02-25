@@ -138,8 +138,6 @@ void RecreateSceneHelper(int bounds)
 
 void BuildAsteroidField(int count, float innerRadius, float outerRadius)
 {
-    // We'll place asteroids in random orbits between [innerRadius, outerRadius].
-    // You can tweak these as you like.
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -178,12 +176,10 @@ void BuildAsteroidField(int count, float innerRadius, float outerRadius)
             // asteroid->setColor(r, g, b);
         }
 
-
-        // Position the asteroid
         glm::mat4 T = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
         asteroid->setTransform(T);
 
-        // Very important: add to Scene so culling will see each asteroid.
+        //astroid doesnt render if not added to scene
         Scene::Instance().AddNode(asteroid);
     }
 }
@@ -252,7 +248,7 @@ void BuildSolarSystem(int bounds)
 
     Scene::Instance().AddNode(sun);
 
-    BuildAsteroidField(200, 25.0f, 40.0f);
+    BuildAsteroidField(800, 25.0f, 40.0f);
 }
 
 void UpdateSolarSystem(float dt)
@@ -313,6 +309,7 @@ void Program::init()
     BuildSolarSystem(bounds);
     // Scene::Instance().BuildQuadTree();
     Scene::Instance().BuildOctTree();
+    
 
 }
 
@@ -346,7 +343,7 @@ void Program::update(float dt)
             speedMultipler *= 1.2;
         
         UpdateSolarSystem(dt);
-        // Scene::Instance().BuildOctTree();  //REAL TIME CULLING OF MOVING OBJECTS!!! :D
+        Scene::Instance().BuildOctTree();  //REAL TIME CULLING OF MOVING OBJECTS!!! :D
     }
     else
     {

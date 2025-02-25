@@ -88,7 +88,7 @@ void Node::UpdateBoundingVolume()
 {
     if(!m_boundingVolume) 
         return;
-    std::cout<<"NAME: "<<m_name<<std::endl;
+    // std::cout<<"NAME: "<<m_name<<std::endl;
     m_boundingVolume->UpdateVolume(getWorldTransform());
     
     for (auto* c : m_children)
@@ -96,14 +96,13 @@ void Node::UpdateBoundingVolume()
         c->UpdateBoundingVolume();
     }
 
-
-    for (auto* c : m_children) // IT WORKS WITH THE SOLAR SYSTEM BUT FUCKS UP DEBUG LINES
-    {
-        BoundingVolume* childVol = c->GetBoundingVolume();
-        if(!childVol) continue;
-        glm::mat4 childWorld = c->getWorldTransform();
-        m_boundingVolume->ExpandToFit(*childVol, childWorld);
-    }
+    // for (auto* c : m_children) // IT WORKS WITH THE SOLAR SYSTEM BUT FUCKS UP DEBUG LINES
+    // {
+    //     BoundingVolume* childVol = c->GetBoundingVolume();
+    //     if(!childVol) continue;
+    //     glm::mat4 childWorld = c->getWorldTransform();
+    //     m_boundingVolume->ExpandToFit(*childVol, childWorld);
+    // }
     
 }
 
