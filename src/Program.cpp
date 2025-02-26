@@ -285,6 +285,18 @@ void UpdateSolarSystem(float dt)
     if(gJupiterOrbit)
         gJupiterOrbit->setTransform(glm::rotate(glm::mat4(1.0f),  jupiterAngle, OrbitAxis));
 }
+
+void buildParticleScene()
+{
+    Scene::Instance().Clear();
+
+    ParticleNode* Emitter = new ParticleNode("ParticleSystemNode");
+
+    Emitter->setTransform(glm::mat4(1.0f));
+
+    Scene::Instance().AddNode(Emitter);
+}
+
 #pragma endregion
 void Program::init()
 {
@@ -306,15 +318,22 @@ void Program::init()
     Scene::Instance().InitLights();
 
     // RecreateSceneHelper(bounds);
-    BuildSolarSystem(bounds);
+    // BuildSolarSystem(bounds);
     // Scene::Instance().BuildQuadTree();
-    Scene::Instance().BuildOctTree();
-    
+    // Scene::Instance().BuildOctTree();
+    buildParticleScene();
+
 
 }
 
 void Program::update(float dt)
 {
+
+    if(m_pApp->isKeyJustDown('P') || m_pApp->isKeyJustDown('p'))
+    {
+        buildParticleScene();
+    }
+
     if(solarSystem)
     {
         //Toggle rotation axis X Y Z 
@@ -422,9 +441,9 @@ void Program::update(float dt)
 
 void Program::draw(int width, int height)
 {
-    if(solarSystem)
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    else
+    // if(solarSystem)
+        // glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    // else
         glClearColor(0.0f, 0.5f, 0.5f, 1.0f);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

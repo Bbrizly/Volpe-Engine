@@ -16,6 +16,8 @@
 #include "../volpe/TextRendering/TextRenderer.h"
 #include "../volpe/TextRendering/TextBox.h"
 
+#include "ParticleNode.h"
+
 class Program
 {
 private:

@@ -17,5 +17,5 @@ void main()
     //FragColor = vec4(v_normal * 0.5 + 0.5, 1.0);
     //FragColor = vec4(v_normal.x, 0.0, 0.0, 1.0);  // Red = X normal
 
-    //FragColor = vec4(v_uv1, 0.0, 1.0); // UV mapped to Red (U) and Green (V)
+    FragColor = vec4(v_uv1, 0.0, 1.0); // UV mapped to Red (U) and Green (V)
 }
