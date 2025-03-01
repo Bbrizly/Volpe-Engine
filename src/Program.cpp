@@ -1,4 +1,7 @@
 #include "Program.h"
+#include "../thirdparty/imgui/imgui.h"
+#include "../thirdparty/imgui/imgui_impl_glfw.h"
+#include "../thirdparty/imgui/imgui_impl_opengl3.h"
 
 using namespace std;
 
@@ -300,11 +303,25 @@ void buildParticleScene()
 #pragma endregion
 void Program::init()
 {
+    #pragma region Initalizing Shit
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
     glEnable(GL_CULL_FACE);
+
+    // Create ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();  
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(m_pApp->getWindow(), true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
+
+    #pragma endregion
     
     fpsCamera = new FirstPersonCamera(m_pApp);
 

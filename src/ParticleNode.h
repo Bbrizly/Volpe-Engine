@@ -33,7 +33,7 @@ private:
     float minLife = 1;
     float maxLife = 4;
 
-    int goalAmount = 50;
+    int goalAmount = 1000;
 
     std::vector<Particle> m_particles;
 

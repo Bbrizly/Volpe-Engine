@@ -56,12 +56,24 @@ add_definitions(-DASSIMP_BUILD_NO_X_IMPORTER
                 -DASSIMP_BUILD_NO_STEP_IMPORTER
                 -DASSIMP_BUILD_NO_BLEND_IMPORTER)
 
-
 add_definitions(-DNO_ASSIMP)
 add_subdirectory(thirdparty/glfw)
 add_subdirectory(thirdparty/glm)
 add_subdirectory(thirdparty/assimp)
 add_subdirectory(thirdparty/glew/build/cmake)
+
+set(IMGUI_SOURCES
+    ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui.cpp
+    ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_draw.cpp
+    ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_widgets.cpp
+    ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_demo.cpp
+    ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_tables.cpp
+    ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_impl_glfw.cpp
+    ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_impl_opengl3.cpp
+)
+add_library(imgui ${IMGUI_SOURCES})
+target_include_directories(imgui PUBLIC ${CMAKE_SOURCE_DIR}/thirdparty/imgui)
+target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_LOADER_GLEW)
 
 include_directories(
     thirdparty/glfw/include 
@@ -69,31 +81,31 @@ include_directories(
     thirdparty/glew/include 
     thirdparty/assimp/include
     ${CMAKE_SOURCE_DIR}/volpe
-    # ${CMAKE_SOURCE_DIR}/volpe/TextRendering # Add this if needed
-    ${OPENGL_INCLUDE_DIRS})
+    ${OPENGL_INCLUDE_DIRS}
+)
 
 file(GLOB_RECURSE SAMPLEFW_SOURCE_FILES 
-	${CMAKE_SOURCE_DIR}/samplefw/*.c
+    ${CMAKE_SOURCE_DIR}/samplefw/*.c
     ${CMAKE_SOURCE_DIR}/samplefw/*.cpp)
 
 file(GLOB_RECURSE SAMPLEFW_HEADER_FILES 
-	${CMAKE_SOURCE_DIR}/samplefw/*.h
+    ${CMAKE_SOURCE_DIR}/samplefw/*.h
     ${CMAKE_SOURCE_DIR}/samplefw/*.hpp)
 
 file(GLOB_RECURSE VOLPE_SOURCE_FILES 
-	${CMAKE_SOURCE_DIR}/volpe/*.c
+    ${CMAKE_SOURCE_DIR}/volpe/*.c
     ${CMAKE_SOURCE_DIR}/volpe/*.cpp)
 
 file(GLOB_RECURSE VOLPE_HEADER_FILES 
-	${CMAKE_SOURCE_DIR}/volpe/*.h
+    ${CMAKE_SOURCE_DIR}/volpe/*.h
     ${CMAKE_SOURCE_DIR}/volpe/*.hpp)
 
 file(GLOB_RECURSE SOURCE_FILES 
-	${CMAKE_SOURCE_DIR}/src/*.c
-	${CMAKE_SOURCE_DIR}/src/*.cpp)
-	
+    ${CMAKE_SOURCE_DIR}/src/*.c
+    ${CMAKE_SOURCE_DIR}/src/*.cpp)
+    
 file(GLOB_RECURSE HEADER_FILES 
-	${CMAKE_SOURCE_DIR}/src/*.h
+    ${CMAKE_SOURCE_DIR}/src/*.h
     ${CMAKE_SOURCE_DIR}/src/*.hpp)
 
 add_executable(sample 
@@ -103,9 +115,9 @@ add_executable(sample
     ${VOLPE_HEADER_FILES}
     ${SOURCE_FILES}
     ${HEADER_FILES}
-    )
+)
 
-target_link_libraries(sample assimp glfw glew ${OPENGL_LIBRARIES} ${GLFW_LIBRARIES})
+target_link_libraries(sample assimp glfw glew imgui ${OPENGL_LIBRARIES} ${GLFW_LIBRARIES})
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

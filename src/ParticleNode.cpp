@@ -22,6 +22,7 @@ ParticleNode::ParticleNode(const std::string& name)
 
 ParticleNode::~ParticleNode()
 {
+    m_particles.clear();
     if(m_vb) {
         volpe::BufferManager::DestroyBuffer(m_vb);
         m_vb = nullptr;
@@ -100,6 +101,7 @@ void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
 
     int vertexCount = (int)m_particles.size() * 6;
     if(vertexCount > 0) {
+        // USE GL_DYNAMIC_DRAW
         glDrawArrays(GL_TRIANGLES, 0, vertexCount);
     }
 
