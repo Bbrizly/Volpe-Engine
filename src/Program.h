@@ -16,6 +16,10 @@
 #include "../volpe/TextRendering/TextRenderer.h"
 #include "../volpe/TextRendering/TextBox.h"
 
+#include "../thirdparty/imgui/imgui.h"
+#include "../thirdparty/imgui/imgui_impl_glfw.h"
+#include "../thirdparty/imgui/imgui_impl_opengl3.h"
+
 #include "ParticleNode.h"
 
 class Program
@@ -26,6 +30,7 @@ private:
     OrbitCamera* orbitCamera = nullptr;
     bool whichCamera = false; //true = orbit, false = fps
     bool solarSystem = true;
+    void DrawSceneManagerUI();
 
 public:
     Program(volpe::App* pApp);

@@ -1,7 +1,4 @@
 #include "Program.h"
-#include "../thirdparty/imgui/imgui.h"
-#include "../thirdparty/imgui/imgui_impl_glfw.h"
-#include "../thirdparty/imgui/imgui_impl_opengl3.h"
 
 using namespace std;
 
@@ -15,6 +12,10 @@ Program::~Program()
 {
     delete orbitCamera;
     delete fpsCamera;
+    
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 }
 
 int amount = 10; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
@@ -33,6 +34,134 @@ static Node* gJupiterOrbit = nullptr;
 
 vec3 OrbitAxis = vec3(0,1,0);
 float speedMultipler = 1.0f;
+
+#pragma region SCENE UI
+
+
+static Node* g_selectedNode = nullptr;
+
+
+
+static glm::vec3 ExtractTranslation(const glm::mat4& m)
+{
+    return glm::vec3(m[3][0], m[3][1], m[3][2]);
+}
+
+static glm::vec3 ExtractScale(const glm::mat4& m)
+{
+    
+    float sx = glm::length(glm::vec3(m[0][0], m[1][0], m[2][0]));
+    float sy = glm::length(glm::vec3(m[0][1], m[1][1], m[2][1]));
+    float sz = glm::length(glm::vec3(m[0][2], m[1][2], m[2][2]));
+    return glm::vec3(sx, sy, sz);
+}
+
+
+static glm::mat4 MakeTransform(const glm::vec3& position, const glm::vec3& scale)
+{
+    glm::mat4 T = glm::translate(glm::mat4(1.0f), position);
+    glm::mat4 S = glm::scale(glm::mat4(1.0f), scale);
+    return T * S; // ignoring rotation for this example
+}
+void Program::DrawSceneManagerUI()
+{
+    // ============= [Scene Hierarchy Panel] =============
+    ImGui::Begin("Scene Hierarchy");
+    {
+        // Retrieve all nodes
+        auto& nodes = Scene::Instance().GetNodes();
+
+        // Make a selectable for each node
+        for (auto* node : nodes)
+        {
+            bool isSelected = (node == g_selectedNode);
+            if (ImGui::Selectable(node->getName().c_str(), isSelected))
+            {
+                g_selectedNode = node;
+            }
+        }
+    }
+    ImGui::End();
+
+    // ============= [Inspector Panel] =============
+    ImGui::Begin("Inspector");
+    {
+        if (g_selectedNode)
+        {
+            // -- Name --
+            char nameBuffer[256];
+            strcpy(nameBuffer, g_selectedNode->getName().c_str());
+            if (ImGui::InputText("Name", nameBuffer, IM_ARRAYSIZE(nameBuffer)))
+            {
+                // If user typed a new name, update the node.
+                g_selectedNode->setName(nameBuffer);
+            }
+
+            // -- Transform (Position & Scale) --
+            glm::mat4 localTransform = g_selectedNode->getTransform();
+            glm::vec3 position = ExtractTranslation(localTransform);
+            glm::vec3 scale    = ExtractScale(localTransform);
+
+            if (ImGui::DragFloat3("Position", (float*)&position, 0.1f))
+            {
+                // Recompose a new transform with the updated position (and old scale).
+                glm::mat4 newTransform = MakeTransform(position, scale);
+                g_selectedNode->setTransform(newTransform);
+            }
+
+            if (ImGui::DragFloat3("Scale", (float*)&scale, 0.01f, 0.0f, 100.0f))
+            {
+                // Recompose a new transform with updated scale.
+                glm::mat4 newTransform = MakeTransform(position, scale);
+                g_selectedNode->setTransform(newTransform);
+            }
+
+            // =========== Node-Specific Editing ===========
+            // Example: if it’s a DebugCube, let’s edit color.
+            if (auto* cube = dynamic_cast<DebugCube*>(g_selectedNode))
+            {
+                glm::vec3 c = cube->getColor();
+                float color[3] = { c.r, c.g, c.b };
+                if (ImGui::ColorEdit3("Cube Color", color))
+                {
+                    // ColorEdit returns 0..1 float, convert back to 0..255.
+                    GLubyte rr = (GLubyte)(color[0] * 255.0f);
+                    GLubyte gg = (GLubyte)(color[1] * 255.0f);
+                    GLubyte bb = (GLubyte)(color[2] * 255.0f);
+                    cube->setColor(rr, gg, bb);
+                }
+            }
+            else if (auto* sphere = dynamic_cast<DebugSphere*>(g_selectedNode))
+            {
+                float r = sphere->getRadius();
+                if (ImGui::DragFloat("Sphere Radius", &r, 0.1f, 0.1f, 100.0f))
+                {
+                    sphere->setRadius(r);
+                }
+
+                // Possibly color for sphere as well
+                glm::vec3 sc = sphere->getColor(); // add getColor() if you want
+                float color[3] = { sc.r, sc.g, sc.b };
+                if (ImGui::ColorEdit3("Sphere Color", color))
+                {
+                    GLubyte rr = (GLubyte)(color[0] * 255.0f);
+                    GLubyte gg = (GLubyte)(color[1] * 255.0f);
+                    GLubyte bb = (GLubyte)(color[2] * 255.0f);
+                    sphere->setColor(rr, gg, bb);
+                }
+            }
+            // You could add else if(...) for ParticleNode, etc.
+        }
+        else
+        {
+            ImGui::Text("No node selected");
+        }
+    }
+    ImGui::End();
+}
+
+
+#pragma endregion
 
 #pragma region Helper Creations
 void RecreateSceneHelper(int bounds)
@@ -345,6 +474,11 @@ void Program::init()
 
 void Program::update(float dt)
 {
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    DrawSceneManagerUI();
 
     if(m_pApp->isKeyJustDown('P') || m_pApp->isKeyJustDown('p'))
     {
@@ -466,4 +600,8 @@ void Program::draw(int width, int height)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     Scene::Instance().Render(width, height);
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
+
