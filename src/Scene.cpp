@@ -291,10 +291,10 @@ void Scene::ShowDebugText()
     debugTextBox =  m_textRenderer->createTextBox(fontArial,"FPS, Each Process's MS, Other important values", 640-200.0f, 95.0f, 200, 200);
     debugTextBox->SetColor(0, 0, 0, 255);
     
-    m_textRenderer->setTextBox(solarSysTextBox);
-    m_textRenderer->setTextBox(debugTextBox);
-    m_textRenderer->setTextBox(textBoc);
-    m_textRenderer->setTextBox(textBox);
+    // m_textRenderer->setTextBox(solarSysTextBox);
+    // m_textRenderer->setTextBox(debugTextBox);
+    // m_textRenderer->setTextBox(textBoc);
+    // m_textRenderer->setTextBox(textBox);
 }
 
 void Scene::Update(float dt, int screenWidth, int screenHeight) {
@@ -554,6 +554,9 @@ void Scene::Clear()
     if(!m_nodesToRender.empty())
         m_nodesToRender.clear();
 
+    // m_quadTree->~QuadTree();
+    // m_octTree
+
     DebugRender::Instance().Clear();
 }
 
@@ -580,7 +583,6 @@ void Scene::Render(int screenWidth, int screenHeight) {
             //     lightCount = maxLights;
             
             mat->SetUniform("lightsInRange", lightCount);
-            // cout<<lightCount<<", lights in range\n";
             
             for(int i=0; i<lightCount; i++)
             {
@@ -600,8 +602,8 @@ void Scene::Render(int screenWidth, int screenHeight) {
             }
             mat->SetUniform("fade", 1.0f);
         }
-        // else        
-            // n->SetMaterial(m_matUnlit);
+        else        
+            n->SetMaterial(m_matUnlit);
         
         n->draw(proj, view);
     }
@@ -618,12 +620,13 @@ void Scene::Render(int screenWidth, int screenHeight) {
     {
         if(m_ShowBoundingVolumes)
         {
+            DebugRender::Instance().ClearLayer("BoundingVolumes");
             for(auto* n : m_nodesToRender)
             {
                 if(n->GetBoundingVolume())
                 {  n->GetBoundingVolume()->DrawMe();  }
             }
-        }
+        } else { DebugRender::Instance().ClearLayer("BoundingVolumes");}
         for (Light l : m_lights)
         {
             DebugRender::Instance().DrawSphere(l.position,l.radius,vec3(1));
@@ -651,11 +654,11 @@ void Scene::Render(int screenWidth, int screenHeight) {
     #pragma endregion
     
     // Render text
-    if(m_textRenderer && textBox)
-    {
-        glDisable(GL_DEPTH_TEST);
-        m_textRenderer->setScreenSize(screenWidth,screenHeight);
-        m_textRenderer->render(proj,view);
-        glEnable(GL_DEPTH_TEST);
-    }
+    // if(m_textRenderer && textBox)
+    // {
+    //     glDisable(GL_DEPTH_TEST);
+    //     m_textRenderer->setScreenSize(screenWidth,screenHeight);
+    //     m_textRenderer->render(proj,view);
+    //     glEnable(GL_DEPTH_TEST);
+    // }
 }

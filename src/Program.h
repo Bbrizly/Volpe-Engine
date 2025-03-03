@@ -22,6 +22,13 @@
 
 #include "ParticleNode.h"
 
+enum class SceneType
+{
+    SolarSystem,
+    Random,
+    Particle
+};
+
 class Program
 {
 private:
@@ -31,6 +38,11 @@ private:
     bool whichCamera = false; //true = orbit, false = fps
     bool solarSystem = true;
     void DrawSceneManagerUI();
+    void SwitchScene(SceneType newScene);
+    void DrawTopBar();
+    void DrawInspector();
+    void DrawSceneHierarchy();
+    void DrawDebugWindow();
 
 public:
     Program(volpe::App* pApp);

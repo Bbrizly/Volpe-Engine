@@ -121,6 +121,7 @@ public:
 
     //TEMPORARYYYY
     vector<Node*> GetNodes() { return m_nodes; }
+    vector<Node*> GetNodesToRender() { return m_nodesToRender; }
 
     void Clear();
 

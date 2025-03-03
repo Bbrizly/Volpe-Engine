@@ -12,12 +12,12 @@ void OrbitCamera::update(float dt)
 {
     glm::vec2 mousePos = m_pApp->getMousePos();
 
-    if(m_pApp->isLMBDown())
+    if(m_pApp->isKeyDown(GLFW_KEY_LEFT_ALT))
     {
         glm::vec2 mouseMovement = mousePos - m_lastMousePos;
         _rotate(mouseMovement);
     }
-    else if(m_pApp->isMMBDown())
+    else if(m_pApp->isKeyDown(GLFW_KEY_LEFT_SHIFT))
     {
         glm::vec2 mouseMovement = mousePos - m_lastMousePos;
         _pan(mouseMovement);
@@ -36,6 +36,20 @@ void OrbitCamera::update(float dt)
     m_far = volpe::max(150.0f, m_distance * 2.0f);
     m_near = m_distance / 10.0f;
 
+    if (m_pApp->isKeyJustDown(GLFW_KEY_TAB))
+    {
+        lockMouse = !lockMouse;
+        if(lockMouse)
+        {
+            m_pApp->LockCursor();
+            m_lastMousePos = m_pApp->getMousePos();
+        }else
+        {
+            m_pApp->UnlockCursor();
+            m_lastMousePos = m_pApp->getMousePos();
+        }
+    }
+    
     // if(m_pApp->isKeyDown('f'))
     // {
     //     focusOn(m_focusMin,m_focusMax);

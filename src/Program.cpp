@@ -18,6 +18,7 @@ Program::~Program()
     ImGui::DestroyContext();
 }
 
+
 int amount = 10; //AMOUTN TEMPORORARY DELETE LATEERRRRR 
 int bounds = 10;
 
@@ -61,105 +62,267 @@ static glm::mat4 MakeTransform(const glm::vec3& position, const glm::vec3& scale
 {
     glm::mat4 T = glm::translate(glm::mat4(1.0f), position);
     glm::mat4 S = glm::scale(glm::mat4(1.0f), scale);
-    return T * S; // ignoring rotation for this example
+    return T * S;
 }
-void Program::DrawSceneManagerUI()
+
+float debugWindowHeight = 200.0f;
+bool culled = false;
+void Program::DrawSceneHierarchy()
 {
-    // ============= [Scene Hierarchy Panel] =============
-    ImGui::Begin("Scene Hierarchy");
-    {
-        // Retrieve all nodes
-        auto& nodes = Scene::Instance().GetNodes();
+    float sceneWidth = 200.0f;
+    float topOffset = 30.0f;
+    float sceneHeight = ImGui::GetIO().DisplaySize.y - (topOffset + debugWindowHeight);
+    ImGui::SetNextWindowPos(ImVec2(0, topOffset));
+    ImGui::SetNextWindowSize(ImVec2(sceneWidth, sceneHeight));
+    ImGui::Begin("Scene Hierarchy", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-        // Make a selectable for each node
-        for (auto* node : nodes)
+    ImGui::Checkbox("Culled", &culled);
+    vector<Node*> nodes;
+    if(culled) nodes = Scene::Instance().GetNodesToRender();
+    else       nodes = Scene::Instance().GetNodes();
+        
+    for (auto* node : nodes)
+    {
+        bool isSelected = (node == g_selectedNode);
+        if (ImGui::Selectable(node->getName().c_str(), isSelected))
         {
-            bool isSelected = (node == g_selectedNode);
-            if (ImGui::Selectable(node->getName().c_str(), isSelected))
-            {
-                g_selectedNode = node;
-            }
+            g_selectedNode = node;
         }
     }
-    ImGui::End();
 
-    // ============= [Inspector Panel] =============
-    ImGui::Begin("Inspector");
-    {
-        if (g_selectedNode)
-        {
-            // -- Name --
-            char nameBuffer[256];
-            strcpy(nameBuffer, g_selectedNode->getName().c_str());
-            if (ImGui::InputText("Name", nameBuffer, IM_ARRAYSIZE(nameBuffer)))
-            {
-                // If user typed a new name, update the node.
-                g_selectedNode->setName(nameBuffer);
-            }
-
-            // -- Transform (Position & Scale) --
-            glm::mat4 localTransform = g_selectedNode->getTransform();
-            glm::vec3 position = ExtractTranslation(localTransform);
-            glm::vec3 scale    = ExtractScale(localTransform);
-
-            if (ImGui::DragFloat3("Position", (float*)&position, 0.1f))
-            {
-                // Recompose a new transform with the updated position (and old scale).
-                glm::mat4 newTransform = MakeTransform(position, scale);
-                g_selectedNode->setTransform(newTransform);
-            }
-
-            if (ImGui::DragFloat3("Scale", (float*)&scale, 0.01f, 0.0f, 100.0f))
-            {
-                // Recompose a new transform with updated scale.
-                glm::mat4 newTransform = MakeTransform(position, scale);
-                g_selectedNode->setTransform(newTransform);
-            }
-
-            // =========== Node-Specific Editing ===========
-            // Example: if it’s a DebugCube, let’s edit color.
-            if (auto* cube = dynamic_cast<DebugCube*>(g_selectedNode))
-            {
-                glm::vec3 c = cube->getColor();
-                float color[3] = { c.r, c.g, c.b };
-                if (ImGui::ColorEdit3("Cube Color", color))
-                {
-                    // ColorEdit returns 0..1 float, convert back to 0..255.
-                    GLubyte rr = (GLubyte)(color[0] * 255.0f);
-                    GLubyte gg = (GLubyte)(color[1] * 255.0f);
-                    GLubyte bb = (GLubyte)(color[2] * 255.0f);
-                    cube->setColor(rr, gg, bb);
-                }
-            }
-            else if (auto* sphere = dynamic_cast<DebugSphere*>(g_selectedNode))
-            {
-                float r = sphere->getRadius();
-                if (ImGui::DragFloat("Sphere Radius", &r, 0.1f, 0.1f, 100.0f))
-                {
-                    sphere->setRadius(r);
-                }
-
-                // Possibly color for sphere as well
-                glm::vec3 sc = sphere->getColor(); // add getColor() if you want
-                float color[3] = { sc.r, sc.g, sc.b };
-                if (ImGui::ColorEdit3("Sphere Color", color))
-                {
-                    GLubyte rr = (GLubyte)(color[0] * 255.0f);
-                    GLubyte gg = (GLubyte)(color[1] * 255.0f);
-                    GLubyte bb = (GLubyte)(color[2] * 255.0f);
-                    sphere->setColor(rr, gg, bb);
-                }
-            }
-            // You could add else if(...) for ParticleNode, etc.
-        }
-        else
-        {
-            ImGui::Text("No node selected");
-        }
-    }
     ImGui::End();
 }
 
+void Program::DrawDebugWindow()
+{
+    float debugWidth = 200;
+    float debugPosY = ImGui::GetIO().DisplaySize.y - debugWindowHeight; //bottom-left
+
+    ImGui::SetNextWindowPos(ImVec2(0, debugPosY));
+    ImGui::SetNextWindowSize(ImVec2(debugWidth, debugWindowHeight));
+    ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+
+    ImGui::Checkbox("Culled", &culled);
+    if (ImGui::Button("Toggle Debug Frustum"))
+    {
+        Scene::Instance().ToggleUseDebugFrustum(fpsCamera);
+    }
+    if (ImGui::Button("Toggle Tree Render"))
+    {
+        Scene::Instance().ToggleQuadTreeRender();
+    }
+    if (ImGui::Button("Toggle Bounding Vol Debug"))
+    {
+        Scene::Instance().ToggleBoundingVolumeDebug();
+    }
+
+
+    ImGui::End();
+}
+
+void Program::DrawInspector()
+{
+    float inspectorWidth = 300.0f;
+    float topOffset = 30.0f;
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - inspectorWidth, topOffset));
+    ImGui::SetNextWindowSize(ImVec2(inspectorWidth, ImGui::GetIO().DisplaySize.y - topOffset));
+    ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+
+    if (!g_selectedNode)
+    {
+        ImGui::Text("No node selected");
+        ImGui::End();
+        return;
+    }
+
+    char nameBuf[256];
+    strcpy(nameBuf, g_selectedNode->getName().c_str());
+    if (ImGui::InputText("Name", nameBuf, IM_ARRAYSIZE(nameBuf)))
+    {
+        string nameSet = nameBuf;
+        if(nameBuf[0] == '\0') {nameSet = "NULL";} //needed cuz deleting whats in textbox crashes program
+        g_selectedNode->setName(std::string(nameSet));
+    }
+
+    glm::mat4 localT = g_selectedNode->getTransform();
+    glm::vec3 pos = ExtractTranslation(localT);
+    glm::vec3 scl = ExtractScale(localT);
+
+    if (ImGui::DragFloat3("Position", (float*)&pos, 0.1f))
+    {
+        glm::mat4 newTrans = MakeTransform(pos, scl);
+        g_selectedNode->setTransform(newTrans);
+    }
+    if (ImGui::DragFloat3("Scale", (float*)&scl, 0.01f, 0.01f, 100.0f))
+    {
+        glm::mat4 newTrans = MakeTransform(pos, scl);
+        g_selectedNode->setTransform(newTrans);
+    }
+
+    // Node specific BUT once I convert codebase to entity system, this will muchhh simpler
+    if (auto* cube = dynamic_cast<DebugCube*>(g_selectedNode))
+    {
+        glm::vec3 c = cube->getColor();
+        float color[3] = { c.r, c.g, c.b };
+        if (ImGui::ColorEdit3("Cube Color", color))
+        {
+            GLubyte rr = (GLubyte)(color[0] * 255.0f);
+            GLubyte gg = (GLubyte)(color[1] * 255.0f);
+            GLubyte bb = (GLubyte)(color[2] * 255.0f);
+            cube->setColor(rr, gg, bb);
+        }
+    }
+    else if (auto* sphere = dynamic_cast<DebugSphere*>(g_selectedNode))
+    {
+        float radius = sphere->getRadius();
+        if (ImGui::DragFloat("Radius", &radius, 0.1f, 0.01f, 100.0f))
+        {
+            sphere->setRadius(radius);
+        }
+
+        glm::vec3 sc = sphere->getColor();
+        float col[3] = {sc.r, sc.g, sc.b};
+        if(ImGui::ColorEdit3("Sphere Color", col))
+        {
+            GLubyte rr = (GLubyte)(col[0] * 255.0f);
+            GLubyte gg = (GLubyte)(col[1] * 255.0f);
+            GLubyte bb = (GLubyte)(col[2] * 255.0f);
+            sphere->setColor(rr, gg, bb);
+        }
+    }
+    // /*
+    else if (auto* emitter = dynamic_cast<ParticleNode*>(g_selectedNode))
+    {
+        ImGui::Separator();
+        ImGui::Text("Particle System Controls");
+        if(ImGui::Button("Play")) {
+            emitter->Play();
+        }
+        ImGui::SameLine();
+        if(ImGui::Button("Pause")) {
+            emitter->Pause();
+        }
+        ImGui::SameLine();
+        if(ImGui::Button("Stop")) {
+            emitter->Stop();
+        }
+        ImGui::SameLine();
+        if(ImGui::Button("Restart")) {
+            emitter->Restart();
+        }
+    
+        ImGui::Text("Current State: %s",
+           (emitter->systemState == ParticleSystemState::Playing) ? "Playing" :
+           (emitter->systemState == ParticleSystemState::Paused)  ? "Paused"  : 
+                                                                   "Stopped");
+
+        ImGui::Text("Active Particles: %d", emitter->getParticles().size());
+
+        ImGui::DragFloat("Emission Rate", &emitter->emissionRate, 0.1f, 0.f, 9999.f);
+        ImGui::Checkbox("Local Space", &emitter->localSpace);
+        ImGui::DragInt("Max Particles", &emitter->maxParticles, 1, 1, 100000);
+        
+        // Emitter shape
+        static const char* shapeNames[] = {"Point","Sphere","Cone","Box","Mesh"};
+        int shapeIdx = (int)emitter->shape;
+        if(ImGui::Combo("Shape", &shapeIdx, shapeNames, IM_ARRAYSIZE(shapeNames))) {
+            emitter->shape = (EmitterShape)shapeIdx;
+        }
+        ImGui::DragFloat3("Spawn Pos", (float*)&emitter->spawnPosition, 0.05f);
+        ImGui::DragFloat3("Spawn Vel", (float*)&emitter->spawnVelocity, 0.05f);
+        
+        ImGui::DragFloat3("Acceleration", (float*)&emitter->globalAcceleration, 0.1f);
+    
+        // Over-lifetime
+        ImGui::Separator();
+        ImGui::Text("Over Lifetime");
+        ImGui::DragFloat("Size Over Life",  &emitter->sizeOverLife,  0.01f, 0.0f, 999.f);
+        ImGui::DragFloat("Alpha Over Life", &emitter->alphaOverLife, 0.01f, 0.0f, 1.f);
+        
+        // Burst
+        if(ImGui::TreeNode("Bursts"))
+        {
+            for(size_t i=0; i<emitter->burstTimes.size(); i++)
+            {
+                ImGui::PushID((int)i);
+                ImGui::DragFloat("Time", &emitter->burstTimes[i], 0.01f, 0.f, 999999.f);
+                ImGui::DragInt("Count", &emitter->burstCounts[i], 1, 0, 100000);
+                if(ImGui::Button("Remove")) {
+                    emitter->burstTimes.erase(emitter->burstTimes.begin() + i);
+                    emitter->burstCounts.erase(emitter->burstCounts.begin()+ i);
+                    ImGui::PopID();
+                    break;
+                }
+                ImGui::PopID();
+                ImGui::Separator();
+            }
+            if(ImGui::Button("Add Burst")) {
+                emitter->burstTimes.push_back(1.f);
+                emitter->burstCounts.push_back(10);
+            }
+            ImGui::TreePop();
+        }
+        if (ImGui::CollapsingHeader("Debug: Active Particles", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            // Number of active
+            auto& ps = emitter->getParticles();
+            int activeCount = (int) ps.size();
+            ImGui::Text("Active Count: %d", activeCount);
+
+            // Only showing 10 particles for debugging, any more will be wasteful
+            int showCount = std::min(activeCount, 10);
+            for (int i = 0; i < showCount; i++)
+            {
+                const auto& p = ps[i];
+                if(ImGui::TreeNode((void*)(intptr_t)i, "Particle %d", i))
+                {
+                    ImGui::Text("Age: %.2f / %.2f", p.age, p.lifetime);
+                    ImGui::Text("Pos: (%.2f, %.2f, %.2f)", p.position.x, p.position.y, p.position.z);
+                    ImGui::Text("Vel: (%.2f, %.2f, %.2f)", p.velocity.x, p.velocity.y, p.velocity.z);
+                    ImGui::Text("Size: %.2f, Rotation: %.2f", p.size, p.rotation);
+                    ImGui::Text("Alpha: %.2f", p.color.a);
+                    ImGui::TreePop();
+                }
+            }
+        }
+    }
+    // */
+    ImGui::End(); // end Inspector
+}
+
+void Program::DrawTopBar()
+{
+    //SCENE PICKER
+    //For the future:
+        //Add file
+            //save and load scenes
+            //Load full on scene XMLs
+        //Add ADD
+            //Add nodes + when i rewrite codebase to ecs u add components
+    ImGui::SetNextWindowPos(ImVec2(0,0));
+    ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, 20));
+    ImGui::Begin("TopBar", nullptr,
+                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar |
+                 ImGuiWindowFlags_NoScrollWithMouse);
+
+    if (ImGui::Button("Solar System"))
+    {
+        SwitchScene(SceneType::SolarSystem);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Random Scene"))
+    {
+        SwitchScene(SceneType::Random);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Particle Scene"))
+    {
+        SwitchScene(SceneType::Particle);
+    }
+
+    ImGui::End();
+}
 
 #pragma endregion
 
@@ -168,52 +331,20 @@ void RecreateSceneHelper(int bounds)
 {
     bounds = 10;
     Scene::Instance().SetBounds(bounds, true);
-    /* GRID like pattern
-    int gridSize = std::ceil(std::cbrt(amount)); // Determine the grid dimensions (N x N x N)
-    float spacing = (2.0f * bounds) / gridSize; // Adjust spacing to fit within bounds
+    
 
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_real_distribution<float> rgb(0.0f, 255.0f);
-    int cubeCount = 0;
-    for (int     x = 0; x < gridSize && cubeCount < amount; x++) {
-        for (int y = 0; y < gridSize && cubeCount < amount; y++) {
-            for (int z = 0; z < gridSize && cubeCount < amount; z++) {
-                
-                float posX = -bounds + x * spacing;
-                float posY = -bounds + y * spacing;
-                float posZ = -bounds + z * spacing;
-
-                glm::vec3 position = glm::vec3(posX, posY, posZ);
-
-                DebugCube* cube = new DebugCube("Cube_" + to_string(cubeCount));
-                cube->setTransform(glm::translate(glm::mat4(1.0f), position));
-
-                // std::cout << "Cube_" << cubeCount << " location: ("
-                //           << trans.x << ", " << trans.y << ", " << trans.z << ")\n";
-                
-                // std::cout << " worldTransform location: ("
-                //     << transa <<")\n";
-
-                GLubyte r = rgb(gen)
-                ,g = rgb(gen)
-                ,b = rgb(gen);
-                cube->setColor(r,g,b);
-
-                Scene::Instance().AddNode(cube); // Add cube to scene
-                cubeCount++;
-            }
-        }
-    }
-
-
-    */
-
-    // /*
     random_device rd;
     mt19937 gen(rd());
     uniform_real_distribution<float> distPos(-bounds, bounds);
     uniform_real_distribution<float> rgb(0.0f, 255.0f);
+
+    ParticleNode* Emitter = new ParticleNode("ParticleSystemNode");
+
+    Emitter->setTransform(glm::mat4(1.0f));
+    Emitter->Play();
+    Emitter->spawnParticles(20);
+
+    Scene::Instance().AddNode(Emitter);
 
     for (int i = 1; i <= amount/2; ++i)
     {
@@ -249,7 +380,6 @@ void RecreateSceneHelper(int bounds)
         // GLubyte r = color
         //        ,g = color
         //        ,b = color;
-        
         
         GLubyte r = rgb(gen)
                ,g = rgb(gen)
@@ -421,15 +551,53 @@ void UpdateSolarSystem(float dt)
 void buildParticleScene()
 {
     Scene::Instance().Clear();
+    
+    Scene::Instance().SetBounds(bounds, true);
 
     ParticleNode* Emitter = new ParticleNode("ParticleSystemNode");
 
     Emitter->setTransform(glm::mat4(1.0f));
+    Emitter->Play();
+    Emitter->spawnParticles(20);
 
     Scene::Instance().AddNode(Emitter);
 }
 
 #pragma endregion
+
+#pragma region Scenes
+
+static SceneType g_sceneType = SceneType::Particle;
+
+void Program::SwitchScene(SceneType newScene)
+{
+    Scene::Instance().Clear();
+    g_sceneType = newScene;
+
+    switch(newScene)
+    {
+        case SceneType::SolarSystem:
+            BuildSolarSystem(bounds);
+            Scene::Instance().BuildOctTree();
+            solarSystem = true;
+            break;
+        case SceneType::Random:
+            RecreateSceneHelper(bounds);
+            Scene::Instance().BuildQuadTree();
+            solarSystem = false;
+            break;
+        case SceneType::Particle:
+        default:
+            buildParticleScene();
+            Scene::Instance().BuildOctTree();
+            solarSystem = false;
+            break;
+    }
+}
+
+
+#pragma endregion
+
 void Program::init()
 {
     #pragma region Initalizing Shit
@@ -463,13 +631,8 @@ void Program::init()
     
     Scene::Instance().InitLights();
 
-    // RecreateSceneHelper(bounds);
-    // BuildSolarSystem(bounds);
-    // Scene::Instance().BuildQuadTree();
-    // Scene::Instance().BuildOctTree();
+    //starter scene
     buildParticleScene();
-
-
 }
 
 void Program::update(float dt)
@@ -478,7 +641,12 @@ void Program::update(float dt)
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    DrawSceneManagerUI();
+    DrawTopBar();
+
+    DrawSceneHierarchy();
+
+    DrawInspector();
+    DrawDebugWindow();
 
     if(m_pApp->isKeyJustDown('P') || m_pApp->isKeyJustDown('p'))
     {
@@ -528,6 +696,7 @@ void Program::update(float dt)
         }
     }
 
+    /* MOVED ALL THIS TO IMGUI SCENE UIII
     if (m_pApp->isKeyJustDown('F') || m_pApp->isKeyJustDown('f')) {
         Scene::Instance().ToggleUseDebugFrustum(fpsCamera);
     }
@@ -568,6 +737,7 @@ void Program::update(float dt)
         Scene::Instance().ToggleBoundingVolumeDebug();
     }
 
+    */
     if(m_pApp->isKeyJustDown('C')) { //switch cameras
         whichCamera = !whichCamera;
         if(whichCamera)
