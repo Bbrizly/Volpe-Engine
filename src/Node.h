@@ -16,9 +16,7 @@ protected:
     Node*             m_parent;
     std::vector<Node*> m_children;
 
-    volpe::Material* m_material = 0;
-    
-    volpe::Material*  m_pMaterial = nullptr;
+    volpe::Material* m_material = nullptr;
 
     BoundingVolume* m_boundingVolume;
     
@@ -47,8 +45,8 @@ public:
 
     glm::mat4 getWorldTransform() const;
     
-    volpe::Material* GetMaterial() const { return m_pMaterial; }
-    void SetMaterial(volpe::Material* mat) { m_pMaterial = mat; }
+    volpe::Material* GetMaterial() const { return m_material; }
+    void SetMaterial(volpe::Material* mat) { m_material = mat; }
 
     // volpe::Program* GetProgram() const { return m_pProgram; }
     // void SetProgram(volpe::Program* prog) { m_pProgram = prog; }

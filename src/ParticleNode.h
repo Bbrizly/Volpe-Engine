@@ -15,6 +15,12 @@ enum class EmitterShape
     Mesh
 };
 
+struct ColorKey
+{
+    float time;        // 0.0 -> 1.0
+    glm::vec4 color;
+};
+
 enum class ParticleSystemState
 {
     Stopped,
@@ -37,6 +43,7 @@ public:
         float     rotationSpeed;  
         glm::vec4 color;          // current RGBA (ADD GRADIENT FUNCTIONALITY TO EMITTER)
         glm::vec4 initialColor;   // color at birth ;; for over-time effects
+        float textureIndex;  // which layer in the array
 
         Particle()
             : position(0), velocity(0), acceleration(0),
@@ -46,7 +53,15 @@ public:
               color(1.0f), initialColor(1.0f) {}
     };
 
+    bool     useTextureArray = false;
+    GLuint   textureArrayID  = 0;
+    int      numTextures     = 0;   // how many layers in the array
+    
+    std::vector<ColorKey> colorKeys;
+
     // =-=-=-=-=-=-=-=-= Emitter Controls =-=-=-=-=-=-=-=-=-=
+    float startSize = 1.0f;  // base start size
+    float startAlpha = 1.0f; // base alpha
     float emissionRate;           // spawn N particles per second
     bool  localSpace;             // local or world coordinate s
     int   maxParticles;           // max particles
@@ -69,6 +84,7 @@ public:
     ParticleNode(const std::string& name);
     virtual ~ParticleNode();    
     std::vector<Particle> getParticles() {return m_particles;}
+    void LoadFromXML(const std::string& xmlPath);
 
     // =-=-=-=-=-=-=-=-= Controlling partcisystm =-=-=-=-=-=-=-=-=-=
     void Play();
@@ -93,21 +109,25 @@ private:
 
     volpe::VertexBuffer*      m_vb   = nullptr;
     volpe::VertexDeclaration* m_decl = nullptr;
-    volpe::Material*          m_material = nullptr;
+    // volpe::Material*          m_material = nullptr;
 
     struct QuadVertex {
-        GLfloat x, y, z;       // Position
-        GLfloat u, v;          // UV 
+        GLfloat x, y, z;        // Position
+        GLfloat u, v, w;        // uv + texture layer
+        GLfloat cr, cg, cb, ca; // RGBA
 
         QuadVertex()
             : x(0), y(0), z(0),
-            u(0.0f), v(0.0f)
+            u(0.0f), v(0.0f), w(0.0),
+            cr(0.0f), cg(0.0f), cb(0.0), ca(1.0f)
         {}
 
         QuadVertex(GLfloat px, GLfloat py, GLfloat pz,
-            GLfloat pu, GLfloat pv)
+            GLfloat pu, GLfloat pv, GLfloat pw,
+            GLfloat pr, GLfloat pg, GLfloat pb, GLfloat pa)
             : x(px), y(py), z(pz),
-            u(pu), v(pv)
+            u(pu), v(pv), w(pw),
+            cr(pr), cg(pg), cb(pb), ca(pa)
         {}
     };
 
@@ -115,4 +135,5 @@ private:
     void buildVertexData(const glm::mat4& view);
     void getCameraRightUp(const glm::mat4& view, glm::vec3& outRight, glm::vec3& outUp);
     Particle createNewParticle();
+    glm::vec4 EvaluateColorGradient(float lifeRatio);
 };

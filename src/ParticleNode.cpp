@@ -4,6 +4,10 @@
 #include <algorithm>
 #include <cmath>
 
+// #include <tinyxml2.h>
+// #include <xmllite.h>
+// using namespace tinyxml2;
+
 ParticleNode::ParticleNode(const std::string& name)
 : Node(name)
 , emissionRate(10.0f)
@@ -25,8 +29,12 @@ ParticleNode::ParticleNode(const std::string& name)
     SphereVolume* vol = new SphereVolume(glm::vec3(0), 20.0f);
     SetBoundingVolume(vol);
 
+    // m_material = volpe::MaterialManager::CreateMaterial("ParticleSystemMaterial");
     m_material = volpe::MaterialManager::CreateMaterial("ParticleSystemMaterial");
     m_material->SetProgram("data/particle.vsh", "data/particle.fsh");
+    SetReactToLight(false);
+    // std::cout<<"Constuctor Material: "<<m_material<<"\n";
+    // std::cout<<"GetMaterial: "<<GetMaterial()<<"\n";
 }
 
 ParticleNode::~ParticleNode()
@@ -165,18 +173,21 @@ void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
         return;
     }
 
+    // std::cout<<"Draw Material: "<<m_material<<"\n";
+    // std::cout<<"GetMaterial: "<<GetMaterial()<<"\n";
+
     buildVertexData(view);
 
     if(!m_vb || !m_decl) {
         Node::draw(proj, view);
         return;
     }
-
+    
 
     m_material->SetUniform("projection", proj);
     m_material->SetUniform("view",       view);
+    
 
-    // localSpace => we transform final in the vertex shader with "world" 
     glm::mat4 worldMat(1.0f);
     if(localSpace) {
         worldMat = getWorldTransform();
@@ -185,13 +196,17 @@ void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
     m_material->SetUniform("world",   worldMat);
     m_material->SetUniform("worldIT", worldIT);
 
+    m_material->SetUniform("useTexture", true);
+
     m_material->SetUniform("u_color", glm::vec3(1,1,1));
 
     m_material->Apply();
     m_decl->Bind();
 
     int totalVerts = (int)m_particles.size()*6;
+    glDepthMask(GL_FALSE);
     glDrawArrays(GL_TRIANGLES, 0, totalVerts);
+    glDepthMask(GL_TRUE);
 
     Node::draw(proj, view);
 }
@@ -221,11 +236,19 @@ ParticleNode::Particle ParticleNode::createNewParticle()
     p.rotationSpeed = 15.f*(m_dist01(m_randGen)-0.5f);
 
     // color
-    p.color        = glm::vec4(1,1,1,1);
+    p.color        = glm::vec4(1,1,1,startAlpha);
     p.initialColor = p.color;
+    
+    if(useTextureArray && numTextures > 0) {
+        p.textureIndex = rand() % numTextures;
+        // p.textureIndex = 1; //UNHARCDODE LATERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+    } else {
+        p.textureIndex = 0;
+    }
+
 
     // size
-    p.initialSize = 0.5f + 1.0f*m_dist01(m_randGen); // between 0.5 & 1.5  ------------ REMEMBER TO UNHARDCODE IMPORTANT
+    p.initialSize = startSize;//0.5f + 1.0f*m_dist01(m_randGen); // between 0.5 & 1.5  ------------ REMEMBER TO UNHARDCODE IMPORTANT
     p.size        = p.initialSize;
 
     // acceleration
@@ -325,6 +348,11 @@ void ParticleNode::buildVertexData(const glm::mat4& view)
     {
         if(p.age>=p.lifetime) continue;
 
+        float t = p.age / p.lifetime;
+        glm::vec4 color = EvaluateColorGradient(t);
+
+        // final alpha
+        float finalAlpha = color.a * p.color.a; // combine gradient & per-particle alpha
         float c = std::cos(glm::radians(p.rotation));
         float s = std::sin(glm::radians(p.rotation));
 
@@ -336,10 +364,17 @@ void ParticleNode::buildVertexData(const glm::mat4& view)
         glm::vec3 tl = p.position - rRot + uRot;
         glm::vec3 tr = p.position + rRot + uRot;
 
-        QuadVertex v0 = { bl.x, bl.y, bl.z, 0.f, 0.f };
-        QuadVertex v1 = { br.x, br.y, br.z, 1.f, 0.f };
-        QuadVertex v2 = { tl.x, tl.y, tl.z, 0.f, 1.f };
-        QuadVertex v3 = { tr.x, tr.y, tr.z, 1.f, 1.f };
+        float texLayer = p.textureIndex;
+
+        // QuadVertex v0 = { bl.x, bl.y, bl.z, 0.f, 0.f };
+        // QuadVertex v1 = { br.x, br.y, br.z, 1.f, 0.f };
+        // QuadVertex v2 = { tl.x, tl.y, tl.z, 0.f, 1.f };
+        // QuadVertex v3 = { tr.x, tr.y, tr.z, 1.f, 1.f };
+        
+        QuadVertex v0 = {bl.x, bl.y, bl.z,  0.f, 0.f, texLayer, color.r, color.g, color.b, finalAlpha};
+        QuadVertex v1 = {br.x, br.y, br.z,  1.f, 0.f, texLayer, color.r, color.g, color.b, finalAlpha};
+        QuadVertex v2 = {tl.x, tl.y, tl.z,  0.f, 1.f, texLayer, color.r, color.g, color.b, finalAlpha};
+        QuadVertex v3 = {tr.x, tr.y, tr.z,  1.f, 1.f, texLayer, color.r, color.g, color.b, finalAlpha};
 
         data.push_back(v0);
         data.push_back(v1);
@@ -356,14 +391,16 @@ void ParticleNode::buildVertexData(const glm::mat4& view)
         m_decl = new volpe::VertexDeclaration();
         m_decl->Begin();
           m_decl->SetVertexBuffer(m_vb);
-          m_decl->AppendAttribute(volpe::AT_Position, 3, volpe::CT_Float);
-          m_decl->AppendAttribute(volpe::AT_TexCoord1,2, volpe::CT_Float);
+          m_decl->AppendAttribute(volpe::AT_Position,   3, volpe::CT_Float);
+          m_decl->AppendAttribute(volpe::AT_TexCoord1,  3, volpe::CT_Float);
+          m_decl->AppendAttribute(volpe::AT_Color,      4, volpe::CT_Float);
         m_decl->End();
     // } else {
     //     volpe::BufferManager::UpdateVertexBuffer(m_vb, data.data(), (unsigned int)sz);
     // }
 }
 
+// =-=-=-=-=-=-=-=-=HELPERS=-=-=-=-=-=-=-=-=-=
 void ParticleNode::getCameraRightUp(const glm::mat4& view, glm::vec3& outRight, glm::vec3& outUp)
 {
     //billboard codee
@@ -371,3 +408,87 @@ void ParticleNode::getCameraRightUp(const glm::mat4& view, glm::vec3& outRight, 
     outRight = glm::normalize(glm::vec3(rot[0][0], rot[0][1], rot[0][2]));
     outUp    = glm::normalize(glm::vec3(rot[1][0], rot[1][1], rot[1][2]));
 }
+
+glm::vec4 ParticleNode::EvaluateColorGradient(float t)
+{
+    if(colorKeys.empty()) {
+        // fallback to some default
+        return glm::vec4(1.0f);
+    }
+    if(t <= colorKeys.front().time) {
+        return colorKeys.front().color;
+    }
+    if(t >= colorKeys.back().time) {
+        return colorKeys.back().color;
+    }
+
+    // find the two keys around t
+    for(size_t i=0; i<colorKeys.size()-1; i++)
+    {
+        const auto& k1 = colorKeys[i];
+        const auto& k2 = colorKeys[i+1];
+        if(t >= k1.time && t <= k2.time)
+        {
+            float range = k2.time - k1.time;
+            float alpha = (t - k1.time)/range;
+            // Lerp
+            return glm::mix(k1.color, k2.color, alpha);
+        }
+    }
+    return colorKeys.back().color;
+}
+
+/*
+void ParticleNode::LoadFromXML(const std::string& xmlPath)
+{
+    XMLDocument doc;
+    if(doc.LoadFile(xmlPath.c_str()) == XML_SUCCESS)
+    {
+        XMLElement* root = doc.RootElement();
+        if(!root) return;
+
+        // read attributes
+        root->QueryFloatAttribute("emissionRate", &emissionRate);
+        root->QueryIntAttribute("maxParticles", &maxParticles);
+
+        // read shape
+        const char* shapeStr = root->Attribute("shape");
+        if(shapeStr)
+        {
+            if(strcmp(shapeStr, "Point")==0) shape=EmitterShape::Point;
+            else if(strcmp(shapeStr, "Sphere")==0) shape=EmitterShape::Sphere;
+        }
+
+        // read startSize
+        root->QueryFloatAttribute("startSize", &startSize);
+        root->QueryFloatAttribute("startAlpha", &startAlpha);
+
+        // read color keys
+        XMLElement* colorKeysElem = root->FirstChildElement("ColorKeys");
+        if(colorKeysElem)
+        {
+            colorKeys.clear();
+            for(XMLElement* ck = colorKeysElem->FirstChildElement("Key");
+                ck; ck=ck->NextSiblingElement("Key"))
+            {
+                float time=0;  ck->QueryFloatAttribute("time", &time);
+                float r=1,g=1,b=1,a=1;
+                ck->QueryFloatAttribute("r", &r);
+                ck->QueryFloatAttribute("g", &g);
+                ck->QueryFloatAttribute("b", &b);
+                ck->QueryFloatAttribute("a", &a);
+                ColorKey ckey;
+                ckey.time = time;
+                ckey.color= glm::vec4(r,g,b,a);
+                colorKeys.push_back(ckey);
+            }
+            // Sort by time
+            std::sort(colorKeys.begin(), colorKeys.end(), 
+                [](const ColorKey&c1, const ColorKey&c2){
+                    return c1.time < c2.time;
+                });
+        }
+    }
+}
+
+*/

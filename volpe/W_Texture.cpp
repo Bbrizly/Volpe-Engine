@@ -78,7 +78,7 @@ Texture::Texture(const std::string& path)
 Texture::Texture(void* pData, unsigned int width, unsigned int height, Format fmt)
 	: m_minFilter(Texture::FM_Invalid), m_magFilter(Texture::FM_Invalid),
 	  m_uWrap(Texture::WM_Invalid), m_vWrap(Texture::WM_Invalid),
-	  m_width(0), m_height(0), m_glTex(0)
+	  m_width(0), m_height(0), m_glTex(0), m_isValid(false)
 {
 	glGenTextures(1,&m_glTex);
 	glBindTexture(GL_TEXTURE_2D, m_glTex);
@@ -122,7 +122,6 @@ Texture::Texture(void* pData, unsigned int width, unsigned int height, unsigned 
 	glGenTextures(1, &m_glTex);
 	glBindTexture(m_target, m_glTex);
 
-	// Allocate storage for the array texture
 	glTexImage3D(m_target, 0, gs_aInternalFormatMap[fmt], width, height, layers, 0,
 				 gs_aFormatMap[fmt], gs_aTypeMap[fmt], pData);
 

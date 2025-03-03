@@ -19,6 +19,11 @@ Node::~Node()
     if(m_boundingVolume)
         delete m_boundingVolume;
     m_boundingVolume =nullptr;
+
+    if(m_material) {
+        volpe::MaterialManager::DestroyMaterial(m_material);
+        m_material = nullptr;
+    }
 }
 
 void Node::addChild(Node* child)

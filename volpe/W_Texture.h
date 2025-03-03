@@ -66,7 +66,7 @@ class Texture
 
 		GLuint GetGLTexture() const { return m_glTex; }
 		//-------------------------------------------------------------------------
-
+		bool IsValid() {return m_isValid;}
 	private:
 		//-------------------------------------------------------------------------
 		// PRIVATE METHODS
@@ -97,6 +97,7 @@ class Texture
 		unsigned int	m_width;
 		unsigned int    m_height;
 
+		bool m_isValid = true;
         // 2D texture or array Texturee
         GLenum         m_target = GL_TEXTURE_2D;
 		//-------------------------------------------------------------------------

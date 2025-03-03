@@ -259,6 +259,8 @@ void Program::DrawInspector()
         }
         ImGui::DragFloat3("Spawn Pos", (float*)&emitter->spawnPosition, 0.05f);
         ImGui::DragFloat3("Spawn Vel", (float*)&emitter->spawnVelocity, 0.05f);
+        ImGui::DragFloat("Spawn Size", (float*)&emitter->startSize, 0.05f);
+        ImGui::DragFloat("Spawn Alpha", (float*)&emitter->startAlpha, 0.05f);
         
         ImGui::DragFloat3("Acceleration", (float*)&emitter->globalAcceleration, 0.1f);
     
@@ -266,7 +268,7 @@ void Program::DrawInspector()
         ImGui::Separator();
         ImGui::Text("Over Lifetime");
         ImGui::DragFloat("Size Over Life",  &emitter->sizeOverLife,  0.01f, 0.0f, 999.f);
-        ImGui::DragFloat("Alpha Over Life", &emitter->alphaOverLife, 0.01f, 0.0f, 1.f);
+        ImGui::DragFloat("Alpha Over Life", &emitter->alphaOverLife, 0.01f, 0.0f, 999.f);
         
         // Burst
         if(ImGui::TreeNode("Bursts"))
@@ -579,15 +581,47 @@ void UpdateSolarSystem(float dt)
 
 void buildParticleScene()
 {
+    std::cout << "Hello, world!" << std::endl;
+    std::cout << "Hello, world!" << std::endl;
+    std::cout << "Hello, world!" << std::endl;
+
     Scene::Instance().Clear();
     
     Scene::Instance().SetBounds(bounds, true);
 
     ParticleNode* Emitter = new ParticleNode("ParticleSystemNode");
+    // Emitter->useTextureArray = true;
+    // Emitter->numTextures = 3;
+    // return;                                                               blackspurce tattoo
+
+    // cout<<"\nRAN\n";
+
+    /*
+    std::vector<std::string> paths = {"data/baby.png", "data/baby2.png", "data/baby3.png"};
+    volpe::Texture* texArray = volpe::TextureManager().CreateAutoArrayTexture(paths);
+    if(texArray) {
+        cout<<"\nRAN\n";
+        // Emitter->textureArrayID = texArray->GetGLTextureID();
+        Emitter->GetMaterial()->SetTexture("u_texture", texArray);
+
+        cout<<"\nBABA\n";
+    }
+    */
+    
+
+    volpe::Texture* texture = volpe::TextureManager().CreateTexture("data/baby1.png");
+
+    if (texture == nullptr || !texture->IsValid()) {
+        std::cerr << "Failed to load texture: data/baby.png" << std::endl;
+        return;
+    }
+
+    Emitter->GetMaterial()->SetTexture("u_texture", texture);
+    // cout<<"\nBABA\n";
 
     Emitter->setTransform(glm::mat4(1.0f));
     Emitter->Play();
-    Emitter->spawnParticles(20);
+    // Emitter->spawnParticles(20);
 
     Scene::Instance().AddNode(Emitter);
 }
@@ -727,8 +761,7 @@ void Program::update(float dt)
 
     /* MOVED ALL THIS TO IMGUI SCENE UIII
     if (m_pApp->isKeyJustDown('F') || m_pApp->isKeyJustDown('f')) {
-        Scene::Instance().ToggleUseDebugFrustum(fpsCamera);
-    }
+        Scene::Instance().ToggleUseDebugFrustum(fpsCamera);}
 
     if (m_pApp->isKeyJustDown('B') || m_pApp->isKeyJustDown('b')) {
         solarSystem = true;
@@ -736,8 +769,7 @@ void Program::update(float dt)
         Scene::Instance().Clear();
         BuildSolarSystem(bounds);
 
-        Scene::Instance().BuildOctTree();
-    }
+        Scene::Instance().BuildOctTree();}
 
     if(m_pApp->isKeyJustDown('R') || m_pApp->isKeyJustDown('r'))
     {
@@ -760,11 +792,9 @@ void Program::update(float dt)
 
     if(m_pApp->isKeyJustDown('L')) { //HOLD L TO MOVE LIGHTS
         // random move lights
-        Scene::Instance().MoveLights();
-    }
+        Scene::Instance().MoveLights();}
     if(m_pApp->isKeyJustDown('G')) { //TOGGLE BOUNDING VOLUME 
-        Scene::Instance().ToggleBoundingVolumeDebug();
-    }
+        Scene::Instance().ToggleBoundingVolumeDebug();}
 
     */
     if(m_pApp->isKeyJustDown('C')) { //switch cameras

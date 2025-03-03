@@ -604,8 +604,10 @@ void Scene::Render(int screenWidth, int screenHeight) {
             mat->SetUniform("fade", 1.0f);
         }
         else        
-            n->SetMaterial(m_matUnlit);
-        
+        {
+            if(n->GetReactToLight())
+                n->SetMaterial(m_matUnlit);
+        }              
         n->draw(proj, view);
     }
     
