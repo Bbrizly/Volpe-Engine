@@ -65,11 +65,11 @@ static glm::mat4 MakeTransform(const glm::vec3& position, const glm::vec3& scale
     return T * S;
 }
 
-float debugWindowHeight = 200.0f;
+float debugWindowHeight = 500.0f;
 bool culled = false;
 void Program::DrawSceneHierarchy()
 {
-    float sceneWidth = 200.0f;
+    float sceneWidth = 230.0f;
     float topOffset = 30.0f;
     float sceneHeight = ImGui::GetIO().DisplaySize.y - (topOffset + debugWindowHeight);
     ImGui::SetNextWindowPos(ImVec2(0, topOffset));
@@ -95,28 +95,57 @@ void Program::DrawSceneHierarchy()
 
 void Program::DrawDebugWindow()
 {
-    float debugWidth = 200;
+    float debugWidth = 230;
     float debugPosY = ImGui::GetIO().DisplaySize.y - debugWindowHeight; //bottom-left
 
     ImGui::SetNextWindowPos(ImVec2(0, debugPosY));
     ImGui::SetNextWindowSize(ImVec2(debugWidth, debugWindowHeight));
     ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-    ImGui::Checkbox("Culled", &culled);
-    if (ImGui::Button("Toggle Debug Frustum"))
+    if (ImGui::BeginTabBar("DebugTabs"))
     {
-        Scene::Instance().ToggleUseDebugFrustum(fpsCamera);
+        if (ImGui::BeginTabItem("Controls"))
+        {
+            if (ImGui::Button("Toggle Debug Frustum"))
+            {
+                Scene::Instance().ToggleUseDebugFrustum(fpsCamera);
+            }
+            if (ImGui::Button("Toggle Tree Render"))
+            {
+                Scene::Instance().ToggleQuadTreeRender();
+            }
+            if (ImGui::Button("Toggle Bounding Vol Debug"))
+            {
+                Scene::Instance().ToggleBoundingVolumeDebug();
+            }
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Statistics"))//{ImGui::EndTabItem();}
+            {
+                // Get and display the various statistics from Scene.
+                ImGui::Text("FPS: %d", (int)Scene::Instance().getFPS());
+                ImGui::Text("QuadTree Render: %s", Scene::Instance().getShowDebug() ? "ON" : "OFF");
+                ImGui::Text("Visual Bounding Vols: %s", Scene::Instance().getShowBoundingVolumes() ? "ON" : "OFF");
+                ImGui::Text("Debug Frustum: %s", Scene::Instance().getUseDebugFrustum() ? "ON" : "OFF");
+                ImGui::Text("CURRENT TREE: %s", Scene::Instance().getActiveTreeName().c_str());
+                ImGui::Separator();
+                ImGui::Text("Scene Creation Time: %.2f ms", Scene::Instance().getSceneCreationTime());
+                ImGui::Text("Tree Build Time: %.2f ms", Scene::Instance().getTreeBuildTime());
+                ImGui::Text("Existing Nodes: %d", (int)Scene::Instance().GetNodes().size());
+                ImGui::Text("Nodes Visible: %d", (int)Scene::Instance().GetNodesToRender().size());
+                ImGui::Text("Lights In Scene: %d", (int)Scene::Instance().GetLights().size());
+                ImGui::Text("Nodes Affected by Light: %d", (int)Scene::Instance().getNodesAffectedByLight());
+                ImGui::Separator();
+                ImGui::Text("Camera Update: %.2f ms", Scene::Instance().getAvgCameraUpdateMs());
+                ImGui::Text("Nodes Update: %.2f ms", Scene::Instance().getAvgNodeUpdateMs());
+                ImGui::Text("Bounding Vol Update: %.2f ms", Scene::Instance().getAvgBoundingVolumeMs());
+                ImGui::Text("Extract Frustum: %.2f ms", Scene::Instance().getAvgFrustumExtractMs());
+                ImGui::Text("QuadTree Query: %.2f ms", Scene::Instance().getAvgQuadTreeQueryMs());
+                ImGui::Text("Light Query: %.2f ms", Scene::Instance().getAvgLightQuery());
+                ImGui::EndTabItem();
+            }
+        ImGui::EndTabBar();
     }
-    if (ImGui::Button("Toggle Tree Render"))
-    {
-        Scene::Instance().ToggleQuadTreeRender();
-    }
-    if (ImGui::Button("Toggle Bounding Vol Debug"))
-    {
-        Scene::Instance().ToggleBoundingVolumeDebug();
-    }
-
-
     ImGui::End();
 }
 

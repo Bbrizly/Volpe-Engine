@@ -312,11 +312,12 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     static int   frameCounter = 0;
     static float accumulatedTime = 0.0f;
     static float lastKnownFps   = 0.0f;
-
+    
     frameCounter++;
     accumulatedTime += dt;
     if (frameCounter >= 60) {
         lastKnownFps = frameCounter / accumulatedTime;  // smoothed FPS
+        m_lastKnownFps = lastKnownFps;
         frameCounter = 0;
         accumulatedTime = 0.0f;
     }
