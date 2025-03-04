@@ -289,7 +289,50 @@ void Program::DrawInspector()
         // ImGui::DragFloat("Lifetime", (float*)&emitter->life, 0.05f);
         ImGui::DragFloat("Size Over Life",  &emitter->sizeOverLife,  0.01f, 0.0f, 999.f);
         ImGui::DragFloat("Alpha Over Life", &emitter->alphaOverLife, 0.01f, 0.0f, 999.f);
-        
+    
+        //COlor gradient
+        if (ImGui::TreeNode("Color Gradient"))
+        {
+            // Loop through current keys
+            for (size_t i = 0; i < emitter->colorKeys.size(); i++)
+            {
+                ImGui::PushID(static_cast<int>(i));
+                float time = emitter->colorKeys[i].time;
+                // Create a temporary color array for ImGui
+                float col[4] = {
+                    emitter->colorKeys[i].color.r,
+                    emitter->colorKeys[i].color.g,
+                    emitter->colorKeys[i].color.b,
+                    emitter->colorKeys[i].color.a
+                };
+                if (ImGui::SliderFloat("Time", &time, 0.0f, 1.0f))
+                {
+                    emitter->colorKeys[i].time = time;
+                }
+                if (ImGui::ColorEdit4("Color", col))
+                {
+                    emitter->colorKeys[i].color = glm::vec4(col[0], col[1], col[2], col[3]);
+                }
+                if (ImGui::Button("Remove"))
+                {
+                    emitter->colorKeys.erase(emitter->colorKeys.begin() + i);
+                    ImGui::PopID();
+                    break; // break out of the loop so we don’t use an invalid iterator
+                }
+                ImGui::Separator();
+                ImGui::PopID();
+            }
+            // Button to add a new key (defaults to time 0 and white)
+            if (ImGui::Button("Add Key"))
+            {
+                ColorKey newKey;
+                newKey.time = 0.0f;
+                newKey.color = glm::vec4(1.0f);
+                emitter->colorKeys.push_back(newKey);
+            }
+            ImGui::TreePop();
+        }
+
         // Burst
         if(ImGui::TreeNode("Bursts"))
         {

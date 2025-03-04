@@ -142,6 +142,9 @@ void ParticleNode::update(float dt)
         float finalSize = p.initialSize * sizeOverLife;
         p.size = p.initialSize + (finalSize - p.initialSize)*t;
 
+        
+        p.color = EvaluateColorGradient(t);
+
         // Alpha
         float a0 = p.initialColor.a;
         float a1 = p.initialColor.a * alphaOverLife;
@@ -176,15 +179,15 @@ void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
     // std::cout<<"Draw Material: "<<m_material<<"\n";
     // std::cout<<"GetMaterial: "<<GetMaterial()<<"\n";
 
-    // Get camera position (adjust this call as needed)
+    // // Get camera position 
     // glm::vec3 camPos = Scene::Instance().GetActiveCamera()->getViewMatrix()[3];
-//     // Sort particles in descending order (farthest first)
-//     std::sort(m_particles.begin(), m_particles.end(),
-//         [&camPos](const ParticleNode::Particle &a, const ParticleNode::Particle &b) {
-//             float da = glm::distance2(a.position, camPos);
-//             float db = glm::distance2(b.position, camPos);
-//             return da > db;
-// });
+    // // Sort particles in descending order (farthest first)
+    // std::sort(m_particles.begin(), m_particles.end(),
+    //     [&camPos](const ParticleNode::Particle &a, const ParticleNode::Particle &b) {
+    //         float da = glm::distance(a.position, camPos);
+    //         float db = glm::distance(b.position, camPos);
+    //         return da > db;
+    // });
 
 
     buildVertexData(view);
@@ -367,7 +370,7 @@ void ParticleNode::buildVertexData(const glm::mat4& view)
         glm::vec4 color = EvaluateColorGradient(t);
 
         // final alpha
-        float finalAlpha = color.a * p.color.a; // combine gradient & per-particle alpha
+        float finalAlpha = color.a * p.color.a;
         float c = std::cos(glm::radians(p.rotation));
         float s = std::sin(glm::radians(p.rotation));
 
@@ -411,6 +414,7 @@ void ParticleNode::buildVertexData(const glm::mat4& view)
           m_decl->AppendAttribute(volpe::AT_Color,      4, volpe::CT_Float);
         m_decl->End();
     } else {
+        std::cout<<"SAVED COMPUTING POWER\n";
         volpe::BufferManager::UpdateVertexBuffer(m_vb, data.data(), (unsigned int)sz);
     }
     prevSZ = sz; //FOR FIXING UPDATE BUFFER 
