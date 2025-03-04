@@ -62,10 +62,8 @@ private:
 
     //STATISTICSSS
 
-    // Track the last time (in ms) it took to build the QuadTree.
     float m_lastQuadTreeBuildTimeMs = 0.0f;
 
-    // We'll keep exponential-moving-average for each update time:
     float m_avgCreation             = 0.0f;
     float m_avgCameraUpdateMs       = 0.0f;
     float m_avgNodeUpdateMs         = 0.0f;
@@ -125,6 +123,7 @@ const std::vector<Node*>& GetNodesToRender() const { return m_nodesToRender; }
     void RandomInitScene(int amount);
 
     void SetActiveCamera(Camera* cam) { m_activeCamera = cam; }
+    Camera* GetActiveCamera() { return m_activeCamera; }
     void BuildQuadTree();
     void BuildOctTree();
     void Update(float dt, int screenWidth, int screenHeight);

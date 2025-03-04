@@ -3,7 +3,7 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <algorithm>
 #include <cmath>
-
+#include "Scene.h"
 // #include <tinyxml2.h>
 // #include <xmllite.h>
 // using namespace tinyxml2;
@@ -176,13 +176,23 @@ void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
     // std::cout<<"Draw Material: "<<m_material<<"\n";
     // std::cout<<"GetMaterial: "<<GetMaterial()<<"\n";
 
+    // Get camera position (adjust this call as needed)
+    // glm::vec3 camPos = Scene::Instance().GetActiveCamera()->getViewMatrix()[3];
+//     // Sort particles in descending order (farthest first)
+//     std::sort(m_particles.begin(), m_particles.end(),
+//         [&camPos](const ParticleNode::Particle &a, const ParticleNode::Particle &b) {
+//             float da = glm::distance2(a.position, camPos);
+//             float db = glm::distance2(b.position, camPos);
+//             return da > db;
+// });
+
+
     buildVertexData(view);
 
     if(!m_vb || !m_decl) {
         Node::draw(proj, view);
         return;
     }
-    
 
     m_material->SetUniform("projection", proj);
     m_material->SetUniform("view",       view);
@@ -205,7 +215,13 @@ void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
 
     int totalVerts = (int)m_particles.size()*6;
     glDepthMask(GL_FALSE);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    
+    // glEnable(GL_BLEND);
+    // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
     glDrawArrays(GL_TRIANGLES, 0, totalVerts);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_TRUE);
 
     Node::draw(proj, view);
@@ -227,16 +243,16 @@ void ParticleNode::spawnParticles(int count)
 ParticleNode::Particle ParticleNode::createNewParticle()
 {
     Particle p;
-    // random lifetime  (add better control)
-    float randLife = 1.f + 3.f*m_dist01(m_randGen);
-    p.lifetime = randLife;
-    p.age      = 0.f;
 
-    p.rotation = 360.f*m_dist01(m_randGen);
-    p.rotationSpeed = 15.f*(m_dist01(m_randGen)-0.5f);
+    p.lifetime = lifetimeMin + (lifetimeMax - lifetimeMin) * m_dist01(m_randGen);
+    p.age      = 0.0f;
+
+    p.rotation = rotationMin + (rotationMax - rotationMin) * m_dist01(m_randGen);
+    p.rotationSpeed = rotationSpeedMin + (rotationSpeedMax - rotationSpeedMin) * m_dist01(m_randGen);
 
     // color
-    p.color        = glm::vec4(1,1,1,startAlpha);
+    float alpha = startAlphaMin + (startAlphaMax - startAlphaMin) * m_dist01(m_randGen);
+    p.color        = glm::vec4(1,1,1,alpha); // ADD COLOUR GRADIENTTTT AAAAAA
     p.initialColor = p.color;
     
     if(useTextureArray && numTextures > 0) {
@@ -246,9 +262,8 @@ ParticleNode::Particle ParticleNode::createNewParticle()
         p.textureIndex = 0;
     }
 
-
     // size
-    p.initialSize = startSize;//0.5f + 1.0f*m_dist01(m_randGen); // between 0.5 & 1.5  ------------ REMEMBER TO UNHARDCODE IMPORTANT
+    p.initialSize = startSizeMin + (startSizeMax - startSizeMin) * m_dist01(m_randGen);
     p.size        = p.initialSize;
 
     // acceleration
@@ -289,29 +304,29 @@ ParticleNode::Particle ParticleNode::createNewParticle()
         }
         break;
         case EmitterShape::Mesh:
+            // ACCORDING TO WHATEVER MESH IN NODE
         default:
             localSpawn = glm::vec3(0);
         break;
     }
 
-    // offset by spawnPosition
+    //  offset by spawnPosition
     localSpawn += spawnPosition;
 
-    // local or world
-    if(localSpace) {
-        p.position = localSpawn;
+   if(!localSpace) {
+        glm::vec4 worldSpawn = getWorldTransform() * glm::vec4(localSpawn, 1.0f);
+        p.position = glm::vec3(worldSpawn);
     } else {
-        glm::vec4 wPos = glm::vec4(localSpawn,1.0f) * getWorldTransform(); //Comment out * getwroldtransform for accurate localspace but particles dont spawn with node the whole shit moves
-        p.position = glm::vec3(wPos);
+        p.position = localSpawn;
     }
 
     // velocity
-    glm::vec3 randomDir((m_dist01(m_randGen)-0.5f),
-                        (m_dist01(m_randGen)-0.5f),
-                        (m_dist01(m_randGen)-0.5f));
+    glm::vec3 randomDir(m_dist01(m_randGen) - 0.5f,
+                        m_dist01(m_randGen) - 0.5f,
+                        m_dist01(m_randGen) - 0.5f);
     randomDir = glm::normalize(randomDir);
-    float sp = 2.0f*m_dist01(m_randGen); // scale for random
-    p.velocity = spawnVelocity + randomDir*sp;
+    float sp = velocityScaleMin + (velocityScaleMax - velocityScaleMin) * m_dist01(m_randGen);
+    p.velocity = spawnVelocity + randomDir * sp;
 
     // transform velocity if not local
     if(!localSpace) {
@@ -383,9 +398,9 @@ void ParticleNode::buildVertexData(const glm::mat4& view)
         data.push_back(v1);
         data.push_back(v3);
     }
-
     GLsizeiptr sz = (GLsizeiptr)(data.size()*sizeof(QuadVertex));
-    // if(!m_vb) {
+    //If try to update buffer, particle system breaks... Look into pooling
+    if(!m_vb || sz != prevSZ) {
         m_vb = volpe::BufferManager::CreateVertexBuffer(data.data(), (unsigned int)sz);
 
         m_decl = new volpe::VertexDeclaration();
@@ -395,9 +410,10 @@ void ParticleNode::buildVertexData(const glm::mat4& view)
           m_decl->AppendAttribute(volpe::AT_TexCoord1,  3, volpe::CT_Float);
           m_decl->AppendAttribute(volpe::AT_Color,      4, volpe::CT_Float);
         m_decl->End();
-    // } else {
-    //     volpe::BufferManager::UpdateVertexBuffer(m_vb, data.data(), (unsigned int)sz);
-    // }
+    } else {
+        volpe::BufferManager::UpdateVertexBuffer(m_vb, data.data(), (unsigned int)sz);
+    }
+    prevSZ = sz; //FOR FIXING UPDATE BUFFER 
 }
 
 // =-=-=-=-=-=-=-=-=HELPERS=-=-=-=-=-=-=-=-=-=

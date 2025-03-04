@@ -60,21 +60,33 @@ public:
     std::vector<ColorKey> colorKeys;
 
     // =-=-=-=-=-=-=-=-= Emitter Controls =-=-=-=-=-=-=-=-=-=
-    float startSize = 1.0f;  // base start size
-    float startAlpha = 1.0f; // base alpha
+    
+    float startSizeMin = 0.5f;   // min size at birth
+    float startSizeMax = 1.5f;   // max size at birth
+    float startAlphaMin= 1.0f;   // base alpha
+    float startAlphaMax= 1.0f;   // base alpha
+    float lifetimeMin  = 1.0f;   // min lifetime
+    float lifetimeMax  = 4.0f;   // max lifetime
+    float rotationMin  = 0.0f;   // min rotation at birth
+    float rotationMax  = 360.0f; // max rotation at birth
+    float rotationSpeedMin = -7.5f;  // min rotation speed
+    float rotationSpeedMax = 7.5f;   // max rotation speed
+    float velocityScaleMin = 0.0f;   // min velocity scale
+    float velocityScaleMax = 2.0f;   // max velocity scale
+    
     float emissionRate;           // spawn N particles per second
-    bool  localSpace;             // local or world coordinate s
+    bool  localSpace;             // local or world coordinate system
     int   maxParticles;           // max particles
-    EmitterShape shape;           // Where spawn position will be at (Currently shapes are hardoceded)
+    EmitterShape shape;           // spawn shape
     glm::vec3 spawnPosition;      // offset
     glm::vec3 spawnVelocity;      // base velocity
-    glm::vec3 globalAcceleration; // Affectors like gravity
+    glm::vec3 globalAcceleration; // affectors like gravity
 
     // BURST
     std::vector<float> burstTimes;    // times at which to emit many at once
     std::vector<int>   burstCounts;   // how many particsl for each burst
 
-    // Over-lifetime multipliers (CURRrently linear, use imgui curves maybe)
+    // Over-lifetime multipliers (CUrrently linear, use imgui curves maybe)
     float sizeOverLife;   
     float alphaOverLife;  
 
@@ -109,6 +121,7 @@ private:
 
     volpe::VertexBuffer*      m_vb   = nullptr;
     volpe::VertexDeclaration* m_decl = nullptr;
+    GLsizeiptr prevSZ; // previous size of vertex buffer FOR UPDATE
     // volpe::Material*          m_material = nullptr;
 
     struct QuadVertex {

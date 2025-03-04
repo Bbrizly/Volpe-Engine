@@ -104,6 +104,31 @@ void Program::DrawDebugWindow()
 
     if (ImGui::BeginTabBar("DebugTabs"))
     {
+        if (ImGui::BeginTabItem("Statistics"))
+        {
+            ImGui::Separator();
+            ImGui::Text("FPS: %d", (int)Scene::Instance().getFPS());
+            ImGui::Separator();
+            ImGui::Text("QuadTree Render: %s", Scene::Instance().getShowDebug() ? "ON" : "OFF");
+            ImGui::Text("Visual Bounding Vols: %s", Scene::Instance().getShowBoundingVolumes() ? "ON" : "OFF");
+            ImGui::Text("Debug Frustum: %s", Scene::Instance().getUseDebugFrustum() ? "ON" : "OFF");
+            ImGui::Text("CURRENT TREE: %s", Scene::Instance().getActiveTreeName().c_str());
+            ImGui::Separator();
+            ImGui::Text("Scene Creation Time: %.2f ms", Scene::Instance().getSceneCreationTime());
+            ImGui::Text("Tree Build Time: %.2f ms", Scene::Instance().getTreeBuildTime());
+            ImGui::Text("Existing Nodes: %d", (int)Scene::Instance().GetNodes().size());
+            ImGui::Text("Nodes Visible: %d", (int)Scene::Instance().GetNodesToRender().size());
+            ImGui::Text("Lights In Scene: %d", (int)Scene::Instance().GetLights().size());
+            ImGui::Text("Nodes Affected by Light: %d", (int)Scene::Instance().getNodesAffectedByLight());
+            ImGui::Separator();
+            ImGui::Text("Camera Update: %.2f ms", Scene::Instance().getAvgCameraUpdateMs());
+            ImGui::Text("Nodes Update: %.2f ms", Scene::Instance().getAvgNodeUpdateMs());
+            ImGui::Text("Bounding Vol Update: %.2f ms", Scene::Instance().getAvgBoundingVolumeMs());
+            ImGui::Text("Extract Frustum: %.2f ms", Scene::Instance().getAvgFrustumExtractMs());
+            ImGui::Text("QuadTree Query: %.2f ms", Scene::Instance().getAvgQuadTreeQueryMs());
+            ImGui::Text("Light Query: %.2f ms", Scene::Instance().getAvgLightQuery());
+            ImGui::EndTabItem();
+        }
         if (ImGui::BeginTabItem("Controls"))
         {
             if (ImGui::Button("Toggle Debug Frustum"))
@@ -120,30 +145,6 @@ void Program::DrawDebugWindow()
             }
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Statistics"))//{ImGui::EndTabItem();}
-            {
-                // Get and display the various statistics from Scene.
-                ImGui::Text("FPS: %d", (int)Scene::Instance().getFPS());
-                ImGui::Text("QuadTree Render: %s", Scene::Instance().getShowDebug() ? "ON" : "OFF");
-                ImGui::Text("Visual Bounding Vols: %s", Scene::Instance().getShowBoundingVolumes() ? "ON" : "OFF");
-                ImGui::Text("Debug Frustum: %s", Scene::Instance().getUseDebugFrustum() ? "ON" : "OFF");
-                ImGui::Text("CURRENT TREE: %s", Scene::Instance().getActiveTreeName().c_str());
-                ImGui::Separator();
-                ImGui::Text("Scene Creation Time: %.2f ms", Scene::Instance().getSceneCreationTime());
-                ImGui::Text("Tree Build Time: %.2f ms", Scene::Instance().getTreeBuildTime());
-                ImGui::Text("Existing Nodes: %d", (int)Scene::Instance().GetNodes().size());
-                ImGui::Text("Nodes Visible: %d", (int)Scene::Instance().GetNodesToRender().size());
-                ImGui::Text("Lights In Scene: %d", (int)Scene::Instance().GetLights().size());
-                ImGui::Text("Nodes Affected by Light: %d", (int)Scene::Instance().getNodesAffectedByLight());
-                ImGui::Separator();
-                ImGui::Text("Camera Update: %.2f ms", Scene::Instance().getAvgCameraUpdateMs());
-                ImGui::Text("Nodes Update: %.2f ms", Scene::Instance().getAvgNodeUpdateMs());
-                ImGui::Text("Bounding Vol Update: %.2f ms", Scene::Instance().getAvgBoundingVolumeMs());
-                ImGui::Text("Extract Frustum: %.2f ms", Scene::Instance().getAvgFrustumExtractMs());
-                ImGui::Text("QuadTree Query: %.2f ms", Scene::Instance().getAvgQuadTreeQueryMs());
-                ImGui::Text("Light Query: %.2f ms", Scene::Instance().getAvgLightQuery());
-                ImGui::EndTabItem();
-            }
         ImGui::EndTabBar();
     }
     ImGui::End();
@@ -257,16 +258,35 @@ void Program::DrawInspector()
         if(ImGui::Combo("Shape", &shapeIdx, shapeNames, IM_ARRAYSIZE(shapeNames))) {
             emitter->shape = (EmitterShape)shapeIdx;
         }
+        ImGui::PushItemWidth(50);
+        ImGui::DragFloat(" - ##size", (float*)&emitter->startSizeMin, 0.05f); ImGui::SameLine();
+        ImGui::DragFloat("Spawn Size range", (float*)&emitter->startSizeMax, 0.05f);
+        
+        ImGui::DragFloat(" - ##lifetime", (float*)&emitter->lifetimeMin, 0.05f); ImGui::SameLine();
+        ImGui::DragFloat("Lifetime range", (float*)&emitter->lifetimeMax, 0.05f);
+        
+        // ImGui::DragFloat(" - ##rot", (float*)&emitter->rotationMin, 0.05f); ImGui::SameLine();
+        // ImGui::DragFloat("Rotation range", (float*)&emitter->rotationMax, 0.05f);
+        
+        ImGui::DragFloat(" - ##rotSpeed", (float*)&emitter->rotationSpeedMin, 0.05f); ImGui::SameLine();
+        ImGui::DragFloat("Rotation Speed range", (float*)&emitter->rotationSpeedMax, 0.05f);
+        
+        ImGui::DragFloat(" - ##vel", (float*)&emitter->velocityScaleMin, 0.05f); ImGui::SameLine();
+        ImGui::DragFloat("Velocity scale range", (float*)&emitter->velocityScaleMax, 0.05f);
+        
+        ImGui::DragFloat(" - ##alpha", (float*)&emitter->startAlphaMin, 0.05f); ImGui::SameLine();
+        ImGui::DragFloat("Alpha range", (float*)&emitter->startAlphaMax, 0.05f);
+
+        ImGui::PopItemWidth();
+
         ImGui::DragFloat3("Spawn Pos", (float*)&emitter->spawnPosition, 0.05f);
         ImGui::DragFloat3("Spawn Vel", (float*)&emitter->spawnVelocity, 0.05f);
-        ImGui::DragFloat("Spawn Size", (float*)&emitter->startSize, 0.05f);
-        ImGui::DragFloat("Spawn Alpha", (float*)&emitter->startAlpha, 0.05f);
-        
         ImGui::DragFloat3("Acceleration", (float*)&emitter->globalAcceleration, 0.1f);
     
         // Over-lifetime
         ImGui::Separator();
         ImGui::Text("Over Lifetime");
+        // ImGui::DragFloat("Lifetime", (float*)&emitter->life, 0.05f);
         ImGui::DragFloat("Size Over Life",  &emitter->sizeOverLife,  0.01f, 0.0f, 999.f);
         ImGui::DragFloat("Alpha Over Life", &emitter->alphaOverLife, 0.01f, 0.0f, 999.f);
         
@@ -581,10 +601,6 @@ void UpdateSolarSystem(float dt)
 
 void buildParticleScene()
 {
-    std::cout << "Hello, world!" << std::endl;
-    std::cout << "Hello, world!" << std::endl;
-    std::cout << "Hello, world!" << std::endl;
-
     Scene::Instance().Clear();
     
     Scene::Instance().SetBounds(bounds, true);
@@ -609,7 +625,7 @@ void buildParticleScene()
     */
     
 
-    volpe::Texture* texture = volpe::TextureManager().CreateTexture("data/baby1.png");
+    volpe::Texture* texture = volpe::TextureManager().CreateTexture("data/smoke.png");
 
     if (texture == nullptr || !texture->IsValid()) {
         std::cerr << "Failed to load texture: data/baby.png" << std::endl;
@@ -617,11 +633,11 @@ void buildParticleScene()
     }
 
     Emitter->GetMaterial()->SetTexture("u_texture", texture);
-    // cout<<"\nBABA\n";
 
     Emitter->setTransform(glm::mat4(1.0f));
     Emitter->Play();
-    // Emitter->spawnParticles(20);
+
+
 
     Scene::Instance().AddNode(Emitter);
 }
