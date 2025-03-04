@@ -127,6 +127,16 @@ void Program::DrawDebugWindow()
             ImGui::Text("Extract Frustum: %.2f ms", Scene::Instance().getAvgFrustumExtractMs());
             ImGui::Text("QuadTree Query: %.2f ms", Scene::Instance().getAvgQuadTreeQueryMs());
             ImGui::Text("Light Query: %.2f ms", Scene::Instance().getAvgLightQuery());
+            ImGui::Separator();
+            
+            const GLubyte* renderer = glGetString(GL_RENDERER);
+            std::string rendererStr = reinterpret_cast<const char*>(renderer);
+            const GLubyte* vendor = glGetString(GL_VENDOR);
+            std::string vendorStr = reinterpret_cast<const char*>(vendor);
+            ImGui::PushTextWrapPos();
+                ImGui::Text("Renderer: %s", rendererStr.c_str());
+                ImGui::Text("Vendor: %s", vendorStr.c_str());
+            ImGui::PopTextWrapPos();
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Controls"))

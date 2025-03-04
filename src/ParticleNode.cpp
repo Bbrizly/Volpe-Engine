@@ -414,7 +414,7 @@ void ParticleNode::buildVertexData(const glm::mat4& view)
           m_decl->AppendAttribute(volpe::AT_Color,      4, volpe::CT_Float);
         m_decl->End();
     } else {
-        std::cout<<"SAVED COMPUTING POWER\n";
+        // std::cout<<"SAVED COMPUTING POWER\n";
         volpe::BufferManager::UpdateVertexBuffer(m_vb, data.data(), (unsigned int)sz);
     }
     prevSZ = sz; //FOR FIXING UPDATE BUFFER 
