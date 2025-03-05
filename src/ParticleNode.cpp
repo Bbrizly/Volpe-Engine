@@ -219,10 +219,12 @@ void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
     m_decl->Bind();
 
     int totalVerts = (int)m_particles.size()*6;
+
+
+    //LOOK INTO BLEND FUNCTIONSSS
     glDepthMask(GL_FALSE);
-    // glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    
     // glEnable(GL_BLEND);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
     glDrawArrays(GL_TRIANGLES, 0, totalVerts);
