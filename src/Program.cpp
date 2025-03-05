@@ -658,41 +658,29 @@ void buildParticleScene()
     
     Scene::Instance().SetBounds(bounds, true);
 
-    ParticleNode* Emitter = new ParticleNode("ParticleSystemNode");
-    // Emitter->useTextureArray = true;
-    // Emitter->numTextures = 3;
-    // return;                                                               blackspurce tattoo
+    ParticleNode* Emitter = new ParticleNode("ParticleSystemNode0");
+    ParticleNode* Emitter1 = new ParticleNode("ParticleSystemNode1");
+    ParticleNode* Emitter2 = new ParticleNode("ParticleSystemNode2");
 
-    // cout<<"\nRAN\n";
+    volpe::Texture* texture0 = volpe::TextureManager().CreateTexture("data/smoke.png");
+    volpe::Texture* texture1 = volpe::TextureManager().CreateTexture("data/baby1.png");
+    volpe::Texture* texture2 = volpe::TextureManager().CreateTexture("data/baby.png");
 
-    /*
-    std::vector<std::string> paths = {"data/baby.png", "data/baby2.png", "data/baby3.png"};
-    volpe::Texture* texArray = volpe::TextureManager().CreateAutoArrayTexture(paths);
-    if(texArray) {
-        cout<<"\nRAN\n";
-        // Emitter->textureArrayID = texArray->GetGLTextureID();
-        Emitter->GetMaterial()->SetTexture("u_texture", texArray);
+    Emitter->GetMaterial()->SetTexture("u_texture", texture0);
+    std::cout<<"E1: "<<Emitter->GetMaterial()<<"\n";
+    Emitter1->GetMaterial()->SetTexture("u_texture", texture1);
+    std::cout<<"E2: "<<Emitter1->GetMaterial()<<"\n";
+    Emitter2->GetMaterial()->SetTexture("u_texture", texture2);
+    std::cout<<"E3: "<<Emitter2->GetMaterial()<<"\n";
 
-        cout<<"\nBABA\n";
-    }
-    */
+    // Emitter->setTransform(glm::mat4(1.0f));
+    // Emitter->Play();
+
     
 
-    volpe::Texture* texture = volpe::TextureManager().CreateTexture("data/smoke.png");
-
-    if (texture == nullptr || !texture->IsValid()) {
-        std::cerr << "Failed to load texture: data/baby.png" << std::endl;
-        return;
-    }
-
-    Emitter->GetMaterial()->SetTexture("u_texture", texture);
-
-    Emitter->setTransform(glm::mat4(1.0f));
-    Emitter->Play();
-
-
-
     Scene::Instance().AddNode(Emitter);
+    Scene::Instance().AddNode(Emitter1);
+    Scene::Instance().AddNode(Emitter2);
 }
 
 #pragma endregion
@@ -780,10 +768,10 @@ void Program::update(float dt)
     DrawInspector();
     DrawDebugWindow();
 
-    if(m_pApp->isKeyJustDown('P') || m_pApp->isKeyJustDown('p'))
-    {
-        buildParticleScene();
-    }
+    // if(m_pApp->isKeyJustDown('P') || m_pApp->isKeyJustDown('p'))
+    // {
+    //     buildParticleScene();
+    // }
 
     if(solarSystem)
     {

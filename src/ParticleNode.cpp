@@ -30,7 +30,9 @@ ParticleNode::ParticleNode(const std::string& name)
     SetBoundingVolume(vol);
 
     // m_material = volpe::MaterialManager::CreateMaterial("ParticleSystemMaterial");
-    m_material = volpe::MaterialManager::CreateMaterial("ParticleSystemMaterial");
+    // std:string s_name = name;
+    // if(name.empty()) s_name = "unnamed";
+    m_material = volpe::MaterialManager::CreateMaterial(name + "Mat"); //to work for multiple particle systems.
     m_material->SetProgram("data/particle.vsh", "data/particle.fsh");
     SetReactToLight(false);
     // std::cout<<"Constuctor Material: "<<m_material<<"\n";
