@@ -4,6 +4,11 @@ project(sample VERSION 0.1.0)
 set(OpenGL_GL_PREFERENCE "GLVND")
 find_package(OpenGL REQUIRED)
 
+# Optional: Force yaml-cpp to build as a static library if desired.
+set(YAML_CPP_BUILD_SHARED_LIBS OFF CACHE BOOL "Build yaml-cpp as a static library" FORCE)
+# Add yaml-cpp from your thirdparty folder.
+add_subdirectory(thirdparty/yaml-cpp)
+
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "If the test suite for Assimp is built in addition to the library." FORCE)
 set(ASSIMP_NO_EXPORT ON CACHE BOOL "Disable Assimp's export functionality." FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "If the supplementary tools for Assimp are built in addition to the library." FORCE)
@@ -61,6 +66,7 @@ add_subdirectory(thirdparty/glfw)
 add_subdirectory(thirdparty/glm)
 add_subdirectory(thirdparty/assimp)
 add_subdirectory(thirdparty/glew/build/cmake)
+# add_subdirectory(thirdparty/yaml-cpp)
 
 set(IMGUI_SOURCES
     ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui.cpp
@@ -80,6 +86,8 @@ include_directories(
     thirdparty/glm 
     thirdparty/glew/include 
     thirdparty/assimp/include
+    # thirdparty
+    thirdparty/yaml-cpp/include
     ${CMAKE_SOURCE_DIR}/volpe
     ${OPENGL_INCLUDE_DIRS}
 )
@@ -117,7 +125,7 @@ add_executable(sample
     ${HEADER_FILES}
 )
 
-target_link_libraries(sample assimp glfw glew imgui ${OPENGL_LIBRARIES} ${GLFW_LIBRARIES})
+target_link_libraries(sample assimp glfw glew imgui yaml-cpp ${OPENGL_LIBRARIES} ${GLFW_LIBRARIES})
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

@@ -41,8 +41,6 @@ float speedMultipler = 1.0f;
 
 static Node* g_selectedNode = nullptr;
 
-
-
 static glm::vec3 ExtractTranslation(const glm::mat4& m)
 {
     return glm::vec3(m[3][0], m[3][1], m[3][2]);
@@ -56,7 +54,6 @@ static glm::vec3 ExtractScale(const glm::mat4& m)
     float sz = glm::length(glm::vec3(m[0][2], m[1][2], m[2][2]));
     return glm::vec3(sx, sy, sz);
 }
-
 
 static glm::mat4 MakeTransform(const glm::vec3& position, const glm::vec3& scale)
 {
@@ -109,25 +106,29 @@ void Program::DrawDebugWindow()
             ImGui::Separator();
             ImGui::Text("FPS: %d", (int)Scene::Instance().getFPS());
             ImGui::Separator();
-            ImGui::Text("QuadTree Render: %s", Scene::Instance().getShowDebug() ? "ON" : "OFF");
-            ImGui::Text("Visual Bounding Vols: %s", Scene::Instance().getShowBoundingVolumes() ? "ON" : "OFF");
-            ImGui::Text("Debug Frustum: %s", Scene::Instance().getUseDebugFrustum() ? "ON" : "OFF");
-            ImGui::Text("CURRENT TREE: %s", Scene::Instance().getActiveTreeName().c_str());
-            ImGui::Separator();
+            ImGui::Text("MS Budget:");
+            ImGui::Text("Camera Update: %.2f ms", Scene::Instance().getAvgCameraUpdateMs());
+            ImGui::Text("Nodes Update: %.2f ms", Scene::Instance().getAvgNodeUpdateMs());
             ImGui::Text("Scene Creation Time: %.2f ms", Scene::Instance().getSceneCreationTime());
             ImGui::Text("Tree Build Time: %.2f ms", Scene::Instance().getTreeBuildTime());
+            ImGui::Text("Bounding Vol Update: %.2f ms", Scene::Instance().getAvgBoundingVolumeMs());
+            ImGui::Text("Extract Frustum: %.2f ms", Scene::Instance().getAvgFrustumExtractMs());
+            ImGui::Text("Tree Query: %.2f ms", Scene::Instance().getAvgQuadTreeQueryMs());
+            ImGui::Text("Light Query: %.2f ms", Scene::Instance().getAvgLightQuery());
+            ImGui::Separator();
+            ImGui::Text("Scene Debug:");
             ImGui::Text("Existing Nodes: %d", (int)Scene::Instance().GetNodes().size());
             ImGui::Text("Nodes Visible: %d", (int)Scene::Instance().GetNodesToRender().size());
             ImGui::Text("Lights In Scene: %d", (int)Scene::Instance().GetLights().size());
             ImGui::Text("Nodes Affected by Light: %d", (int)Scene::Instance().getNodesAffectedByLight());
             ImGui::Separator();
-            ImGui::Text("Camera Update: %.2f ms", Scene::Instance().getAvgCameraUpdateMs());
-            ImGui::Text("Nodes Update: %.2f ms", Scene::Instance().getAvgNodeUpdateMs());
-            ImGui::Text("Bounding Vol Update: %.2f ms", Scene::Instance().getAvgBoundingVolumeMs());
-            ImGui::Text("Extract Frustum: %.2f ms", Scene::Instance().getAvgFrustumExtractMs());
-            ImGui::Text("QuadTree Query: %.2f ms", Scene::Instance().getAvgQuadTreeQueryMs());
-            ImGui::Text("Light Query: %.2f ms", Scene::Instance().getAvgLightQuery());
+            ImGui::Text("Toggles:");
+            ImGui::Text("QuadTree Render: %s", Scene::Instance().getShowDebug() ? "ON" : "OFF");
+            ImGui::Text("Visual Bounding Vols: %s", Scene::Instance().getShowBoundingVolumes() ? "ON" : "OFF");
+            ImGui::Text("Debug Frustum: %s", Scene::Instance().getUseDebugFrustum() ? "ON" : "OFF");
+            ImGui::Text("CURRENT TREE: %s", Scene::Instance().getActiveTreeName().c_str());
             ImGui::Separator();
+
             
             const GLubyte* renderer = glGetString(GL_RENDERER);
             std::string rendererStr = reinterpret_cast<const char*>(renderer);
@@ -428,6 +429,46 @@ void Program::DrawTopBar()
     ImGui::End();
 }
 
+void Program::DrawPerformanceGraphs() {
+
+    {
+        m_cameraUpdateTimes[m_perfBufferIndex]       = Scene::Instance().getAvgCameraUpdateMs();
+        m_nodeUpdateTimes[m_perfBufferIndex]         = Scene::Instance().getAvgNodeUpdateMs();
+        m_boundingVolumeTimes[m_perfBufferIndex]     = Scene::Instance().getAvgBoundingVolumeMs();
+        m_TreeBuildTime[m_perfBufferIndex]           = Scene::Instance().getTreeBuildTime();
+        m_treeQueryTimes[m_perfBufferIndex]          = Scene::Instance().getAvgQuadTreeQueryMs();
+        m_lightQueryTimes[m_perfBufferIndex]         = Scene::Instance().getAvgLightQuery();
+        m_perfBufferIndex = (m_perfBufferIndex + 1) % kPerfBufferSize;
+    }
+    ImGui::Begin("Performance Graphs");
+
+    // Adjusted graph height and range for clearer visualization
+    const ImVec2 graphSize(0, 50);  // Increase height to 200 pixels
+    float graphMin = 0.0f;
+    float graphMax = 5.0f;
+
+    ImGui::Text("Camera Update (ms)");
+    ImGui::PlotLines("##Camera", m_cameraUpdateTimes, kPerfBufferSize, m_perfBufferIndex, nullptr, graphMin, graphMax, graphSize);
+
+    ImGui::Text("Node Update (ms)");
+    ImGui::PlotLines("##Nodes", m_nodeUpdateTimes, kPerfBufferSize, m_perfBufferIndex, nullptr, graphMin, graphMax, graphSize);
+
+    ImGui::Text("Bounding Volumes (ms)");
+    ImGui::PlotLines("##BV", m_boundingVolumeTimes, kPerfBufferSize, m_perfBufferIndex, nullptr, graphMin, graphMax, graphSize);
+
+    ImGui::Text("Tree Building (ms)");
+    ImGui::PlotLines("##TreeBuild", m_TreeBuildTime, kPerfBufferSize, m_perfBufferIndex, nullptr, graphMin, graphMax, graphSize);
+
+    ImGui::Text("Tree Query (ms)");
+    ImGui::PlotLines("##TreeQuery", m_treeQueryTimes, kPerfBufferSize, m_perfBufferIndex, nullptr, graphMin, graphMax, graphSize);
+
+    ImGui::Text("Light Query (ms)");
+    ImGui::PlotLines("##LightQuery", m_lightQueryTimes, kPerfBufferSize, m_perfBufferIndex, nullptr, graphMin, graphMax, graphSize);
+
+    ImGui::End();
+}
+
+
 #pragma endregion
 
 #pragma region Helper Creations
@@ -512,7 +553,7 @@ void BuildAsteroidField(int count, float innerRadius, float outerRadius)
     std::uniform_real_distribution<float> distShape(0.0f, 1.0f);  // 50% chance sphere/cube
     std::uniform_real_distribution<float> distHeight(-5.0f, 5.0f); // random offset
     std::uniform_real_distribution<float> distScale(0.2f, 1.0f);   // random size
-    std::uniform_real_distribution<float> distColor(0.0f, 255.0f);
+    std::uniform_real_distribution<float> distColor(100.0f, 255.0f);
 
     for(int i = 0; i < count; i++)
     {
@@ -535,11 +576,14 @@ void BuildAsteroidField(int count, float innerRadius, float outerRadius)
         {
             asteroid = new DebugSphere("AsteroidSphere_" + std::to_string(i),
                                        distScale(gen));  // sphere radius
-            // asteroid->setColor(r, g, b);
+
+            DebugSphere* sphere = dynamic_cast<DebugSphere*>(asteroid);
+            sphere->setColor(r, g, b);
         }
         else
-        {asteroid = new DebugCube("AsteroidCube_" + std::to_string(i)); 
-            // asteroid->setColor(r, g, b);
+        {   asteroid = new DebugCube("AsteroidCube_" + std::to_string(i)); 
+            DebugCube* cube = dynamic_cast<DebugCube*>(asteroid);
+            cube->setColor(r, g, b);
         }
 
         glm::mat4 T = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
@@ -614,7 +658,7 @@ void BuildSolarSystem(int bounds)
 
     Scene::Instance().AddNode(sun);
 
-    BuildAsteroidField(800, 25.0f, 40.0f);
+    BuildAsteroidField(200, 25.0f, 40.0f);
 }
 
 void UpdateSolarSystem(float dt)
@@ -720,6 +764,7 @@ void Program::SwitchScene(SceneType newScene)
 
 void Program::init()
 {
+    glfwSwapInterval(0);
     #pragma region Initalizing Shit
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -739,7 +784,7 @@ void Program::init()
 
 
     #pragma endregion
-    
+
     fpsCamera = new FirstPersonCamera(m_pApp);
 
     orbitCamera = new OrbitCamera(m_pApp);
@@ -766,6 +811,8 @@ void Program::update(float dt)
 
     DrawInspector();
     DrawDebugWindow();
+
+    DrawPerformanceGraphs();
 
     // if(m_pApp->isKeyJustDown('P') || m_pApp->isKeyJustDown('p'))
     // {

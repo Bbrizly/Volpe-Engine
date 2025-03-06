@@ -89,7 +89,12 @@
         "ratio": "cpp",
         "iomanip": "cpp",
         "condition_variable": "cpp",
-        "mutex": "cpp"
+        "mutex": "cpp",
+        "any": "cpp",
+        "queue": "cpp",
+        "ranges": "cpp",
+        "stack": "cpp",
+        "valarray": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

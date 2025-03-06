@@ -77,7 +77,7 @@ private:
 
     bool reDebug = false;
     
-    const float m_smoothAlpha = 0.0001f;
+    const float m_smoothAlpha = 0.01f;
 
     float m_lastKnownFps = 0.0f;
 

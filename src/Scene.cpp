@@ -391,21 +391,21 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
         }
     }
 
-    std::string shapes = "";
+    // std::string shapes = "";
 
-    for (auto& object : m_nodesToRender) {
-        vec3 x = object->getWorldTransform()[3];
+    // for (auto& object : m_nodesToRender) {
+    //     vec3 x = object->getWorldTransform()[3];
 
-        std::ostringstream oss;
-        oss << std::fixed << std::setprecision(0) << x.x << ", " 
-            << std::fixed << std::setprecision(0) << x.y << ", " 
-            << std::fixed << std::setprecision(0) << x.z;
+    //     std::ostringstream oss;
+    //     oss << std::fixed << std::setprecision(0) << x.x << ", " 
+    //         << std::fixed << std::setprecision(0) << x.y << ", " 
+    //         << std::fixed << std::setprecision(0) << x.z;
 
-        shapes += object->getName() + " | " + oss.str() + "\n";
-    }
+    //     shapes += object->getName() + " | " + oss.str() + "\n";
+    // }
 
     // Set text in the debug UI
-    debugTextBox->SetText(shapes);
+    // debugTextBox->SetText(shapes);
     
     t1 = high_resolution_clock::now();
     float quadTreeQueryMS = duration<float, milli>(t1 - t0).count();
@@ -429,12 +429,20 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
 
     #pragma region Statistics
 
-    m_avgCameraUpdateMs   = EMA(m_avgCameraUpdateMs,   cameraUpdateMS);
-    m_avgNodeUpdateMs     = EMA(m_avgNodeUpdateMs,     nodeUpdateMS);
-    m_avgBoundingVolumeMs = EMA(m_avgBoundingVolumeMs, boundingVolumeMS);
-    m_avgFrustumExtractMs = EMA(m_avgFrustumExtractMs, frustumExtractMS);
-    m_avgQuadTreeQueryMs  = EMA(m_avgQuadTreeQueryMs,  quadTreeQueryMS);
-    m_avgLightQuery  = EMA(m_avgLightQuery,  lightQueryMS);
+    // m_avgCameraUpdateMs   = EMA(m_avgCameraUpdateMs,   cameraUpdateMS);
+    // m_avgNodeUpdateMs     = EMA(m_avgNodeUpdateMs,     nodeUpdateMS);
+    // m_avgBoundingVolumeMs = EMA(m_avgBoundingVolumeMs, boundingVolumeMS);
+    // m_avgFrustumExtractMs = EMA(m_avgFrustumExtractMs, frustumExtractMS);
+    // m_avgQuadTreeQueryMs  = EMA(m_avgQuadTreeQueryMs,  quadTreeQueryMS);
+    // m_avgLightQuery       = EMA(m_avgLightQuery,  lightQueryMS);
+    
+    //Testing:
+    m_avgCameraUpdateMs   = cameraUpdateMS;
+    m_avgNodeUpdateMs     = nodeUpdateMS;
+    m_avgBoundingVolumeMs = boundingVolumeMS;
+    m_avgFrustumExtractMs = frustumExtractMS;
+    m_avgQuadTreeQueryMs  = quadTreeQueryMS;
+    m_avgLightQuery       = lightQueryMS;
     // m_avgQuadTreeQueryMs  = EMA(m_avgQuadTreeQueryMs,  quadTreeQueryMS);
 
     string activeTreeName = m_useQuadTreeOrOct ? "Quad" : "Oct";
