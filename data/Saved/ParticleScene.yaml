@@ -1,0 +1,72 @@
+Scene: VolpeScene
+Nodes:
+  - Name: ParticleSystemNode0
+    LocalTransform:
+      - 1
+      - 0
+      - 0
+      - 0
+      - 0
+      - 1
+      - 0
+      - 0
+      - 0
+      - 0
+      - 1
+      - 0
+      - 0
+      - 0
+      - 0
+      - 1
+    Type: ParticleNode
+    EmissionRate: 10
+    MaxParticles: 1000
+    Shape: 0
+    LocalSpace: false
+  - Name: ParticleSystemNode1
+    LocalTransform:
+      - 1
+      - 0
+      - 0
+      - 0
+      - 0
+      - 1
+      - 0
+      - 0
+      - 0
+      - 0
+      - 1
+      - 0
+      - 0
+      - 0
+      - 0
+      - 1
+    Type: ParticleNode
+    EmissionRate: 10
+    MaxParticles: 1000
+    Shape: 0
+    LocalSpace: false
+  - Name: ParticleSystemNode2
+    LocalTransform:
+      - 1
+      - 0
+      - 0
+      - 0
+      - 0
+      - 1
+      - 0
+      - 0
+      - 0
+      - 0
+      - 1
+      - 0
+      - 0
+      - 0
+      - 0
+      - 1
+    Type: ParticleNode
+    EmissionRate: 10
+    MaxParticles: 1000
+    Shape: 0
+    LocalSpace: false
+Lights: ~

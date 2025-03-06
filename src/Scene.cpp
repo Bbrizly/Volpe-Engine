@@ -566,6 +566,8 @@ void Scene::Clear()
     // m_quadTree->~QuadTree();
     // m_octTree
 
+    BuildOctTree();
+
     DebugRender::Instance().Clear();
 }
 

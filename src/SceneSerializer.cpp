@@ -4,21 +4,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-YAML::Emitter& operator<<(YAML::Emitter& out, const glm::mat4& mat)
-{
-    out << YAML::BeginSeq;
-    for (int row = 0; row < 4; ++row)
-    {
-        for (int col = 0; col < 4; ++col)
-        {
-            float value = mat[row][col];
-            out << value;
-        }
-    }
-    out << YAML::EndSeq;
-    return out;
-}
-
 glm::mat4 SceneSerializer::ReadMat4(YAML::Node& node)
 {
     glm::mat4 out(1.0f);
@@ -35,7 +20,7 @@ glm::mat4 SceneSerializer::ReadMat4(YAML::Node& node)
     return out;
 }
 
-void SceneSerializer::SaveScene(Scene& scene, std::string& filePath)
+void SceneSerializer::SaveScene(Scene& scene, const  std::string& filePath)
 {
     YAML::Node root;
     root["Scene"] = "VolpeScene";
@@ -68,7 +53,7 @@ void SceneSerializer::SaveScene(Scene& scene, std::string& filePath)
 
     root["Lights"] = lightsNode;
 
-    // Write YAML out to file.
+    
     std::ofstream fout(filePath);
     if(!fout.is_open()){
         std::cerr << "[SceneSerializer] Could not open file for writing: " << filePath << "\n";
@@ -79,7 +64,7 @@ void SceneSerializer::SaveScene(Scene& scene, std::string& filePath)
     std::cout << "[SceneSerializer] Saved scene to " << filePath << "\n";
 }
 
-void SceneSerializer::LoadScene(Scene& scene, std::string& filePath)
+void SceneSerializer::LoadScene(Scene& scene, const std::string& filePath)
 {
     YAML::Node root;
     try {

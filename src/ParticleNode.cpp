@@ -4,9 +4,6 @@
 #include <algorithm>
 #include <cmath>
 #include "Scene.h"
-// #include <tinyxml2.h>
-// #include <xmllite.h>
-// using namespace tinyxml2;
 
 ParticleNode::ParticleNode(const std::string& name)
 : Node(name)
@@ -25,7 +22,6 @@ ParticleNode::ParticleNode(const std::string& name)
 , m_randGen(std::random_device{}())
 , m_dist01(0.0f, 1.0f)
 {
-    // Bounding volume just so it appears, in the future make it so it encapsulates all particles
     SphereVolume* vol = new SphereVolume(glm::vec3(0), 20.0f);
     SetBoundingVolume(vol);
 
@@ -35,6 +31,7 @@ ParticleNode::ParticleNode(const std::string& name)
     m_material = volpe::MaterialManager::CreateMaterial(name + "Mat"); //to work for multiple particle systems.
     m_material->SetProgram("data/particle.vsh", "data/particle.fsh");
     SetReactToLight(false);
+    Play();
     // std::cout<<"Constuctor Material: "<<m_material<<"\n";
     // std::cout<<"GetMaterial: "<<GetMaterial()<<"\n";
 }

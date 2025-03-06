@@ -1,4 +1,5 @@
 #include "Program.h"
+#include "SceneSerializer.h"
 
 using namespace std;
 
@@ -797,6 +798,8 @@ void Program::init()
     Scene::Instance().InitLights();
 
     buildParticleScene();
+    Scene& scene = Scene::Instance();
+    SceneSerializer::SaveScene(scene, "data/saved/ParticleScene.yaml");
 }
 
 void Program::update(float dt)
@@ -814,10 +817,17 @@ void Program::update(float dt)
 
     DrawPerformanceGraphs();
 
-    // if(m_pApp->isKeyJustDown('P') || m_pApp->isKeyJustDown('p'))
-    // {
-    //     buildParticleScene();
-    // }
+    if(m_pApp->isKeyJustDown('J') || m_pApp->isKeyJustDown('j'))
+    {
+        // buildParticleScene();
+        Scene::Instance().Clear();
+        SceneSerializer::LoadScene(Scene::Instance() ,"data/saved/ParticleScene.yaml");
+    }
+    if(m_pApp->isKeyJustDown('H') || m_pApp->isKeyJustDown('h'))
+    {
+        Scene& scene = Scene::Instance();
+        SceneSerializer::SaveScene(scene, "data/saved/ParticleScene.yaml");
+    }
 
     if(solarSystem)
     {
