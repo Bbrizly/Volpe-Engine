@@ -1,72 +1,99 @@
 Scene: VolpeScene
 Nodes:
   - Name: ParticleSystemNode0
-    LocalTransform:
-      - 1
-      - 0
-      - 0
-      - 0
-      - 0
-      - 1
-      - 0
-      - 0
-      - 0
-      - 0
-      - 1
-      - 0
-      - 0
-      - 0
-      - 0
-      - 1
     Type: ParticleNode
-    EmissionRate: 10
-    MaxParticles: 1000
-    Shape: 0
-    LocalSpace: false
+    ParticleData:
+      emissionRate: 50
+      localSpace: false
+      maxParticles: 50
+      shape: 1
+      globalAcceleration: [0, 1.5, 0]
+      spawnPosition: [0, 0, 0]
+      spawnVelocity: [0, 1, 0]
+      lifetimeMin: 0.8
+      lifetimeMax: 1
+      startSizeMin: 0.5
+      startSizeMax: 1
+      startAlphaMin: 1
+      startAlphaMax: 1
+      rotationMin: 0
+      rotationMax: 360
+      rotationSpeedMin: -7.5
+      rotationSpeedMax: 7.5
+      velocityScaleMin: 0
+      velocityScaleMax: 2
+      sizeOverLife: 0.83
+      alphaOverLife: 0.62
+      colorKeys:
+        - time: 0
+          color: [1, 1, 1, 1]
+        - time: 0.5
+          color: [1, 0, 0, 1]
+        - time: 1
+          color: [0, 0, 0, 1]
+      texturePath: data/smoke.png
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0, 1]
+      Scale: [0.5, 0.5, 0.5]
   - Name: ParticleSystemNode1
-    LocalTransform:
-      - 1
-      - 0
-      - 0
-      - 0
-      - 0
-      - 1
-      - 0
-      - 0
-      - 0
-      - 0
-      - 1
-      - 0
-      - 0
-      - 0
-      - 0
-      - 1
     Type: ParticleNode
-    EmissionRate: 10
-    MaxParticles: 1000
-    Shape: 0
-    LocalSpace: false
+    ParticleData:
+      emissionRate: 10
+      localSpace: false
+      maxParticles: 1000
+      shape: 0
+      globalAcceleration: [0, 0, 0]
+      spawnPosition: [0, 0, 0]
+      spawnVelocity: [0, 0, 0]
+      lifetimeMin: 1
+      lifetimeMax: 4
+      startSizeMin: 0.5
+      startSizeMax: 1.5
+      startAlphaMin: 1
+      startAlphaMax: 1
+      rotationMin: 0
+      rotationMax: 360
+      rotationSpeedMin: -7.5
+      rotationSpeedMax: 7.5
+      velocityScaleMin: 0
+      velocityScaleMax: 2
+      sizeOverLife: 1
+      alphaOverLife: 1
+      colorKeys: ~
+      texturePath: data/baby1.png
+    Transform:
+      Position: [0, 0, -7.6]
+      Rotation: [0, 0, 0, 1]
+      Scale: [1, 1, 1]
   - Name: ParticleSystemNode2
-    LocalTransform:
-      - 1
-      - 0
-      - 0
-      - 0
-      - 0
-      - 1
-      - 0
-      - 0
-      - 0
-      - 0
-      - 1
-      - 0
-      - 0
-      - 0
-      - 0
-      - 1
     Type: ParticleNode
-    EmissionRate: 10
-    MaxParticles: 1000
-    Shape: 0
-    LocalSpace: false
+    ParticleData:
+      emissionRate: 10
+      localSpace: false
+      maxParticles: 1000
+      shape: 0
+      globalAcceleration: [0, 0, 0]
+      spawnPosition: [0, 0, 0]
+      spawnVelocity: [0, 0, 0]
+      lifetimeMin: 1
+      lifetimeMax: 4
+      startSizeMin: 0.5
+      startSizeMax: 1.5
+      startAlphaMin: 1
+      startAlphaMax: 1
+      rotationMin: 0
+      rotationMax: 360
+      rotationSpeedMin: -7.5
+      rotationSpeedMax: 7.5
+      velocityScaleMin: 0
+      velocityScaleMax: 2
+      sizeOverLife: 1
+      alphaOverLife: 1
+      colorKeys: ~
+      texturePath: data/baby.png
+    Transform:
+      Position: [3, 0, -7.2]
+      Rotation: [0, 0, 0, 1]
+      Scale: [0.99999726, 0.9999921, 0.999993]
 Lights: ~

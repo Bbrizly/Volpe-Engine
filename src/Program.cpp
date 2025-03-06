@@ -190,15 +190,32 @@ void Program::DrawInspector()
     glm::vec3 pos = ExtractTranslation(localT);
     glm::vec3 scl = ExtractScale(localT);
 
-    if (ImGui::DragFloat3("Position", (float*)&pos, 0.1f))
+    if (ImGui::CollapsingHeader("Transform"))
     {
-        glm::mat4 newTrans = MakeTransform(pos, scl);
-        g_selectedNode->setTransform(newTrans);
-    }
-    if (ImGui::DragFloat3("Scale", (float*)&scl, 0.01f, 0.01f, 100.0f))
-    {
-        glm::mat4 newTrans = MakeTransform(pos, scl);
-        g_selectedNode->setTransform(newTrans);
+        glm::vec3 pos, scl;
+        glm::quat rot;
+        g_selectedNode->getTransformDecomposed(pos, rot, scl);
+
+        // Convert quaternion to Euler angles (degrees) for editing
+        glm::vec3 eulerDegrees = glm::degrees(glm::eulerAngles(rot));
+
+        // Position
+        if(ImGui::DragFloat3("Position", (float*)&pos, 0.1f)){
+            // rebuild
+            glm::quat newQ = glm::quat(glm::radians(eulerDegrees));
+            g_selectedNode->setTransformDecomposed(pos, newQ, scl);
+        }
+        // Scale
+        if(ImGui::DragFloat3("Scale", (float*)&scl, 0.01f, 0.001f, 1000.f)){
+            glm::quat newQ = glm::quat(glm::radians(eulerDegrees));
+            g_selectedNode->setTransformDecomposed(pos, newQ, scl);
+        }
+        // Rotation
+        if(ImGui::DragFloat3("Rotation", (float*)&eulerDegrees, 0.1f, -360.f, 360.f)){
+            // Rebuild from euler
+            glm::quat newQ = glm::quat(glm::radians(eulerDegrees));
+            g_selectedNode->setTransformDecomposed(pos, newQ, scl);
+        }
     }
 
     // Node specific BUT once I convert codebase to entity system, this will muchhh simpler
@@ -799,7 +816,7 @@ void Program::init()
 
     buildParticleScene();
     Scene& scene = Scene::Instance();
-    SceneSerializer::SaveScene(scene, "data/saved/ParticleScene.yaml");
+    // SceneSerializer::SaveScene(scene, "data/saved/ParticleScene.yaml");
 }
 
 void Program::update(float dt)
@@ -822,6 +839,7 @@ void Program::update(float dt)
         // buildParticleScene();
         Scene::Instance().Clear();
         SceneSerializer::LoadScene(Scene::Instance() ,"data/saved/ParticleScene.yaml");
+        Scene::Instance().BuildOctTree();
     }
     if(m_pApp->isKeyJustDown('H') || m_pApp->isKeyJustDown('h'))
     {

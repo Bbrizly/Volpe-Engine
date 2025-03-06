@@ -2,9 +2,10 @@
 
 #include <string>
 #include "Scene.h"
+#include "ParticleNode.h"
 #include <yaml-cpp/yaml.h>
 
-#include "ParticleNode.h"
+YAML::Emitter& operator<<(YAML::Emitter& out, const glm::mat4& mat);
 
 struct SerializedTransform {
     glm::vec3 pos;
@@ -15,15 +16,21 @@ struct SerializedTransform {
 class SceneSerializer
 {
 public:
-
     static void SaveScene(Scene& scene, const std::string& filePath);
     static void LoadScene(Scene& scene, const std::string& filePath);
 
-
 private:
     static YAML::Node SerializeNode(Node* node);
+    static Node*     DeserializeNode(const YAML::Node& nodeData, Scene& scene, Node* parent);
 
-    static Node* DeserializeNode(YAML::Node& nodeData, Scene& scene, Node* parent);
+    // for gradient keysss
+    static YAML::Node SerializeColorKeys(const std::vector<ColorKey>& keys);
+    static void DeserializeColorKeys(const YAML::Node& node, std::vector<ColorKey>& outKeys);
 
-    static glm::mat4 ReadMat4(YAML::Node& node);
+    // Transform to YAML
+    static YAML::Node SerializeTransform(const Node* node);
+    static void       DeserializeTransform(Node* node, const YAML::Node& transformNode);
+
+    static YAML::Node SerializeParticleNode(const ParticleNode* emitter);
+    static void       DeserializeParticleNode(const YAML::Node& n, ParticleNode* emitter);
 };

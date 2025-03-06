@@ -69,6 +69,8 @@ Texture::Texture(const std::string& path)
 		printf("ERROR: No idea how to load this file - %s!", path.c_str());
 	}
 
+	texPath = path;
+
 	SetWrapMode(WM_Clamp);
 }
 

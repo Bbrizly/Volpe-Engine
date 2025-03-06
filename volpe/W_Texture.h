@@ -67,6 +67,7 @@ class Texture
 		GLuint GetGLTexture() const { return m_glTex; }
 		//-------------------------------------------------------------------------
 		bool IsValid() {return m_isValid;}
+		std::string texPath = "path unknown";
 	private:
 		//-------------------------------------------------------------------------
 		// PRIVATE METHODS

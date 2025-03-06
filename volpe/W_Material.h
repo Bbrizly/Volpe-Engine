@@ -35,6 +35,7 @@ class Material
 		void SetUniform(const std::string& name, const std::vector<glm::mat4>& mats);
 
 		void SetTexture(const std::string& name, const Texture* pTex);
+		const Texture* GetTexture(const std::string& name) {return m_uniforms[name].pTexture; }
 
 		void SetDepthTest(bool enable) { m_depthTest = enable; }
 		void SetDepthWrite(bool enable) { m_depthWrite = enable; }
