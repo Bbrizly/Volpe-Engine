@@ -37,12 +37,23 @@ private:
     OrbitCamera* orbitCamera = nullptr;
     bool whichCamera = false; //true = orbit, false = fps
     bool solarSystem = true;
+
+    static const int kPerfBufferSize = 100;
+    float m_cameraUpdateTimes[kPerfBufferSize] = {0};
+    float m_nodeUpdateTimes[kPerfBufferSize] = {0};
+    float m_boundingVolumeTimes[kPerfBufferSize] = {0};
+    float m_TreeBuildTime[kPerfBufferSize] = {0};
+    float m_treeQueryTimes[kPerfBufferSize] = {0};
+    float m_lightQueryTimes[kPerfBufferSize] = {0};
+    int   m_perfBufferIndex = 0;
+
     void DrawSceneManagerUI();
     void SwitchScene(SceneType newScene);
     void DrawTopBar();
     void DrawInspector();
     void DrawSceneHierarchy();
     void DrawDebugWindow();
+    void DrawPerformanceGraphs();
 
 public:
     Program(volpe::App* pApp);

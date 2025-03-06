@@ -25,7 +25,7 @@ DebugSphere::DebugSphere(const std::string& name, float radius)
     mat->SetDepthWrite(true);
     SetMaterial(mat);
 
-    initGeometry(20, 20);
+    initGeometry(10, 10);
 }
 
 DebugSphere::~DebugSphere()

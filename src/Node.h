@@ -47,11 +47,10 @@ public:
     
     volpe::Material* GetMaterial() const { return m_material; }
     void SetMaterial(volpe::Material* mat) { m_material = mat; }
+    
+    void getTransformDecomposed(glm::vec3& outPos, glm::quat& outRot, glm::vec3& outScale) const;
+    void setTransformDecomposed(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale);
 
-    // volpe::Program* GetProgram() const { return m_pProgram; }
-    // void SetProgram(volpe::Program* prog) { m_pProgram = prog; }
-
-    // Bounding volume
     void SetBoundingVolume(BoundingVolume* volume);
     BoundingVolume* GetBoundingVolume() const;
     virtual void UpdateBoundingVolume();
