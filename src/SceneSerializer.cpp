@@ -45,7 +45,7 @@ static glm::quat ReadQuat(const YAML::Node& n)
 }
 
 //  SAVING
-void SceneSerializer::SaveScene(Scene& scene, const std::string& filePath)
+void SceneSerializer::SaveScene(Scene& scene, const std::string& givenFilePath)
 {
     YAML::Node root;
     root["Scene"] = "VolpeScene";
@@ -85,6 +85,9 @@ void SceneSerializer::SaveScene(Scene& scene, const std::string& filePath)
     }
     root["Lights"] = lightsArr;
 
+    // filePath += ".yaml";
+    std::string filePath = givenFilePath;
+    filePath += ".yaml";
     std::ofstream fout(filePath);
     if(!fout.is_open()){
         std::cerr<<"[SceneSerializer] Cannot open file for write: "<<filePath<<"\n";
@@ -96,9 +99,11 @@ void SceneSerializer::SaveScene(Scene& scene, const std::string& filePath)
     std::cout<<"[SceneSerializer] Saved scene to "<<filePath<<"\n";
 }
 
-void SceneSerializer::LoadScene(Scene& scene, const std::string& filePath)
+void SceneSerializer::LoadScene(Scene& scene, const std::string& givenFilePath)
 {
     YAML::Node root;
+    std::string filePath = givenFilePath;
+    filePath += ".yaml";
     try {
         root = YAML::LoadFile(filePath);
     }

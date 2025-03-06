@@ -37,6 +37,17 @@ void Scene::AddNode(Node* node) {
         m_nodes.push_back(node);
 }
 
+void Scene::RemoveNode(Node* node)
+{
+    auto it = std::find(m_nodes.begin(), m_nodes.end(), node);
+    if (it != m_nodes.end())
+    {
+        delete *it;
+        m_nodes.erase(it);
+    }
+}
+
+
 void Scene::AddLight(Light l)
 {
     
@@ -159,6 +170,18 @@ void Scene::BuildQuadTree() {
     m_lastQuadTreeBuildTimeMs = buildTimeMs;
     
     reDebug = true;
+}
+
+void Scene::ReBuildTree()
+{
+    if(m_useQuadTreeOrOct)
+    {
+        BuildQuadTree();
+    }
+    else
+    {
+        BuildOctTree();
+    }
 }
 
 void Scene::RandomInitScene(int amount)

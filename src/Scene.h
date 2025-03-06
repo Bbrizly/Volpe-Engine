@@ -119,6 +119,7 @@ const std::vector<Node*>& GetNodesToRender() const { return m_nodesToRender; }
     static Scene& Instance();
     
     void AddNode(Node* node);
+    void RemoveNode(Node* node);
 
     void RandomInitScene(int amount);
 
@@ -152,6 +153,7 @@ const std::vector<Node*>& GetNodesToRender() const { return m_nodesToRender; }
     void ToggleUseDebugFrustum(Camera* c);
 
     bool getWhichTree() {return m_useQuadTreeOrOct;} //true quadtree, false octree
+    void ReBuildTree(); 
 
     //TEMPORARYYYY
     vector<Node*> GetNodes() { return m_nodes; }

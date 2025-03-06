@@ -16,8 +16,8 @@ struct SerializedTransform {
 class SceneSerializer
 {
 public:
-    static void SaveScene(Scene& scene, const std::string& filePath);
-    static void LoadScene(Scene& scene, const std::string& filePath);
+    static void SaveScene(Scene& scene, const std::string& givenFilePath);
+    static void LoadScene(Scene& scene, const std::string& givenFilePath);
 
 private:
     static YAML::Node SerializeNode(Node* node);

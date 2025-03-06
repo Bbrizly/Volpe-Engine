@@ -68,7 +68,7 @@ bool culled = false;
 void Program::DrawSceneHierarchy()
 {
     float sceneWidth = 230.0f;
-    float topOffset = 30.0f;
+    float topOffset = 18.0f;
     float sceneHeight = ImGui::GetIO().DisplaySize.y - (topOffset + debugWindowHeight);
     ImGui::SetNextWindowPos(ImVec2(0, topOffset));
     ImGui::SetNextWindowSize(ImVec2(sceneWidth, sceneHeight));
@@ -165,7 +165,7 @@ void Program::DrawDebugWindow()
 void Program::DrawInspector()
 {
     float inspectorWidth = 300.0f;
-    float topOffset = 30.0f;
+    float topOffset = 18.0f;
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - inspectorWidth, topOffset));
     ImGui::SetNextWindowSize(ImVec2(inspectorWidth, ImGui::GetIO().DisplaySize.y - topOffset));
     ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
@@ -185,18 +185,26 @@ void Program::DrawInspector()
         if(nameBuf[0] == '\0') {nameSet = "NULL";} //needed cuz deleting whats in textbox crashes program
         g_selectedNode->setName(std::string(nameSet));
     }
+    ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 40);
+    if (ImGui::SmallButton("Delete"))
+    {
+        Scene::Instance().RemoveNode(g_selectedNode);
+        g_selectedNode = nullptr;
+        ImGui::End();
+        return;
+    }
 
     glm::mat4 localT = g_selectedNode->getTransform();
     glm::vec3 pos = ExtractTranslation(localT);
     glm::vec3 scl = ExtractScale(localT);
 
-    if (ImGui::CollapsingHeader("Transform"))
+    if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
     {
         glm::vec3 pos, scl;
         glm::quat rot;
         g_selectedNode->getTransformDecomposed(pos, rot, scl);
 
-        // Convert quaternion to Euler angles (degrees) for editing
+        // Convert quaternion to degrees
         glm::vec3 eulerDegrees = glm::degrees(glm::eulerAngles(rot));
 
         // Position
@@ -413,6 +421,117 @@ void Program::DrawInspector()
     ImGui::End(); // end Inspector
 }
 
+int addedNode = 0;
+void Program::DrawTopBar()
+{
+    // These flags will store the popup open requests
+    static bool open_save_popup = false;
+    static bool open_load_popup = false;
+
+    // Draw main menu bar.
+    if (ImGui::BeginMainMenuBar())
+    {             
+        if (ImGui::BeginMenu("File"))
+        {
+            if (ImGui::MenuItem("Save Scene"))
+                open_save_popup = true;
+            if (ImGui::MenuItem("Load Scene"))
+                open_load_popup = true;
+            if (ImGui::MenuItem("Quick save and Exit"))
+                SceneSerializer::SaveScene(Scene::Instance(), "autosave");
+                
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Add"))
+        {
+            if (ImGui::MenuItem("Cube"))
+            {
+                DebugCube* cube = new DebugCube("cube_" + to_string(addedNode++));
+                Scene::Instance().AddNode(cube);
+                Scene::Instance().ReBuildTree();
+            }
+            if (ImGui::MenuItem("Sphere"))
+            {
+                DebugSphere* sphere = new DebugSphere("sphere_" + to_string(addedNode++), 0.5);
+                Scene::Instance().AddNode(sphere);
+                Scene::Instance().ReBuildTree();
+            }
+            if (ImGui::MenuItem("Particle Node"))
+            {
+                ParticleNode* Emitter = new ParticleNode("ParticleSystemNode_" + to_string(addedNode++));
+                volpe::Texture* texture0 = volpe::TextureManager().CreateTexture("data/Textures/smoke.png");
+                Emitter->GetMaterial()->SetTexture("u_texture", texture0);
+                Scene::Instance().AddNode(Emitter);
+                Scene::Instance().ReBuildTree();
+            }
+                
+            ImGui::EndMenu();
+        }
+        
+        if (ImGui::MenuItem("Solar System"))
+            SwitchScene(SceneType::SolarSystem);
+        if (ImGui::MenuItem("Random Scene"))
+            SwitchScene(SceneType::Random);
+        if (ImGui::MenuItem("Particle Scene"))
+            SwitchScene(SceneType::Particle);
+
+        ImGui::EndMainMenuBar();
+    }
+
+    if (open_save_popup)
+    {
+        ImGui::OpenPopup("Save Scene");
+        open_save_popup = false;
+    }
+    if (open_load_popup)
+    {
+        ImGui::OpenPopup("Load Scene");
+        open_load_popup = false;
+    }
+
+    // --- Save Scene Popup ---
+    if (ImGui::BeginPopupModal("Save Scene", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        static char saveFileName[256] = "";
+        ImGui::Text("Enter file name to save:");
+        ImGui::InputText("File Name", saveFileName, IM_ARRAYSIZE(saveFileName));
+        if (ImGui::Button("Save", ImVec2(120, 0)))
+        {
+            std::string filename(saveFileName);
+            filename = "data/Saved/" + filename;
+            SceneSerializer::SaveScene(Scene::Instance(), filename);
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0)))
+            ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+
+    // --- Load Scene Popup ---
+    if (ImGui::BeginPopupModal("Load Scene", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        static char loadFileName[256] = "";
+        ImGui::Text("Enter file name to load:");
+        ImGui::InputText("File Name", loadFileName, IM_ARRAYSIZE(loadFileName));
+        if (ImGui::Button("Load", ImVec2(120, 0)))
+        {
+            std::string filename(loadFileName);
+            filename = "data/Saved/" + filename;
+            SceneSerializer::LoadScene(Scene::Instance(), filename);
+            Scene::Instance().ReBuildTree();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0)))
+            ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+}
+
+
+/*
 void Program::DrawTopBar()
 {
     //SCENE PICKER
@@ -422,33 +541,97 @@ void Program::DrawTopBar()
             //Load full on scene XMLs
         //Add ADD
             //Add nodes + when i rewrite codebase to ecs u add components
-    ImGui::SetNextWindowPos(ImVec2(0,0));
-    ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, 20));
-    ImGui::Begin("TopBar", nullptr,
-                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar |
-                 ImGuiWindowFlags_NoScrollWithMouse);
 
-    if (ImGui::Button("Solar System"))
-    {
-        SwitchScene(SceneType::SolarSystem);
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Random Scene"))
-    {
-        SwitchScene(SceneType::Random);
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Particle Scene"))
-    {
-        SwitchScene(SceneType::Particle);
+    // ImGui::SetNextWindowPos(ImVec2(0,0));
+    // ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, 20));
+    // ImGui::Begin("TopBar", nullptr,
+    //              ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+    //              ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar |
+    //              ImGuiWindowFlags_NoScrollWithMouse);
+
+    if (ImGui::BeginMainMenuBar())
+    {             
+        if (ImGui::BeginMenu("File"))
+        {
+            ImGui::PushItemWidth(150);
+            if (ImGui::MenuItem("Save Scene"))
+            {
+                ImGui::OpenPopup("Save Scene");
+                // SceneSerializer::SaveScene(Scene::Instance(), "ParticleScene");
+            }
+            if (ImGui::MenuItem("Load Scene"))
+            {
+                ImGui::OpenPopup("Load Scene");
+                // SceneSerializer::LoadScene(Scene::Instance(), "ParticleScene");
+                // Scene::Instance().BuildOctTree();
+            }
+            if (ImGui::MenuItem("Save and Exit"))
+            {
+                SceneSerializer::SaveScene(Scene::Instance(), "ParticleScene");
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::Text("Pre-made Scenes: ");
+        
+        if (ImGui::MenuItem("Solar System"))
+        {
+            SwitchScene(SceneType::SolarSystem);
+        }
+        if (ImGui::MenuItem("Random Scene"))
+        {
+            SwitchScene(SceneType::Random);
+        }
+        if (ImGui::MenuItem("Particle Scene"))
+        {
+            SwitchScene(SceneType::Particle);
+        }
+        ImGui::EndMainMenuBar();
     }
 
-    ImGui::End();
+    // save
+    static char saveFileName[256] = "";
+    if (ImGui::BeginPopupModal("Save Scene", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("Enter file name to save:");
+        ImGui::InputText("File name", saveFileName, IM_ARRAYSIZE(saveFileName));
+        if (ImGui::Button("Save", ImVec2(120, 0)))
+        {
+            std::string filename = std::string(saveFileName) + ".yaml";
+            SceneSerializer::SaveScene(Scene::Instance(), filename);
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0)))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    //load
+    static char loadFileName[256] = "";
+    if (ImGui::BeginPopupModal("Load Scene", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("Enter file name to load:");
+        ImGui::InputText("File name", loadFileName, IM_ARRAYSIZE(loadFileName));
+        if (ImGui::Button("Load", ImVec2(120, 0)))
+        {
+            std::string filename = std::string(loadFileName) + ".yaml";
+            SceneSerializer::LoadScene(Scene::Instance(), filename);
+            Scene::Instance().BuildOctTree();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0)))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
 }
+*/
 
 void Program::DrawPerformanceGraphs() {
-
     {
         m_cameraUpdateTimes[m_perfBufferIndex]       = Scene::Instance().getAvgCameraUpdateMs();
         m_nodeUpdateTimes[m_perfBufferIndex]         = Scene::Instance().getAvgNodeUpdateMs();
@@ -486,7 +669,6 @@ void Program::DrawPerformanceGraphs() {
     ImGui::End();
 }
 
-
 #pragma endregion
 
 #pragma region Helper Creations
@@ -501,13 +683,12 @@ void RecreateSceneHelper(int bounds)
     uniform_real_distribution<float> distPos(-bounds, bounds);
     uniform_real_distribution<float> rgb(0.0f, 255.0f);
 
-    ParticleNode* Emitter = new ParticleNode("ParticleSystemNode");
+    // ParticleNode* Emitter = new ParticleNode("ParticleSystemNode");
 
-    Emitter->setTransform(glm::mat4(1.0f));
-    Emitter->Play();
-    Emitter->spawnParticles(20);
-
-    Scene::Instance().AddNode(Emitter);
+    // Emitter->setTransform(glm::mat4(1.0f));
+    // Emitter->Play();
+    // Emitter->spawnParticles(20);
+    // Scene::Instance().AddNode(Emitter);
 
     for (int i = 1; i <= amount/2; ++i)
     {
@@ -724,9 +905,9 @@ void buildParticleScene()
     ParticleNode* Emitter1 = new ParticleNode("ParticleSystemNode1");
     ParticleNode* Emitter2 = new ParticleNode("ParticleSystemNode2");
 
-    volpe::Texture* texture0 = volpe::TextureManager().CreateTexture("data/smoke.png");
-    volpe::Texture* texture1 = volpe::TextureManager().CreateTexture("data/baby1.png");
-    volpe::Texture* texture2 = volpe::TextureManager().CreateTexture("data/baby.png");
+    volpe::Texture* texture0 = volpe::TextureManager().CreateTexture("data/Textures/smoke.png");
+    volpe::Texture* texture1 = volpe::TextureManager().CreateTexture("data/Textures/baby1.png");
+    volpe::Texture* texture2 = volpe::TextureManager().CreateTexture("data/Textures/baby.png");
 
     Emitter->GetMaterial()->SetTexture("u_texture", texture0);
     std::cout<<"E1: "<<Emitter->GetMaterial()<<"\n";
@@ -816,7 +997,6 @@ void Program::init()
 
     buildParticleScene();
     Scene& scene = Scene::Instance();
-    // SceneSerializer::SaveScene(scene, "data/saved/ParticleScene.yaml");
 }
 
 void Program::update(float dt)
@@ -838,13 +1018,14 @@ void Program::update(float dt)
     {
         // buildParticleScene();
         Scene::Instance().Clear();
-        SceneSerializer::LoadScene(Scene::Instance() ,"data/saved/ParticleScene.yaml");
-        Scene::Instance().BuildOctTree();
+        SceneSerializer::LoadScene(Scene::Instance() ,"autosave");
+        Scene::Instance().ReBuildTree();
+        
     }
     if(m_pApp->isKeyJustDown('H') || m_pApp->isKeyJustDown('h'))
     {
         Scene& scene = Scene::Instance();
-        SceneSerializer::SaveScene(scene, "data/saved/ParticleScene.yaml");
+        SceneSerializer::SaveScene(scene, "autosave");
     }
 
     if(solarSystem)
