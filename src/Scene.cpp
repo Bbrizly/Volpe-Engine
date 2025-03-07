@@ -50,16 +50,11 @@ void Scene::RemoveNode(Node* node)
 
 void Scene::AddLight(Light l)
 {
-    
     m_lights.push_back(l);
 }
 
 void Scene::DebugDrawFrustum(const Frustum& frustum)
 {
-    // For demonstration, let’s just show each plane as a square.
-    // Each plane = (A,B,C,D) in Ax+By+Cz+D=0, normal = (A,B,C), distance = -D
-    // We'll pick an arbitrary “square size” in that plane.
-
     float planeSize = 5.0f; // half-extent
 
     for (int i = 0; i < 6; ++i)
