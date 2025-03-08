@@ -514,3 +514,182 @@ void SceneSerializer::DeserializeColorKeys(const YAML::Node& node, std::vector<C
         return a.time < b.time;
     });
 }
+
+void SceneSerializer::DeserializeParticleNodeFromFile(const std::string& filePath, ParticleNode* outEmitter)
+{
+    // We assume 'outEmitter' is already allocated.
+    if(!outEmitter) return;
+
+    YAML::Node root;
+    try {
+        root= YAML::LoadFile(filePath);
+    }
+    catch(const YAML::Exception& e){
+        std::cerr<<"[SceneSerializer] Can't load emitter file "<<filePath<<" => "<< e.what()<<"\n";
+        return;
+    }
+
+    auto nEm = root["emitter"];
+    if(!nEm){
+        std::cerr<<"[SceneSerializer] No 'emitter' node in "<<filePath<<"\n";
+        return;
+    }
+
+    // name
+    if(nEm["name"]){
+        std::string nm= nEm["name"].as<std::string>();
+        outEmitter->setName(nm);
+    }
+    // mode
+    // if(nEm["mode"]){
+    //     std::string m= nEm["mode"].as<std::string>();
+    //     if(m=="continuous") outEmitter->mode= EmitterMode::Continuous;
+    //     else if(m=="burst") outEmitter->mode= EmitterMode::Burst;
+    // }
+    // duration
+    // if(nEm["duration"]){
+    //     outEmitter->duration= nEm["duration"].as<float>();
+    // }
+    // emissionRate
+    if(nEm["emissionRate"]){
+        outEmitter->emissionRate= nEm["emissionRate"].as<float>();
+    }
+    // maxParticles
+    if(nEm["max_particles"]){
+        outEmitter->maxParticles= nEm["max_particles"].as<int>();
+    }
+    // shape
+    if(nEm["shape"]){
+        std::string shp= nEm["shape"].as<std::string>();
+        if(shp=="Point") outEmitter->shape= EmitterShape::Point;
+        else if(shp=="Sphere") outEmitter->shape= EmitterShape::Sphere;
+        else if(shp=="Cone")   outEmitter->shape= EmitterShape::Cone;
+        else if(shp=="Box")    outEmitter->shape= EmitterShape::Box;
+        else if(shp=="Mesh")   outEmitter->shape= EmitterShape::Mesh;
+    }
+    // spawnPosition
+    if(nEm["spawnPosition"] && nEm["spawnPosition"].IsSequence() && nEm["spawnPosition"].size()==3){
+        outEmitter->spawnPosition.x= nEm["spawnPosition"][0].as<float>();
+        outEmitter->spawnPosition.y= nEm["spawnPosition"][1].as<float>();
+        outEmitter->spawnPosition.z= nEm["spawnPosition"][2].as<float>();
+    }
+    // spawnVelocity
+    if(nEm["spawnVelocity"] && nEm["spawnVelocity"].IsSequence() && nEm["spawnVelocity"].size()==3){
+        outEmitter->spawnVelocity.x= nEm["spawnVelocity"][0].as<float>();
+        outEmitter->spawnVelocity.y= nEm["spawnVelocity"][1].as<float>();
+        outEmitter->spawnVelocity.z= nEm["spawnVelocity"][2].as<float>();
+    }
+    // globalAcceleration
+    if(nEm["globalAcceleration"] && nEm["globalAcceleration"].IsSequence() && nEm["globalAcceleration"].size()==3){
+        outEmitter->globalAcceleration.x= nEm["globalAcceleration"][0].as<float>();
+        outEmitter->globalAcceleration.y= nEm["globalAcceleration"][1].as<float>();
+        outEmitter->globalAcceleration.z= nEm["globalAcceleration"][2].as<float>();
+    }
+    // lifetimeMin/Max
+    if(nEm["lifetimeMin"]) outEmitter->lifetimeMin= nEm["lifetimeMin"].as<float>();
+    if(nEm["lifetimeMax"]) outEmitter->lifetimeMax= nEm["lifetimeMax"].as<float>();
+    // sizes
+    if(nEm["startSizeMin"]) outEmitter->startSizeMin= nEm["startSizeMin"].as<float>();
+    if(nEm["startSizeMax"]) outEmitter->startSizeMax= nEm["startSizeMax"].as<float>();
+    // alpha
+    if(nEm["startAlphaMin"]) outEmitter->startAlphaMin= nEm["startAlphaMin"].as<float>();
+    if(nEm["startAlphaMax"]) outEmitter->startAlphaMax= nEm["startAlphaMax"].as<float>();
+    // rotation
+    if(nEm["rotationMin"])      outEmitter->rotationMin= nEm["rotationMin"].as<float>();
+    if(nEm["rotationMax"])      outEmitter->rotationMax= nEm["rotationMax"].as<float>();
+    if(nEm["rotationSpeedMin"]) outEmitter->rotationSpeedMin= nEm["rotationSpeedMin"].as<float>();
+    if(nEm["rotationSpeedMax"]) outEmitter->rotationSpeedMax= nEm["rotationSpeedMax"].as<float>();
+    // velocity scale
+    if(nEm["velocityScaleMin"]) outEmitter->velocityScaleMin= nEm["velocityScaleMin"].as<float>();
+    if(nEm["velocityScaleMax"]) outEmitter->velocityScaleMax= nEm["velocityScaleMax"].as<float>();
+
+    // colorKeys
+    if(nEm["colorKeys"] && nEm["colorKeys"].IsSequence()){
+        outEmitter->colorKeys.clear();
+        for(auto ckNode : nEm["colorKeys"]){
+            ColorKey ck;
+            ck.time=0.f;
+            if(ckNode["time"])  ck.time= ckNode["time"].as<float>();
+            if(ckNode["color"] && ckNode["color"].IsSequence() && ckNode["color"].size()==4){
+                ck.color.r= ckNode["color"][0].as<float>();
+                ck.color.g= ckNode["color"][1].as<float>();
+                ck.color.b= ckNode["color"][2].as<float>();
+                ck.color.a= ckNode["color"][3].as<float>();
+            }
+            outEmitter->colorKeys.push_back(ck);
+        }
+        // sort them
+        std::sort(outEmitter->colorKeys.begin(), outEmitter->colorKeys.end(), 
+                  [](auto&a, auto&b){return a.time<b.time;});
+    }
+
+    // bursts
+    if(nEm["burstTimes"] && nEm["burstTimes"].IsSequence())
+    {
+        outEmitter->burstTimes.clear();
+        outEmitter->burstCounts.clear();
+        for(auto bN : nEm["burstTimes"])
+        {
+            // each element might be [time, count], or a map with time: X, count: Y
+            // If your emitter YAML format is simpler, parse accordingly.
+            if(bN.IsSequence() && bN.size()==2){
+                float t= bN[0].as<float>();
+                int   c= bN[1].as<int>();
+                outEmitter->burstTimes.push_back(t);
+                outEmitter->burstCounts.push_back(c);
+            }
+        }
+    }
+
+    // parse localSpace
+    if(nEm["localSpace"]) outEmitter->localSpace= nEm["localSpace"].as<bool>();
+
+    if(nEm["affectors"] && nEm["affectors"].IsSequence()){
+        for(auto affN : nEm["affectors"]){
+            if(!affN["type"]) continue;
+            std::string atype= affN["type"].as<std::string>();
+
+            if(atype=="AddVelocity"){
+                glm::vec3 vel(0,-9.81f,0);
+                if(affN["velocity"] && affN["velocity"].IsSequence() && affN["velocity"].size()==3){
+                    vel.x= affN["velocity"][0].as<float>();
+                    vel.y= affN["velocity"][1].as<float>();
+                    vel.z= affN["velocity"][2].as<float>();
+                }
+                AddVelocityAffector* av= new AddVelocityAffector(vel);
+                outEmitter->AddAffector(av);
+            }
+            else if(atype=="ScaleOverLife"){
+                float ss=1.f, ee=2.f;
+                if(affN["startScale"]) ss= affN["startScale"].as<float>();
+                if(affN["endScale"])   ee= affN["endScale"].as<float>();
+                ScaleOverLifeAffector* sc= new ScaleOverLifeAffector(ss,ee);
+                outEmitter->AddAffector(sc);
+            }
+            else if(atype=="FadeOverLife"){
+                float sa=1.f, ea=0.f;
+                if(affN["startAlpha"]) sa= affN["startAlpha"].as<float>();
+                if(affN["endAlpha"])   ea= affN["endAlpha"].as<float>();
+                FadeOverLifeAffector* fa= new FadeOverLifeAffector(sa,ea);
+                outEmitter->AddAffector(fa);
+            }
+            // etc for any custom affector
+        }
+    }
+
+    if(nEm["texturePath"]){
+        std::string tp= nEm["texturePath"].as<std::string>();
+        if(!tp.empty()){
+            auto* mat= outEmitter->GetMaterial();
+            if(mat){
+                volpe::Texture* t= volpe::TextureManager().CreateTexture(tp.c_str());
+                if(t){
+                    mat->SetTexture("u_texture", t);
+                }
+            }
+        }
+    }
+
+    outEmitter->Stop();
+    outEmitter->Play();
+}

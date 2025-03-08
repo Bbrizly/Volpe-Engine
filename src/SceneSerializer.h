@@ -3,6 +3,7 @@
 #include <string>
 #include "Scene.h"
 #include "ParticleNode.h"
+#include "Affector.h"
 #include <yaml-cpp/yaml.h>
 
 YAML::Emitter& operator<<(YAML::Emitter& out, const glm::mat4& mat);
@@ -18,6 +19,8 @@ class SceneSerializer
 public:
     static void SaveScene(Scene& scene, const std::string& givenFilePath);
     static void LoadScene(Scene& scene, const std::string& givenFilePath);
+    
+    static void DeserializeParticleNodeFromFile(const std::string& filePath, ParticleNode* outEmitter);
 
 private:
     static YAML::Node SerializeNode(Node* node);

@@ -150,6 +150,12 @@ void ParticleNode::update(float dt)
         float a1 = p.initialColor.a * alphaOverLife;
         float newAlpha = a0 + (a1 - a0)*t;
         p.color.a = newAlpha;
+
+        for( auto x : m_affectors)
+        {
+            x->Apply(p,dt);
+        }
+
     }
 
     //delete of old age
@@ -210,7 +216,7 @@ void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
     // }
 
     std::sort(m_particles.begin(), m_particles.end(),
-    [&camPos](const ParticleNode::Particle &a, const ParticleNode::Particle &b) {
+    [&camPos](const Particle &a, const Particle &b) {
         float da = glm::dot(a.position - camPos, a.position - camPos);
         float db = glm::dot(b.position - camPos, b.position - camPos);
         return da > db;
@@ -297,7 +303,7 @@ void ParticleNode::spawnParticles(int count)
     }
 }
 
-ParticleNode::Particle ParticleNode::createNewParticle()
+Particle ParticleNode::createNewParticle()
 {
     Particle p;
 
