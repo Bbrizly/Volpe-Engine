@@ -56,20 +56,21 @@ public:
     float velocityScaleMax = 2.0f;   // max velocity scale
     
     float emissionRate;           // spawn N particles per second
+    float duration;           // spawn N particles per second
+
     bool  localSpace;             // local or world coordinate system
     int   maxParticles;           // max particles
     EmitterShape shape;           // spawn shape
     glm::vec3 spawnPosition;      // offset
     glm::vec3 spawnVelocity;      // base velocity
-    glm::vec3 globalAcceleration; // affectors like gravity
 
     // BURST
     std::vector<float> burstTimes;    // times at which to emit many at once
     std::vector<int>   burstCounts;   // how many particsl for each burst
 
     // Over-lifetime multipliers (CUrrently linear, use imgui curves maybe)
-    float sizeOverLife;   
-    float alphaOverLife;  
+    // float sizeOverLife;
+    // float alphaOverLife;
 
     // =-=-=-=-=-=-=-=-= State =-=-=-=-=-=-=-=-=-=
     ParticleSystemState systemState;

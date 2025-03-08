@@ -14,12 +14,10 @@ ParticleNode::ParticleNode(const std::string& name)
 , shape(EmitterShape::Point)
 , spawnPosition(0.0f)
 , spawnVelocity(0.0f, 1.0f, 0.0f)
-, globalAcceleration(0.0f, -9.81f, 0.0f)
-, sizeOverLife(1.0f)
-, alphaOverLife(1.0f)
 , systemState(ParticleSystemState::Stopped)
 , m_emissionAdder(0.0f)
 , m_totalTime(0.0f)
+, duration(-1)
 , m_randGen(std::random_device{}())
 , m_dist01(0.0f, 1.0f)
 {
@@ -89,7 +87,7 @@ void ParticleNode::update(float dt)
     Node::update(dt);
     if(dt <= 0.0f) return;
 
-    if(systemState == ParticleSystemState::Stopped) {
+    if(systemState == ParticleSystemState::Stopped || (m_totalTime >= duration && duration > 0)) {
         // no update, no spawn, no existing
         m_particles.clear();
         return;
@@ -121,10 +119,6 @@ void ParticleNode::update(float dt)
         p.age += dt;
         if(p.age >= p.lifetime) continue; // remove soon
 
-        // Acceleration
-        glm::vec3 totalAccel = p.acceleration + globalAcceleration;
-        p.velocity += totalAccel * dt;
-
         // Rotation
         p.rotation += p.rotationSpeed * dt;
 
@@ -133,23 +127,11 @@ void ParticleNode::update(float dt)
 
         
         // =-=-=-=-=-=-=-=-=TWEENING=-=-=-=-=-=-=-=-=-=
-
-        // Over-lifetime
+        
         float t = (p.age / p.lifetime);
         if(t>1.f) t=1.f;
 
-        // Size
-        float finalSize = p.initialSize * sizeOverLife;
-        p.size = p.initialSize + (finalSize - p.initialSize)*t;
-
-        
         p.color = EvaluateColorGradient(t);
-
-        // Alpha
-        float a0 = p.initialColor.a;
-        float a1 = p.initialColor.a * alphaOverLife;
-        float newAlpha = a0 + (a1 - a0)*t;
-        p.color.a = newAlpha;
 
         for( auto x : m_affectors)
         {

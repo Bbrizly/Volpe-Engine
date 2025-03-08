@@ -291,9 +291,16 @@ void Program::DrawInspector()
 
         ImGui::Text("Active Particles: %d", emitter->getParticles().size());
 
-        ImGui::DragFloat("Emission Rate", &emitter->emissionRate, 0.1f, 0.f, 9999.f);
-        ImGui::Checkbox("Local Space", &emitter->localSpace);
+        ImGui::PushItemWidth(60); 
         ImGui::DragInt("Max Particles", &emitter->maxParticles, 1, 1, 100000);
+        ImGui::SameLine();
+        ImGui::DragFloat("Duration", &emitter->duration, 0.25, -1, 100000);
+        ImGui::PopItemWidth();
+
+        ImGui::DragFloat("Emission Rate", &emitter->emissionRate, 0.1f, 0.f, 9999.f);
+
+        ImGui::Checkbox("Local Space", &emitter->localSpace);
+
         
         // Emitter shape
         static const char* shapeNames[] = {"Point","Sphere","Cone","Box","Mesh"};
@@ -315,7 +322,7 @@ void Program::DrawInspector()
         ImGui::DragFloat("Rotation Speed range", (float*)&emitter->rotationSpeedMax, 0.05f);
         
         ImGui::DragFloat(" - ##vel", (float*)&emitter->velocityScaleMin, 0.05f); ImGui::SameLine();
-        ImGui::DragFloat("Velocity scale range", (float*)&emitter->velocityScaleMax, 0.05f);
+        ImGui::DragFloat("Random Velocity range", (float*)&emitter->velocityScaleMax, 0.05f);
         
         ImGui::DragFloat(" - ##alpha", (float*)&emitter->startAlphaMin, 0.05f); ImGui::SameLine();
         ImGui::DragFloat("Alpha range", (float*)&emitter->startAlphaMax, 0.05f);
@@ -324,16 +331,121 @@ void Program::DrawInspector()
 
         ImGui::DragFloat3("Spawn Pos", (float*)&emitter->spawnPosition, 0.05f);
         ImGui::DragFloat3("Spawn Vel", (float*)&emitter->spawnVelocity, 0.05f);
-        ImGui::DragFloat3("Acceleration", (float*)&emitter->globalAcceleration, 0.1f);
     
         // Over-lifetime
+        #pragma region AFFECTORS
         ImGui::Separator();
-        ImGui::Text("Over Lifetime");
-        // ImGui::DragFloat("Lifetime", (float*)&emitter->life, 0.05f);
-        ImGui::DragFloat("Size Over Life",  &emitter->sizeOverLife,  0.01f, 0.0f, 999.f);
-        ImGui::DragFloat("Alpha Over Life", &emitter->alphaOverLife, 0.01f, 0.0f, 999.f);
+        ImGui::Text("Affectors:");
+        static const char* affectorTypes[] = { "Acceleration", "FadeOverLife", "ScaleOverLife", "TowardsPoint", "AwayFromPoint" };
+        static int selectedAffType = 0;
+
+        if(ImGui::BeginCombo("##affTypes", affectorTypes[selectedAffType]))
+        {
+            for (int i = 0; i < IM_ARRAYSIZE(affectorTypes); i++)
+            {
+                bool isSelected = (selectedAffType == i);
+                if (ImGui::Selectable(affectorTypes[i], isSelected))
+                {
+                    selectedAffType = i;
+                }
+                if (isSelected) ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::SameLine();
+        if(ImGui::Button("Add Affector"))
+        {
+            // Based on selectedAffType, create the affector
+            Affector* newA = nullptr;
+            if(selectedAffType == 0) // Acceleration
+            {
+                // example: add zero velocity
+                newA = new AccelerationAffector(glm::vec3(0,0,0));
+            }
+            else if(selectedAffType == 1) // FadeOverLife
+            {
+                newA = new FadeOverLifeAffector(1.0f, 0.0f);
+            }
+            else if(selectedAffType == 2) // ScaleOverLife
+            {
+                newA = new ScaleOverLifeAffector(1.f, 2.f);
+            }
+            else if(selectedAffType == 3) // TowardsPoint
+            {
+                newA = new TowardsPointAffector(glm::vec3(0,5,0), 1.0f);
+            }
+            else if(selectedAffType == 4) // AwayFromPoint
+            {
+                newA = new AwayFromPointAffector(glm::vec3(0,0,0), 1.0f);
+            }
+            if(newA)
+            {
+                emitter->AddAffector(newA);
+            }
+        }
+
+        auto& affList = emitter->getAffectors();
+        for (int i = 0; i < (int)affList.size(); i++)
+        {
+            ImGui::PushID(i);
+            Affector* A = affList[i];
+
+            // DYNAMIC CAST HELL 
+            if(auto* av = dynamic_cast<AccelerationAffector*>(A))
+            {
+                ImGui::Text("AccelerationAffector");
+                static float vel[3] = { av->velocityToAdd.x, av->velocityToAdd.y, av->velocityToAdd.z };
+                if(ImGui::DragFloat3("Acc##aff", vel, 0.1f))
+                {
+                    av->velocityToAdd = glm::vec3(vel[0], vel[1], vel[2]);
+                }
+            }
+            else if(auto* fo = dynamic_cast<FadeOverLifeAffector*>(A))
+            {
+                ImGui::Text("FadeOverLifeAffector");
+                ImGui::DragFloat("Start Alpha", &fo->startAlpha, 0.01f, 0.f, 1.f);
+                ImGui::DragFloat("End Alpha", &fo->endAlpha, 0.01f, 0.f, 1.f);
+            }
+            else if(auto* so = dynamic_cast<ScaleOverLifeAffector*>(A))
+            {
+                ImGui::Text("ScaleOverLifeAffector");
+                ImGui::DragFloat("Start Scale", &so->startScale, 0.01f, 0.f, 10.f);
+                ImGui::DragFloat("End Scale", &so->endScale, 0.01f, 0.f, 10.f);
+            }
+            else if(auto* tp = dynamic_cast<TowardsPointAffector*>(A))
+            {
+                ImGui::Text("TowardsPointAffector");
+                static float p[3] = { tp->target.x, tp->target.y, tp->target.z };
+                if(ImGui::DragFloat3("Target##tpa", p, 0.1f))
+                {
+                    tp->target = glm::vec3(p[0], p[1], p[2]);
+                }
+                ImGui::DragFloat("Strength", &tp->strength, 0.1f, -999.f, 999.f);
+            }                                                           //ADD ABIlity to maybe set a node as pointAffector??? WOULD BE SICK WITH THE SUN
+            else if(auto* aw = dynamic_cast<AwayFromPointAffector*>(A)) //OMG I JUST REALIZED AWAY FROM POINT IS JUST TOWARDS POINT BUT NEGATIVEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE FUCKING DUMBASS
+            {
+                ImGui::Text("AwayFromPointAffector");
+                static float c[3] = { aw->center.x, aw->center.y, aw->center.z };
+                if(ImGui::DragFloat3("Center##awa", c, 0.1f))
+                {
+                    aw->center = glm::vec3(c[0], c[1], c[2]);
+                }
+                ImGui::DragFloat("Strength", &aw->strength, 0.1f, -999.f, 999.f);
+            }
+            else
+            {
+                ImGui::Text("Unknown Affector");
+            }
+            // ImGui::SameLine();
+            if(ImGui::SmallButton("Remove##aff"))
+            {
+                emitter->RemoveAffector(i);
+            }
+            ImGui::PopID();
+        }
+#pragma endregion
     
-        //COlor gradient
+        //Cplor gradient
         if (ImGui::TreeNode("Color Gradient"))
         {
             // Loop through current keys
@@ -399,121 +511,8 @@ void Program::DrawInspector()
             }
             ImGui::TreePop();
         }
-        
-        ImGui::Separator();
-        ImGui::Text("Affectors:");
-        static const char* affectorTypes[] = { "AddVelocity", "FadeOverLife", "ScaleOverLife", "TowardsPoint", "AwayFromPoint" };
-        static int selectedAffType = 0;
 
-        if(ImGui::BeginCombo("##affTypes", affectorTypes[selectedAffType]))
-        {
-            for (int i = 0; i < IM_ARRAYSIZE(affectorTypes); i++)
-            {
-                bool isSelected = (selectedAffType == i);
-                if (ImGui::Selectable(affectorTypes[i], isSelected))
-                {
-                    selectedAffType = i;
-                }
-                if (isSelected) ImGui::SetItemDefaultFocus();
-            }
-            ImGui::EndCombo();
-        }
-        ImGui::SameLine();
-        if(ImGui::Button("Add Affector"))
-        {
-            // Based on selectedAffType, create the affector
-            Affector* newA = nullptr;
-            if(selectedAffType == 0) // AddVelocity
-            {
-                // example: add zero velocity
-                newA = new AddVelocityAffector(glm::vec3(0,0,0));
-            }
-            else if(selectedAffType == 1) // FadeOverLife
-            {
-                newA = new FadeOverLifeAffector(1.0f, 0.0f);
-            }
-            else if(selectedAffType == 2) // ScaleOverLife
-            {
-                newA = new ScaleOverLifeAffector(1.f, 2.f);
-            }
-            else if(selectedAffType == 3) // TowardsPoint
-            {
-                newA = new TowardsPointAffector(glm::vec3(0,5,0), 1.0f);
-            }
-            else if(selectedAffType == 4) // AwayFromPoint
-            {
-                newA = new AwayFromPointAffector(glm::vec3(0,0,0), 1.0f);
-            }
-
-            if(newA)
-            {
-                emitter->AddAffector(newA);
-            }
-        }
-
-        std::vector<int> indicesToRemove; //FOR REMOVING AFFECTORS AFTER THE LOOP
-        auto& affList = emitter->getAffectors();
-        // for (int i = 0; i < (int)affList.size(); i++)
-        for (int i = (int)affList.size() - 1; i >= 0; --i)
-        {
-            ImGui::PushID(i);
-            Affector* A = affList[i];
-
-            // DYNAMIC CAST HELL 
-            if(auto* av = dynamic_cast<AddVelocityAffector*>(A))
-            {
-                ImGui::Text("AddVelocityAffector");
-                static float vel[3] = { av->velocityToAdd.x, av->velocityToAdd.y, av->velocityToAdd.z };
-                if(ImGui::DragFloat3("Velocity##aff", vel, 0.1f))
-                {
-                    av->velocityToAdd = glm::vec3(vel[0], vel[1], vel[2]);
-                }
-            }
-            else if(auto* fo = dynamic_cast<FadeOverLifeAffector*>(A))
-            {
-                ImGui::Text("FadeOverLifeAffector");
-                ImGui::DragFloat("Start Alpha", &fo->startAlpha, 0.01f, 0.f, 1.f);
-                ImGui::DragFloat("End Alpha", &fo->endAlpha, 0.01f, 0.f, 1.f);
-            }
-            else if(auto* so = dynamic_cast<ScaleOverLifeAffector*>(A))
-            {
-                ImGui::Text("ScaleOverLifeAffector");
-                ImGui::DragFloat("Start Scale", &so->startScale, 0.01f, 0.f, 10.f);
-                ImGui::DragFloat("End Scale", &so->endScale, 0.01f, 0.f, 10.f);
-            }
-            else if(auto* tp = dynamic_cast<TowardsPointAffector*>(A))
-            {
-                ImGui::Text("TowardsPointAffector");
-                static float p[3] = { tp->target.x, tp->target.y, tp->target.z };
-                if(ImGui::DragFloat3("Target##tpa", p, 0.1f))
-                {
-                    tp->target = glm::vec3(p[0], p[1], p[2]);
-                }
-                ImGui::DragFloat("Strength", &tp->strength, 0.1f, -999.f, 999.f);
-            }                                                           //ADD ABIlity to maybe set a node as pointAffector??? WOULD BE SICK WITH THE SUN
-            else if(auto* aw = dynamic_cast<AwayFromPointAffector*>(A)) //OMG I JUST REALIZED AWAY FROM POINT IS JUST TOWARDS POINT BUT NEGATIVEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE FUCKING DUMBASS
-            {
-                ImGui::Text("AwayFromPointAffector");
-                static float c[3] = { aw->center.x, aw->center.y, aw->center.z };
-                if(ImGui::DragFloat3("Center##awa", c, 0.1f))
-                {
-                    aw->center = glm::vec3(c[0], c[1], c[2]);
-                }
-                ImGui::DragFloat("Strength", &aw->strength, 0.1f, -999.f, 999.f);
-            }
-            else
-            {
-                ImGui::Text("Unknown Affector");
-            }
-            ImGui::SameLine();
-            if(ImGui::SmallButton("Remove##aff"))
-            {
-                emitter->RemoveAffector(i);
-            }
-            ImGui::PopID();
-        }
-
-        if (ImGui::CollapsingHeader("Debug: Active Particles", ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::CollapsingHeader("Debug: Active Particles"))
         {
             // Number of active
             auto& ps = emitter->getParticles();

@@ -329,9 +329,9 @@ YAML::Node SceneSerializer::SerializeParticleNode(const ParticleNode* emitter)
     // n["globalAcceleration"] = YAML::Flow << YAML::BeginSeq << emitter->globalAcceleration.x << emitter->globalAcceleration.y << emitter->globalAcceleration.z << YAML::EndSeq;
 
     n["globalAcceleration"].SetStyle(YAML::EmitterStyle::Flow);
-    n["globalAcceleration"].push_back(emitter->globalAcceleration.x);
-    n["globalAcceleration"].push_back(emitter->globalAcceleration.y);
-    n["globalAcceleration"].push_back(emitter->globalAcceleration.z);
+    // n["globalAcceleration"].push_back(emitter->globalAcceleration.x);
+    // n["globalAcceleration"].push_back(emitter->globalAcceleration.y);
+    // n["globalAcceleration"].push_back(emitter->globalAcceleration.z);
 
     n["spawnPosition"].SetStyle(YAML::EmitterStyle::Flow);
     n["spawnPosition"].push_back(emitter->spawnPosition.x);
@@ -364,8 +364,8 @@ YAML::Node SceneSerializer::SerializeParticleNode(const ParticleNode* emitter)
     n["velocityScaleMax"] = emitter->velocityScaleMax;
 
     // Over-lifetime
-    n["sizeOverLife"]  = emitter->sizeOverLife;
-    n["alphaOverLife"] = emitter->alphaOverLife;
+    // n["sizeOverLife"]  = emitter->sizeOverLife;
+    // n["alphaOverLife"] = emitter->alphaOverLife;
 
     // bursts
     if(!emitter->burstTimes.empty()){
@@ -410,11 +410,11 @@ void SceneSerializer::DeserializeParticleNode(const YAML::Node& n, ParticleNode*
         emitter->spawnVelocity.y = n["spawnVelocity"][1].as<float>();
         emitter->spawnVelocity.z = n["spawnVelocity"][2].as<float>();
     }
-    if(n["globalAcceleration"] && n["globalAcceleration"].size()==3){
-        emitter->globalAcceleration.x = n["globalAcceleration"][0].as<float>();
-        emitter->globalAcceleration.y = n["globalAcceleration"][1].as<float>();
-        emitter->globalAcceleration.z = n["globalAcceleration"][2].as<float>();
-    }
+    // if(n["globalAcceleration"] && n["globalAcceleration"].size()==3){
+    //     emitter->globalAcceleration.x = n["globalAcceleration"][0].as<float>();
+    //     emitter->globalAcceleration.y = n["globalAcceleration"][1].as<float>();
+    //     emitter->globalAcceleration.z = n["globalAcceleration"][2].as<float>();
+    // }
 
     // lifetime
     if(n["lifetimeMin"]) emitter->lifetimeMin = n["lifetimeMin"].as<float>();
@@ -437,8 +437,8 @@ void SceneSerializer::DeserializeParticleNode(const YAML::Node& n, ParticleNode*
     if(n["velocityScaleMax"]) emitter->velocityScaleMax = n["velocityScaleMax"].as<float>();
 
     // over-lifetime
-    if(n["sizeOverLife"])  emitter->sizeOverLife  = n["sizeOverLife"].as<float>();
-    if(n["alphaOverLife"]) emitter->alphaOverLife = n["alphaOverLife"].as<float>();
+    // if(n["sizeOverLife"])  emitter->sizeOverLife  = n["sizeOverLife"].as<float>();
+    // if(n["alphaOverLife"]) emitter->alphaOverLife = n["alphaOverLife"].as<float>();
 
     // bursts
     if(n["bursts"]){
@@ -581,9 +581,9 @@ void SceneSerializer::DeserializeParticleNodeFromFile(const std::string& filePat
     }
     // globalAcceleration
     if(nEm["globalAcceleration"] && nEm["globalAcceleration"].IsSequence() && nEm["globalAcceleration"].size()==3){
-        outEmitter->globalAcceleration.x= nEm["globalAcceleration"][0].as<float>();
-        outEmitter->globalAcceleration.y= nEm["globalAcceleration"][1].as<float>();
-        outEmitter->globalAcceleration.z= nEm["globalAcceleration"][2].as<float>();
+        // outEmitter->globalAcceleration.x= nEm["globalAcceleration"][0].as<float>();
+        // outEmitter->globalAcceleration.y= nEm["globalAcceleration"][1].as<float>();
+        // outEmitter->globalAcceleration.z= nEm["globalAcceleration"][2].as<float>();
     }
     // lifetimeMin/Max
     if(nEm["lifetimeMin"]) outEmitter->lifetimeMin= nEm["lifetimeMin"].as<float>();
@@ -656,7 +656,7 @@ void SceneSerializer::DeserializeParticleNodeFromFile(const std::string& filePat
                     vel.y= affN["velocity"][1].as<float>();
                     vel.z= affN["velocity"][2].as<float>();
                 }
-                AddVelocityAffector* av= new AddVelocityAffector(vel);
+                AccelerationAffector* av= new AccelerationAffector(vel);
                 outEmitter->AddAffector(av);
             }
             else if(atype=="ScaleOverLife"){

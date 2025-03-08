@@ -10,12 +10,12 @@ public:
     virtual void Apply(Particle& p, float dt)=0;
 };
 
-class AddVelocityAffector : public Affector
+class AccelerationAffector : public Affector
 {
 public:
     glm::vec3 velocityToAdd;
 
-    AddVelocityAffector(const glm::vec3& vel= glm::vec3(0,-9.81f,0))
+    AccelerationAffector(const glm::vec3& vel= glm::vec3(0,-9.81f,0))
     : velocityToAdd(vel)
     {}
 
