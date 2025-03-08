@@ -153,6 +153,7 @@ void ParticleNode::update(float dt)
 
         for( auto x : m_affectors)
         {
+            std::cout<<"\naffector: "<<x;
             x->Apply(p,dt);
         }
 

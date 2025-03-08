@@ -81,6 +81,12 @@ public:
     std::vector<Affector*> getAffectors() {return m_affectors;}
 
     void AddAffector(Affector* x) { if(x) m_affectors.push_back(x);}
+    void RemoveAffector(int index) 
+    {
+        Affector* A = m_affectors[index];
+        m_affectors.erase(m_affectors.begin() + index);
+        delete A;     
+    }
 
     void LoadFromXML(const std::string& xmlPath);
 
