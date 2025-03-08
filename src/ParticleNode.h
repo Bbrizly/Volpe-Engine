@@ -143,6 +143,8 @@ private:
             cr(pr), cg(pg), cb(pb), ca(pa)
         {}
     };
+    
+    virtual void UpdateBoundingVolume() override;
 
     void handleBursts(float dt);
     void buildVertexData(const glm::mat4& view);

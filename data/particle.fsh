@@ -20,6 +20,7 @@ void main()
   
   if(useTexture) {
     baseColor *= texture(u_texture, v_uv1.xy);
+    baseColor = vec4(baseColor.rgb * baseColor.a, baseColor.a); //premultiplied shits
   }
 
 //  if(baseColor.a <= discardAlpha)

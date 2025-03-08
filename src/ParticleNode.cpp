@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include "Scene.h"
+#include "iostream"
 
 ParticleNode::ParticleNode(const std::string& name)
 : Node(name)
@@ -164,6 +165,28 @@ void ParticleNode::update(float dt)
     if((int)m_particles.size() > maxParticles) {
         m_particles.resize(maxParticles);
     }
+
+}
+
+void ParticleNode::UpdateBoundingVolume()
+{
+    if(!m_particles.empty()) {
+        glm::vec3 pMin = m_particles[0].position;
+        glm::vec3 pMax = m_particles[0].position;
+        for (const auto& p : m_particles) {
+            pMin = glm::min(pMin, p.position);
+            pMax = glm::max(pMax, p.position);
+        }
+        glm::vec3 newCenter = (pMin + pMax) * 0.5f;
+        float newRadius = glm::length(pMax - newCenter);
+        SphereVolume* sphere = dynamic_cast<SphereVolume*>(m_boundingVolume);
+        if(sphere) {
+            sphere->center = newCenter;
+            sphere->radius = newRadius;
+            sphere->m_localCenter = newCenter;
+            sphere->m_initialRadius = newRadius;
+        }
+    }
 }
 
 void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
@@ -178,16 +201,20 @@ void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
     // std::cout<<"Draw Material: "<<m_material<<"\n";
     // std::cout<<"GetMaterial: "<<GetMaterial()<<"\n";
 
-    // // Get camera position 
-    // glm::vec3 camPos = Scene::Instance().GetActiveCamera()->getViewMatrix()[3];
-    // // Sort particles in descending order (farthest first)
-    // std::sort(m_particles.begin(), m_particles.end(),
-    //     [&camPos](const ParticleNode::Particle &a, const ParticleNode::Particle &b) {
-    //         float da = glm::distance(a.position, camPos);
-    //         float db = glm::distance(b.position, camPos);
-    //         return da > db;
-    // });
+    // Get camera position 
+    glm::vec3 camPos = (glm::inverse(view))[3]; //Scene::Instance().GetActiveCamera()->getProjMatrix()
 
+    // if(Scene::Instance().GetActiveCamera())
+    // {
+    //     std::cout<<"CamPos: "<<camPos.x<<", "<<camPos.y<<", "<<camPos.z<<"\n";
+    // }
+
+    std::sort(m_particles.begin(), m_particles.end(),
+    [&camPos](const ParticleNode::Particle &a, const ParticleNode::Particle &b) {
+        float da = glm::dot(a.position - camPos, a.position - camPos);
+        float db = glm::dot(b.position - camPos, b.position - camPos);
+        return da > db;
+    });
 
     buildVertexData(view);
 
@@ -218,15 +245,41 @@ void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
     int totalVerts = (int)m_particles.size()*6;
 
 
-    //LOOK INTO BLEND FUNCTIONSSS
-    glDepthMask(GL_FALSE);
+    
+
     // glEnable(GL_BLEND);
-    // glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    // // glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    // // glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA); //Pre multiplied alpha
+    
+    // // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+    // // glDepthMask(GL_FALSE);
+    
+    // // glBlendFunc(GL_SRC_ALPHA, GL_ONE); //GLOW EFFECT
+
+    // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    // glDepthMask(GL_FALSE);
+
+    // glDrawArrays(GL_TRIANGLES, 0, totalVerts);
+
+    // // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);// GLOW EFFECT
+
+    // glDepthMask(GL_TRUE);
+    // glDisable(GL_BLEND);
+    
+    //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+    glEnable(GL_BLEND);
+
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
 
     glDrawArrays(GL_TRIANGLES, 0, totalVerts);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
 
     Node::draw(proj, view);
 }
@@ -458,58 +511,3 @@ glm::vec4 ParticleNode::EvaluateColorGradient(float t)
     }
     return colorKeys.back().color;
 }
-
-/*
-void ParticleNode::LoadFromXML(const std::string& xmlPath)
-{
-    XMLDocument doc;
-    if(doc.LoadFile(xmlPath.c_str()) == XML_SUCCESS)
-    {
-        XMLElement* root = doc.RootElement();
-        if(!root) return;
-
-        // read attributes
-        root->QueryFloatAttribute("emissionRate", &emissionRate);
-        root->QueryIntAttribute("maxParticles", &maxParticles);
-
-        // read shape
-        const char* shapeStr = root->Attribute("shape");
-        if(shapeStr)
-        {
-            if(strcmp(shapeStr, "Point")==0) shape=EmitterShape::Point;
-            else if(strcmp(shapeStr, "Sphere")==0) shape=EmitterShape::Sphere;
-        }
-
-        // read startSize
-        root->QueryFloatAttribute("startSize", &startSize);
-        root->QueryFloatAttribute("startAlpha", &startAlpha);
-
-        // read color keys
-        XMLElement* colorKeysElem = root->FirstChildElement("ColorKeys");
-        if(colorKeysElem)
-        {
-            colorKeys.clear();
-            for(XMLElement* ck = colorKeysElem->FirstChildElement("Key");
-                ck; ck=ck->NextSiblingElement("Key"))
-            {
-                float time=0;  ck->QueryFloatAttribute("time", &time);
-                float r=1,g=1,b=1,a=1;
-                ck->QueryFloatAttribute("r", &r);
-                ck->QueryFloatAttribute("g", &g);
-                ck->QueryFloatAttribute("b", &b);
-                ck->QueryFloatAttribute("a", &a);
-                ColorKey ckey;
-                ckey.time = time;
-                ckey.color= glm::vec4(r,g,b,a);
-                colorKeys.push_back(ckey);
-            }
-            // Sort by time
-            std::sort(colorKeys.begin(), colorKeys.end(), 
-                [](const ColorKey&c1, const ColorKey&c2){
-                    return c1.time < c2.time;
-                });
-        }
-    }
-}
-
-*/
