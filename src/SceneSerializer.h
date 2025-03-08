@@ -4,6 +4,7 @@
 #include "Scene.h"
 #include "ParticleNode.h"
 #include "Affector.h"
+#include "EffectNode.h"
 #include <yaml-cpp/yaml.h>
 
 YAML::Emitter& operator<<(YAML::Emitter& out, const glm::mat4& mat);
@@ -22,6 +23,13 @@ public:
     
     static void DeserializeParticleNodeFromFile(const std::string& filePath, ParticleNode* outEmitter);
 
+    
+    static void SaveEffectNode(EffectNode* effect, const std::string& filePath);
+    static EffectNode* LoadEffectNode(Scene& scene, const std::string& filePath);
+
+    static void SaveEmitter(ParticleNode* emitter, const std::string& filePath);
+    static ParticleNode* LoadEmitter(const std::string& filePath);
+
 private:
     static YAML::Node SerializeNode(Node* node);
     static Node*     DeserializeNode(const YAML::Node& nodeData, Scene& scene, Node* parent);
@@ -36,4 +44,7 @@ private:
 
     static YAML::Node SerializeParticleNode(const ParticleNode* emitter);
     static void       DeserializeParticleNode(const YAML::Node& n, ParticleNode* emitter);
+
+    static YAML::Node SerializeAffectors(const std::vector<Affector*>& affs);
+    static void       DeserializeAffectors(const YAML::Node& n, ParticleNode* emitter);
 };

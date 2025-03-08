@@ -79,7 +79,7 @@ public:
     virtual ~ParticleNode();    
     
     std::vector<Particle> getParticles() {return m_particles;}
-    std::vector<Affector*> getAffectors() {return m_affectors;}
+    std::vector<Affector*> getAffectors() const {return m_affectors;}
 
     void AddAffector(Affector* x) { if(x) m_affectors.push_back(x);}
     void RemoveAffector(int index) 

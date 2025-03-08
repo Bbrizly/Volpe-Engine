@@ -98,7 +98,6 @@ void SceneSerializer::SaveScene(Scene& scene, const std::string& givenFilePath)
 
     std::cout<<"[SceneSerializer] Saved scene to "<<filePath<<"\n";
 }
-
 void SceneSerializer::LoadScene(Scene& scene, const std::string& givenFilePath)
 {
     YAML::Node root;
@@ -189,7 +188,6 @@ YAML::Node SceneSerializer::SerializeNode(Node* node)
 
     return n;
 }
-
 Node* SceneSerializer::DeserializeNode(const YAML::Node& nodeData, Scene& scene, Node* parent)
 {
     if(!nodeData["Name"] || !nodeData["Type"]){
@@ -294,7 +292,6 @@ YAML::Node SceneSerializer::SerializeTransform(const Node* node)
     }
     return transform;
 }
-
 void SceneSerializer::DeserializeTransform(Node* node, const YAML::Node& transformNode)
 {
     glm::vec3 pos(0), scl(1.0f);
@@ -321,17 +318,10 @@ YAML::Node SceneSerializer::SerializeParticleNode(const ParticleNode* emitter)
 {
     YAML::Node n;
     n["emissionRate"]       = emitter->emissionRate;
+    n["duration"]           = emitter->duration;
     n["localSpace"]         = emitter->localSpace;
     n["maxParticles"]       = emitter->maxParticles;
     n["shape"]              = (int) emitter->shape;
-    // n["spawnPosition"]      = YAML::Flow << YAML::BeginSeq << emitter->spawnPosition.x << emitter->spawnPosition.y << emitter->spawnPosition.z << YAML::EndSeq;
-    // n["spawnVelocity"]      = YAML::Flow << YAML::BeginSeq << emitter->spawnVelocity.x << emitter->spawnVelocity.y << emitter->spawnVelocity.z << YAML::EndSeq;
-    // n["globalAcceleration"] = YAML::Flow << YAML::BeginSeq << emitter->globalAcceleration.x << emitter->globalAcceleration.y << emitter->globalAcceleration.z << YAML::EndSeq;
-
-    n["globalAcceleration"].SetStyle(YAML::EmitterStyle::Flow);
-    // n["globalAcceleration"].push_back(emitter->globalAcceleration.x);
-    // n["globalAcceleration"].push_back(emitter->globalAcceleration.y);
-    // n["globalAcceleration"].push_back(emitter->globalAcceleration.z);
 
     n["spawnPosition"].SetStyle(YAML::EmitterStyle::Flow);
     n["spawnPosition"].push_back(emitter->spawnPosition.x);
@@ -363,10 +353,6 @@ YAML::Node SceneSerializer::SerializeParticleNode(const ParticleNode* emitter)
     n["velocityScaleMin"] = emitter->velocityScaleMin;
     n["velocityScaleMax"] = emitter->velocityScaleMax;
 
-    // Over-lifetime
-    // n["sizeOverLife"]  = emitter->sizeOverLife;
-    // n["alphaOverLife"] = emitter->alphaOverLife;
-
     // bursts
     if(!emitter->burstTimes.empty()){
         YAML::Node bursts;
@@ -381,6 +367,10 @@ YAML::Node SceneSerializer::SerializeParticleNode(const ParticleNode* emitter)
 
     n["colorKeys"] = SerializeColorKeys(emitter->colorKeys); // AAAAAAAAAAAAAAAAAAAAAAA
 
+    if(!emitter->getAffectors().empty()){
+        n["affectors"] = SerializeAffectors(emitter->getAffectors());
+    }
+
     if(emitter->GetMaterial()){
         auto* tex = emitter->GetMaterial()->GetTexture("u_texture");
         if(tex){
@@ -388,34 +378,36 @@ YAML::Node SceneSerializer::SerializeParticleNode(const ParticleNode* emitter)
             n["texturePath"] = texPath;
         }
     }
-
     return n;
 }
-
 void SceneSerializer::DeserializeParticleNode(const YAML::Node& n, ParticleNode* emitter)
 {
     // basic fields
     if(n["emissionRate"])       emitter->emissionRate       = n["emissionRate"].as<float>();
+    if(n["duration"])      emitter->duration       = n["duration"].as<float>();
     if(n["localSpace"])         emitter->localSpace         = n["localSpace"].as<bool>();
     if(n["maxParticles"])       emitter->maxParticles       = n["maxParticles"].as<int>();
-    if(n["shape"])              emitter->shape              = (EmitterShape)n["shape"].as<int>();
 
-    if(n["spawnPosition"] && n["spawnPosition"].size()==3){
+    // if(n["shape"])              emitter->shape              = (EmitterShape)n["shape"].as<int>();
+
+    if(n["shape"]){
+        int shapeVal = n["shape"].as<int>();
+        emitter->shape = (EmitterShape) shapeVal;
+    }
+
+    if(n["spawnPosition"] && n["spawnPosition"].IsSequence() && n["spawnPosition"].size()==3)
+    {
         emitter->spawnPosition.x = n["spawnPosition"][0].as<float>();
         emitter->spawnPosition.y = n["spawnPosition"][1].as<float>();
         emitter->spawnPosition.z = n["spawnPosition"][2].as<float>();
     }
-    if(n["spawnVelocity"] && n["spawnVelocity"].size()==3){
+    if(n["spawnVelocity"] && n["spawnVelocity"].IsSequence() && n["spawnVelocity"].size()==3)
+    {
         emitter->spawnVelocity.x = n["spawnVelocity"][0].as<float>();
         emitter->spawnVelocity.y = n["spawnVelocity"][1].as<float>();
         emitter->spawnVelocity.z = n["spawnVelocity"][2].as<float>();
     }
-    // if(n["globalAcceleration"] && n["globalAcceleration"].size()==3){
-    //     emitter->globalAcceleration.x = n["globalAcceleration"][0].as<float>();
-    //     emitter->globalAcceleration.y = n["globalAcceleration"][1].as<float>();
-    //     emitter->globalAcceleration.z = n["globalAcceleration"][2].as<float>();
-    // }
-
+    
     // lifetime
     if(n["lifetimeMin"]) emitter->lifetimeMin = n["lifetimeMin"].as<float>();
     if(n["lifetimeMax"]) emitter->lifetimeMax = n["lifetimeMax"].as<float>();
@@ -436,10 +428,6 @@ void SceneSerializer::DeserializeParticleNode(const YAML::Node& n, ParticleNode*
     if(n["velocityScaleMin"]) emitter->velocityScaleMin = n["velocityScaleMin"].as<float>();
     if(n["velocityScaleMax"]) emitter->velocityScaleMax = n["velocityScaleMax"].as<float>();
 
-    // over-lifetime
-    // if(n["sizeOverLife"])  emitter->sizeOverLife  = n["sizeOverLife"].as<float>();
-    // if(n["alphaOverLife"]) emitter->alphaOverLife = n["alphaOverLife"].as<float>();
-
     // bursts
     if(n["bursts"]){
         auto arr = n["bursts"];
@@ -455,11 +443,15 @@ void SceneSerializer::DeserializeParticleNode(const YAML::Node& n, ParticleNode*
     if(n["colorKeys"]){
         DeserializeColorKeys(n["colorKeys"], emitter->colorKeys);
     }
+    //affectors
+    if(n["affectors"]){
+        DeserializeAffectors(n["affectors"], emitter);
+    }
 
     // texture path
     if(n["texturePath"]){
         std::string texPath = n["texturePath"].as<std::string>();
-        // loads that texture n apply to material
+        // loads that texturea nd apply to material
         auto* mat = emitter->GetMaterial();
         if(mat){
             volpe::Texture* tex = volpe::TextureManager().CreateTexture(texPath.c_str());
@@ -468,6 +460,8 @@ void SceneSerializer::DeserializeParticleNode(const YAML::Node& n, ParticleNode*
             }
         }
     }
+    emitter->Stop();
+    emitter->Play();
 }
 
 //Color keys (bane of my existance)
@@ -490,7 +484,6 @@ YAML::Node SceneSerializer::SerializeColorKeys(const std::vector<ColorKey>& keys
     }
     return arr;
 }
-
 void SceneSerializer::DeserializeColorKeys(const YAML::Node& node, std::vector<ColorKey>& outKeys)
 {
     outKeys.clear();
@@ -692,4 +685,276 @@ void SceneSerializer::DeserializeParticleNodeFromFile(const std::string& filePat
 
     outEmitter->Stop();
     outEmitter->Play();
+}
+void SceneSerializer::SaveEffectNode(EffectNode* effect, const std::string& filePath)
+{
+    if(!effect) return;
+
+    YAML::Node root;
+    YAML::Node eff;
+    eff["name"] = effect->getName();
+    eff["combineDraws"] = effect->combineDraws;
+
+    YAML::Node emArr(YAML::NodeType::Sequence);
+
+    for (auto* c : effect->getChildren())
+    {
+        auto* emitter = dynamic_cast<ParticleNode*>(c);
+        if(!emitter) continue;
+        YAML::Node oneEm;
+        oneEm["EmitterName"] = emitter->getName();
+
+        oneEm["Transform"] = SerializeTransform(emitter);
+        oneEm["ParticleData"] = SerializeParticleNode(emitter);
+
+        emArr.push_back(oneEm);
+    }
+    eff["emitters"] = emArr;
+
+    root["effect"] = eff;
+
+    std::string finalPath = filePath;
+    if(finalPath.find(".yaml")==std::string::npos){
+        finalPath += ".effect"; //.EFFECT.YAML FOR EFFECTSSS
+        finalPath += ".yaml";
+    }
+    std::ofstream out(finalPath);
+    if(!out.is_open()){
+        std::cerr<<"Cannot write effect to "<<finalPath<<"\n";
+        return;
+    }
+    out << root;
+    out.close();
+
+    std::cout<<"[SceneSerializer] Saved Effect "<<effect->getName()<<" => "<<finalPath<<"\n";
+}
+
+EffectNode* SceneSerializer::LoadEffectNode(Scene& scene, const std::string& filePath)
+{
+    YAML::Node root;
+    try {
+        root = YAML::LoadFile(filePath);
+    } catch(const YAML::Exception& e){
+        std::cerr<<"[SceneSerializer::LoadEffectNode] Error: "<<e.what()<<"\n";
+        return nullptr;
+    }
+    auto nEff = root["effect"];
+    if(!nEff){
+        std::cerr<<"No 'effect' in file: "<<filePath<<"\n";
+        return nullptr;
+    }
+
+    EffectNode* fx = new EffectNode("UnnamedEffect");
+    scene.AddNode(fx);
+
+    if(nEff["name"]){
+        fx->setName(nEff["name"].as<std::string>());
+    }
+    if(nEff["combineDraws"]){
+        fx->combineDraws = nEff["combineDraws"].as<bool>();
+    }
+
+    if(nEff["emitters"] && nEff["emitters"].IsSequence())
+    {
+        for(auto e : nEff["emitters"])
+        {
+            std::string eName = "Emitter";
+            if(e["EmitterName"])
+                eName = e["EmitterName"].as<std::string>();
+            ParticleNode* emitter = new ParticleNode(eName);
+
+            if(e["Transform"])
+                DeserializeTransform(emitter, e["Transform"]);
+            if(e["ParticleData"])
+                DeserializeParticleNode(e["ParticleData"], emitter);
+
+            fx->addEmitter(emitter);
+            scene.AddNode(emitter);
+        }
+    }
+
+    std::cout<<"[SceneSerializer] Loaded Effect: "<<fx->getName()<<" from "<<filePath<<"\n";
+    return fx;
+}
+
+void SceneSerializer::SaveEmitter(ParticleNode* emitter, const std::string& filePath)
+{
+    if(!emitter) return;
+
+    YAML::Node root;
+    YAML::Node em;
+
+    em["name"] = emitter->getName();
+    em["transform"] = SerializeTransform(emitter);
+
+    em["particle"]  = SerializeParticleNode(emitter);
+
+    root["Emitter"] = em;
+
+    std::string final = filePath;
+    if(final.find(".yaml")==std::string::npos){
+        final += ".emitter"; //EMITTER WILL BE .EMITTER.YAML
+        final += ".yaml";
+    }
+    std::ofstream ofs(final);
+    if(!ofs.is_open()){
+        std::cerr<<"[SceneSerializer] Cannot write Emitter to "<<final<<"\n";
+        return;
+    }
+    ofs << root;
+    ofs.close();
+
+    std::cout<<"[SceneSerializer] Saved Emitter => "<<final<<"\n";
+}
+
+ParticleNode* SceneSerializer::LoadEmitter(const std::string& filePath) //DECIDE IF SHOULD HARDCODEPATHS OR NOT
+{
+    YAML::Node root;
+    try {
+        root = YAML::LoadFile(filePath);
+    }
+    catch(const YAML::Exception& e){
+        std::cerr<<"[SceneSerializer] Load Emitter error: "<<e.what()<<"\n";
+        return nullptr;
+    }
+    auto nEm = root["Emitter"];
+    if(!nEm){
+        std::cerr<<"[SceneSerializer] No 'Emitter' in "<<filePath<<"\n";
+        return nullptr;
+    }
+    ParticleNode* emitter = new ParticleNode("Emitter");
+    if(nEm["name"]){
+        emitter->setName(nEm["name"].as<std::string>());
+    }
+    // transform
+    if(nEm["transform"]){
+        DeserializeTransform(emitter, nEm["transform"]);
+    }
+    // particle
+    if(nEm["particle"]){
+        DeserializeParticleNode(nEm["particle"], emitter);
+    }
+
+    std::cout<<"[SceneSerializer] Loaded Emitter: "<<emitter->getName()<<" from "<<filePath<<"\n";
+    return emitter;
+}
+
+YAML::Node SceneSerializer::SerializeAffectors(const std::vector<Affector*>& affs)
+{
+    YAML::Node arr(YAML::NodeType::Sequence);
+
+    for (auto* A : affs)
+    {
+        if(!A) continue;
+        YAML::Node one;
+        
+        if (auto* acc = dynamic_cast<AccelerationAffector*>(A))
+        {
+            one["type"] = "Acceleration";
+            
+            YAML::Node vel(YAML::NodeType::Sequence);
+            vel.push_back(acc->velocityToAdd.x);
+            vel.push_back(acc->velocityToAdd.y);
+            vel.push_back(acc->velocityToAdd.z);
+            one["velocity"] = vel;
+        }
+        else if (auto* fade = dynamic_cast<FadeOverLifeAffector*>(A))
+        {
+            one["type"] = "FadeOverLife";
+            one["startAlpha"] = fade->startAlpha;
+            one["endAlpha"]   = fade->endAlpha;
+        }
+        else if (auto* scale = dynamic_cast<ScaleOverLifeAffector*>(A))
+        {
+            one["type"] = "ScaleOverLife";
+            one["startScale"] = scale->startScale;
+            one["endScale"]   = scale->endScale;
+        }
+        else if (auto* toward = dynamic_cast<TowardsPointAffector*>(A))
+        {
+            one["type"] = "TowardsPoint";
+            YAML::Node tgt(YAML::NodeType::Sequence);
+            tgt.push_back(toward->target.x);
+            tgt.push_back(toward->target.y);
+            tgt.push_back(toward->target.z);
+            one["target"]   = tgt;
+            one["strength"] = toward->strength;
+        }
+        else if (auto* away = dynamic_cast<AwayFromPointAffector*>(A))
+        {
+            one["type"] = "AwayFromPoint";
+            YAML::Node c(YAML::NodeType::Sequence);
+            c.push_back(away->center.x);
+            c.push_back(away->center.y);
+            c.push_back(away->center.z);
+            one["center"]   = c;
+            one["strength"] = away->strength;
+        }
+        
+        arr.push_back(one);
+    }
+
+    return arr;
+}
+void SceneSerializer::DeserializeAffectors(const YAML::Node& n, ParticleNode* emitter)
+{
+    if(!n.IsSequence()) return;
+
+    for (auto affN : n)
+    {
+        if(!affN["type"]) continue;
+        std::string t = affN["type"].as<std::string>();
+
+        if(t=="Acceleration")
+        {
+            glm::vec3 vel(0.f, -9.81f, 0.f);
+            if(affN["velocity"] && affN["velocity"].IsSequence() && affN["velocity"].size()==3)
+            {
+                vel.x = affN["velocity"][0].as<float>();
+                vel.y = affN["velocity"][1].as<float>();
+                vel.z = affN["velocity"][2].as<float>();
+            }
+            emitter->AddAffector(new AccelerationAffector(vel));
+        }
+        else if(t=="FadeOverLife")
+        {
+            float sA=1.f, eA=0.f;
+            if(affN["startAlpha"]) sA= affN["startAlpha"].as<float>();
+            if(affN["endAlpha"])   eA= affN["endAlpha"].as<float>();
+            emitter->AddAffector(new FadeOverLifeAffector(sA,eA));
+        }
+        else if(t=="ScaleOverLife")
+        {
+            float sS=1.f, eS=2.f;
+            if(affN["startScale"]) sS= affN["startScale"].as<float>();
+            if(affN["endScale"])   eS= affN["endScale"].as<float>();
+            emitter->AddAffector(new ScaleOverLifeAffector(sS,eS));
+        }
+        else if(t=="TowardsPoint")
+        {
+            glm::vec3 tgt(0,5,0);
+            if(affN["target"] && affN["target"].IsSequence() && affN["target"].size()==3)
+            {
+                tgt.x= affN["target"][0].as<float>();
+                tgt.y= affN["target"][1].as<float>();
+                tgt.z= affN["target"][2].as<float>();
+            }
+            float str=1.f;
+            if(affN["strength"]) str= affN["strength"].as<float>();
+            emitter->AddAffector(new TowardsPointAffector(tgt, str));
+        }
+        else if(t=="AwayFromPoint")
+        {
+            glm::vec3 c(0,0,0);
+            if(affN["center"] && affN["center"].IsSequence() && affN["center"].size()==3)
+            {
+                c.x= affN["center"][0].as<float>();
+                c.y= affN["center"][1].as<float>();
+                c.z= affN["center"][2].as<float>();
+            }
+            float str=1.f;
+            if(affN["strength"]) str= affN["strength"].as<float>();
+            emitter->AddAffector(new AwayFromPointAffector(c, str));
+        }
+    }
 }
