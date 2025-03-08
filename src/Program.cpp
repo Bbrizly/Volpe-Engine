@@ -179,6 +179,9 @@ void Program::DrawInspector()
 
     char nameBuf[256];
     strcpy(nameBuf, g_selectedNode->getName().c_str());
+    
+    //GENERIC Node info
+    
     if (ImGui::InputText("Name", nameBuf, IM_ARRAYSIZE(nameBuf)))
     {
         string nameSet = nameBuf;
@@ -188,6 +191,10 @@ void Program::DrawInspector()
     ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 40);
     if (ImGui::SmallButton("Delete"))
     {
+        if(g_selectedNode->getParent())
+        {
+            g_selectedNode->getParent()->removeChild(g_selectedNode);
+        }
         Scene::Instance().RemoveNode(g_selectedNode);
         g_selectedNode = nullptr;
         ImGui::End();
@@ -433,31 +440,24 @@ void Program::DrawInspector()
 
         ImGui::Separator();
         ImGui::Text("Emitters inside this Effect:");
-        // We can list effect->m_children, or use the Node base method:
+
         for (auto* child : effect->getChildren())
         {
             auto* emitter = dynamic_cast<ParticleNode*>(child);
             if (!emitter) continue;
 
-            // Show each child emitter as a selectable item
             bool isSelected = (emitter == g_selectedNode);
-            // Actually, we might not want to re-select the same node. Typically we keep g_selectedNode = effect. 
-            // But if you want to jump to the emitter, you can do:
-            if (ImGui::Selectable(emitter->getName().c_str(), false))
+            
+            if (ImGui::Selectable(emitter->getName().c_str(), false, 0, ImVec2(ImGui::GetContentRegionAvail().x - 60,0)))
             {
-                // if user clicks it, let's set g_selectedNode = emitter
                 g_selectedNode = emitter;
             }
 
             ImGui::SameLine();
             if(ImGui::SmallButton((std::string("Remove##") + emitter->getName()).c_str()))
             {
-                // remove from effect
                 effect->removeChild(emitter);
                 Scene::Instance().RemoveNode(emitter); 
-                // This actually deletes emitter from the scene, if you want.
-                // or you might just remove from effect and keep it around 
-                // if your Node system supports that. Adjust as you prefer.
                 break;
             }
         }

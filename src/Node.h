@@ -29,6 +29,7 @@ public:
     void addChild(Node* child);
     void removeChild(Node* child);
     std::vector<Node*> getChildren() {return m_children;}
+    Node*              getParent() {return m_parent;}
 
 
     virtual void update(float dt);
