@@ -28,6 +28,8 @@ public:
 
     void addChild(Node* child);
     void removeChild(Node* child);
+    std::vector<Node*> getChildren() {return m_children;}
+
 
     virtual void update(float dt);
     virtual void draw(const glm::mat4& proj, const glm::mat4& view);

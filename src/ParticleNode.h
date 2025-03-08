@@ -76,6 +76,7 @@ public:
 
     ParticleNode(const std::string& name);
     virtual ~ParticleNode();    
+    
     std::vector<Particle> getParticles() {return m_particles;}
     std::vector<Affector*> getAffectors() {return m_affectors;}
 

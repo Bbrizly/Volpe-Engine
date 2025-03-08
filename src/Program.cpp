@@ -257,7 +257,6 @@ void Program::DrawInspector()
             sphere->setColor(rr, gg, bb);
         }
     }
-    // /*
     else if (auto* emitter = dynamic_cast<ParticleNode*>(g_selectedNode))
     {
         ImGui::Separator();
@@ -417,11 +416,67 @@ void Program::DrawInspector()
             }
         }
     }
-    // */
-    ImGui::End(); // end Inspector
+    else if (auto* effect = dynamic_cast<EffectNode*>(g_selectedNode))
+    {
+        ImGui::Separator();
+        ImGui::Text("Effect Controls");
+        if(ImGui::Button("Play")) { effect->Play(); }
+        ImGui::SameLine();
+        if(ImGui::Button("Stop")) { effect->Stop(); }
+        ImGui::SameLine();
+        if(ImGui::Button("Pause")) { effect->Pause(); }
+        ImGui::SameLine();
+        if(ImGui::Button("Restart")) { effect->Restart(); }
+
+        //Better performance?
+        ImGui::Checkbox("Combine Draws", &effect->combineDraws);
+
+        ImGui::Separator();
+        ImGui::Text("Emitters inside this Effect:");
+        // We can list effect->m_children, or use the Node base method:
+        for (auto* child : effect->getChildren())
+        {
+            auto* emitter = dynamic_cast<ParticleNode*>(child);
+            if (!emitter) continue;
+
+            // Show each child emitter as a selectable item
+            bool isSelected = (emitter == g_selectedNode);
+            // Actually, we might not want to re-select the same node. Typically we keep g_selectedNode = effect. 
+            // But if you want to jump to the emitter, you can do:
+            if (ImGui::Selectable(emitter->getName().c_str(), false))
+            {
+                // if user clicks it, let's set g_selectedNode = emitter
+                g_selectedNode = emitter;
+            }
+
+            ImGui::SameLine();
+            if(ImGui::SmallButton((std::string("Remove##") + emitter->getName()).c_str()))
+            {
+                // remove from effect
+                effect->removeChild(emitter);
+                Scene::Instance().RemoveNode(emitter); 
+                // This actually deletes emitter from the scene, if you want.
+                // or you might just remove from effect and keep it around 
+                // if your Node system supports that. Adjust as you prefer.
+                break;
+            }
+        }
+
+        // Button to add a brand new ParticleNode into the effect
+        if (ImGui::Button("Add Emitter"))
+        {
+            ParticleNode* newEmitter = new ParticleNode("Emitter_" + std::to_string(addedNode++));
+            newEmitter->GetMaterial()->SetTexture("u_texture", volpe::TextureManager().CreateTexture("data/Textures/smoke.png"));
+            // optionally set default texture or parameters
+            effect->addEmitter(newEmitter);
+            Scene::Instance().AddNode(newEmitter);
+            Scene::Instance().ReBuildTree();
+        }
+    }
+
+    ImGui::End();
 }
 
-int addedNode = 0;
 void Program::DrawTopBar()
 {
     // These flags will store the popup open requests
@@ -465,7 +520,13 @@ void Program::DrawTopBar()
                 Scene::Instance().AddNode(Emitter);
                 Scene::Instance().ReBuildTree();
             }
-                
+            if (ImGui::MenuItem("Effect"))
+            {
+                // Creates empty effect, Add button for loading effect from file l8r
+                EffectNode* effect = new EffectNode("Effect_" + to_string(addedNode++));
+                Scene::Instance().AddNode(effect);
+                Scene::Instance().ReBuildTree();
+            }
             ImGui::EndMenu();
         }
         

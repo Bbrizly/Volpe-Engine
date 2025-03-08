@@ -21,6 +21,7 @@
 #include "../thirdparty/imgui/imgui_impl_opengl3.h"
 
 #include "ParticleNode.h"
+#include "EffectNode.h"
 
 enum class SceneType
 {
@@ -46,6 +47,8 @@ private:
     float m_treeQueryTimes[kPerfBufferSize] = {0};
     float m_lightQueryTimes[kPerfBufferSize] = {0};
     int   m_perfBufferIndex = 0;
+    
+    int addedNode = 0;
 
     void DrawSceneManagerUI();
     void SwitchScene(SceneType newScene);
