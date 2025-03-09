@@ -1,6 +1,6 @@
 #pragma once
 #include "Node.h"
-#include "SphereVolume.h"
+#include "../samplefw/BoundingVolumes/SphereVolume.h"
 #include "../volpe/Volpe.h"
 #include <glm/glm.hpp>
 #include <vector>

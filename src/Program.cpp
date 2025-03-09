@@ -63,6 +63,21 @@ static glm::mat4 MakeTransform(const glm::vec3& position, const glm::vec3& scale
     return T * S;
 }
 
+void DrawNodeRecursive(Node* node, int indentLevel) {
+    if (!node) return;
+    ImGui::Indent(indentLevel * 15.0f); // 15 pixels per indent???
+
+    bool isSelected = (node == g_selectedNode);
+    
+    if (ImGui::Selectable(node->getName().c_str(), isSelected))
+        g_selectedNode = node;
+    
+    ImGui::Unindent(indentLevel * 15.0f);
+    for (Node* child : node->getChildren())
+        DrawNodeRecursive(child, indentLevel + 1);
+}
+
+
 float debugWindowHeight = 500.0f;
 bool culled = false;
 void Program::DrawSceneHierarchy()
@@ -75,17 +90,16 @@ void Program::DrawSceneHierarchy()
     ImGui::Begin("Scene Hierarchy", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
     ImGui::Checkbox("Culled", &culled);
+    ImGui::SameLine();
+    ImGui::Text("Top level Nodes: %i", Scene::Instance().GetNodes().size());
     vector<Node*> nodes;
     if(culled) nodes = Scene::Instance().GetNodesToRender();
     else       nodes = Scene::Instance().GetNodes();
         
     for (auto* node : nodes)
     {
-        bool isSelected = (node == g_selectedNode);
-        if (ImGui::Selectable(node->getName().c_str(), isSelected))
-        {
-            g_selectedNode = node;
-        }
+        if(node->getParent() == nullptr)
+            DrawNodeRecursive(node, 0);
     }
 
     ImGui::End();
@@ -194,6 +208,10 @@ void Program::DrawInspector()
         if(g_selectedNode->getParent())
         {
             g_selectedNode->getParent()->removeChild(g_selectedNode);
+            // if(auto* effectParent = dynamic_cast<EffectNode*>(g_selectedNode->getParent()))
+            // {
+                // effectParent->addEmitter
+            // }
         }
         Scene::Instance().RemoveNode(g_selectedNode);
         g_selectedNode = nullptr;
@@ -266,6 +284,79 @@ void Program::DrawInspector()
     }
     else if (auto* emitter = dynamic_cast<ParticleNode*>(g_selectedNode))
     {
+
+        #pragma region SAVING AND LOADING
+        if (ImGui::Button("Save Emitter"))
+        {
+            static char emitterFileName[256] = "MyEmitter.emitter.yaml"; // default
+            ImGui::OpenPopup("SaveEmitterPopup");
+        }
+
+        // The SaveEmitterPopup
+        if (ImGui::BeginPopupModal("SaveEmitterPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            // text input for the file name
+            static char emitterFileName[256] = "MyEmitter.emitter.yaml";
+            ImGui::InputText("Emitter File", emitterFileName, IM_ARRAYSIZE(emitterFileName));
+
+            if (ImGui::Button("Save##Emitter"))
+            {
+                std::string filename = std::string("data/Saved/") + emitterFileName;
+                SceneSerializer::SaveEmitter(emitter, filename);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel##Emitter"))
+            {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        // For Load Emitter:
+        ImGui::SameLine();
+        if (ImGui::Button("Load Emitter"))
+        {
+            ImGui::OpenPopup("LoadEmitterPopup");
+        }
+
+        if (ImGui::BeginPopupModal("LoadEmitterPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            static char loadFileName[256] = "";
+            ImGui::InputText("Emitter File", loadFileName, IM_ARRAYSIZE(loadFileName));
+            if (ImGui::Button("Load##EmitterLoad"))
+            {
+                std::string filename = std::string("data/Saved/") + loadFileName;
+                ParticleNode* loaded = SceneSerializer::LoadEmitter(filename);
+                if (loaded)
+                {
+                    // The question is: do you want to replace
+                    // the currently selected emitter’s parameters?
+                    // Or do you want to spawn a brand new emitter node?
+                    
+                    // Option A: Overwrite current emitter
+                    //   by transferring loaded’s fields
+                    //   or just do it the “hacky” way:
+                    *emitter = *loaded; 
+                    // not recommended though, can break pointer-based data
+                    // Better is: copy your fields manually from 'loaded' to 'emitter'.
+                    
+                    // Option B: add 'loaded' as a brand new node:
+                    // Scene::Instance().AddNode(loaded);
+                    // ...
+                }
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel##EmitterLoad"))
+            {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        #pragma endregion
+        
         ImGui::Separator();
         ImGui::Text("Particle System Controls");
         if(ImGui::Button("Play")) {
@@ -541,6 +632,61 @@ void Program::DrawInspector()
     }
     else if (auto* effect = dynamic_cast<EffectNode*>(g_selectedNode))
     {
+        #pragma region Saving & loadingg
+
+        // Save
+        if (ImGui::Button("Save Effect"))
+        {
+            ImGui::OpenPopup("SaveEffectPopup");
+        }
+        if (ImGui::BeginPopupModal("SaveEffectPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            static char effectFile[256] = "MyEffect.effect.yaml";
+            ImGui::InputText("Effect File", effectFile, IM_ARRAYSIZE(effectFile));
+            if (ImGui::Button("Save##Effect"))
+            {
+                std::string filename = std::string("data/Saved/") + effectFile;
+                SceneSerializer::SaveEffectNode(effect, filename);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel##Effect"))
+            {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        // Load
+        ImGui::SameLine();
+        if (ImGui::Button("Load Effect"))
+        {
+            ImGui::OpenPopup("LoadEffectPopup");
+        }
+
+        if (ImGui::BeginPopupModal("LoadEffectPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            static char loadEffectFile[256] = "";
+            ImGui::InputText("Effect File", loadEffectFile, IM_ARRAYSIZE(loadEffectFile));
+            if (ImGui::Button("Load##Effect"))
+            {
+                
+                std::string filename = std::string("data/Saved/") + loadEffectFile;
+                effect = SceneSerializer::LoadEffectNode(Scene::Instance(), filename);
+                
+                // EffectNode* newFx = SceneSerializer::LoadEffectNode(Scene::Instance(), loadEffectFile);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel##Effect"))
+            {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+
+        #pragma endregion
         ImGui::Separator();
         ImGui::Text("Effect Controls");
         if(ImGui::Button("Play")) { effect->Play(); }
@@ -573,20 +719,18 @@ void Program::DrawInspector()
             if(ImGui::SmallButton((std::string("Remove##") + emitter->getName()).c_str()))
             {
                 effect->removeChild(emitter);
-                Scene::Instance().RemoveNode(emitter); 
+                emitter = nullptr; //Could be issue
+                // Scene::Instance().RemoveNode(emitter); 
                 break;
             }
         }
 
-        // Button to add a brand new ParticleNode into the effect
         if (ImGui::Button("Add Emitter"))
         {
             ParticleNode* newEmitter = new ParticleNode("Emitter_" + std::to_string(addedNode++));
             newEmitter->GetMaterial()->SetTexture("u_texture", volpe::TextureManager().CreateTexture("data/Textures/smoke.png"));
-            // optionally set default texture or parameters
+
             effect->addEmitter(newEmitter);
-            Scene::Instance().AddNode(newEmitter);
-            Scene::Instance().ReBuildTree();
         }
     }
 
@@ -610,7 +754,7 @@ void Program::DrawTopBar()
             if (ImGui::MenuItem("Load Scene"))
                 open_load_popup = true;
             if (ImGui::MenuItem("Quick save and Exit"))
-                SceneSerializer::SaveScene(Scene::Instance(), "autosave");
+                SceneSerializer::SaveScene(Scene::Instance(), "data/Saved/autosave");
                 
             ImGui::EndMenu();
         }
@@ -621,13 +765,11 @@ void Program::DrawTopBar()
             {
                 DebugCube* cube = new DebugCube("cube_" + to_string(addedNode++));
                 Scene::Instance().AddNode(cube);
-                Scene::Instance().ReBuildTree();
             }
             if (ImGui::MenuItem("Sphere"))
             {
                 DebugSphere* sphere = new DebugSphere("sphere_" + to_string(addedNode++), 0.5);
                 Scene::Instance().AddNode(sphere);
-                Scene::Instance().ReBuildTree();
             }
             if (ImGui::MenuItem("Particle Node"))
             {
@@ -635,14 +777,12 @@ void Program::DrawTopBar()
                 volpe::Texture* texture0 = volpe::TextureManager().CreateTexture("data/Textures/smoke.png");
                 Emitter->GetMaterial()->SetTexture("u_texture", texture0);
                 Scene::Instance().AddNode(Emitter);
-                Scene::Instance().ReBuildTree();
             }
             if (ImGui::MenuItem("Effect"))
             {
                 // Creates empty effect, Add button for loading effect from file l8r
                 EffectNode* effect = new EffectNode("Effect_" + to_string(addedNode++));
                 Scene::Instance().AddNode(effect);
-                Scene::Instance().ReBuildTree();
             }
             ImGui::EndMenu();
         }
@@ -707,107 +847,6 @@ void Program::DrawTopBar()
         ImGui::EndPopup();
     }
 }
-
-
-/*
-void Program::DrawTopBar()
-{
-    //SCENE PICKER
-    //For the future:
-        //Add file
-            //save and load scenes
-            //Load full on scene XMLs
-        //Add ADD
-            //Add nodes + when i rewrite codebase to ecs u add components
-
-    // ImGui::SetNextWindowPos(ImVec2(0,0));
-    // ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, 20));
-    // ImGui::Begin("TopBar", nullptr,
-    //              ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-    //              ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar |
-    //              ImGuiWindowFlags_NoScrollWithMouse);
-
-    if (ImGui::BeginMainMenuBar())
-    {             
-        if (ImGui::BeginMenu("File"))
-        {
-            ImGui::PushItemWidth(150);
-            if (ImGui::MenuItem("Save Scene"))
-            {
-                ImGui::OpenPopup("Save Scene");
-                // SceneSerializer::SaveScene(Scene::Instance(), "ParticleScene");
-            }
-            if (ImGui::MenuItem("Load Scene"))
-            {
-                ImGui::OpenPopup("Load Scene");
-                // SceneSerializer::LoadScene(Scene::Instance(), "ParticleScene");
-                // Scene::Instance().BuildOctTree();
-            }
-            if (ImGui::MenuItem("Save and Exit"))
-            {
-                SceneSerializer::SaveScene(Scene::Instance(), "ParticleScene");
-            }
-            ImGui::EndMenu();
-        }
-        ImGui::Text("Pre-made Scenes: ");
-        
-        if (ImGui::MenuItem("Solar System"))
-        {
-            SwitchScene(SceneType::SolarSystem);
-        }
-        if (ImGui::MenuItem("Random Scene"))
-        {
-            SwitchScene(SceneType::Random);
-        }
-        if (ImGui::MenuItem("Particle Scene"))
-        {
-            SwitchScene(SceneType::Particle);
-        }
-        ImGui::EndMainMenuBar();
-    }
-
-    // save
-    static char saveFileName[256] = "";
-    if (ImGui::BeginPopupModal("Save Scene", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::Text("Enter file name to save:");
-        ImGui::InputText("File name", saveFileName, IM_ARRAYSIZE(saveFileName));
-        if (ImGui::Button("Save", ImVec2(120, 0)))
-        {
-            std::string filename = std::string(saveFileName) + ".yaml";
-            SceneSerializer::SaveScene(Scene::Instance(), filename);
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(120, 0)))
-        {
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::EndPopup();
-    }
-
-    //load
-    static char loadFileName[256] = "";
-    if (ImGui::BeginPopupModal("Load Scene", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::Text("Enter file name to load:");
-        ImGui::InputText("File name", loadFileName, IM_ARRAYSIZE(loadFileName));
-        if (ImGui::Button("Load", ImVec2(120, 0)))
-        {
-            std::string filename = std::string(loadFileName) + ".yaml";
-            SceneSerializer::LoadScene(Scene::Instance(), filename);
-            Scene::Instance().BuildOctTree();
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(120, 0)))
-        {
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::EndPopup();
-    }
-}
-*/
 
 void Program::DrawPerformanceGraphs() {
     {

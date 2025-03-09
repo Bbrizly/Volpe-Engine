@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
-#include "BoundingVolume.h"
+#include "../samplefw/BoundingVolumes/BoundingVolume.h"
 
 class Node
 {

@@ -87,6 +87,7 @@ void SceneSerializer::SaveScene(Scene& scene, const std::string& givenFilePath)
 
     // filePath += ".yaml";
     std::string filePath = givenFilePath;
+    
     filePath += ".yaml";
     std::ofstream fout(filePath);
     if(!fout.is_open()){
@@ -180,11 +181,30 @@ YAML::Node SceneSerializer::SerializeNode(Node* node)
         n["Type"] = "ParticleNode";
         n["ParticleData"] = SerializeParticleNode(emitter);
     }
+    else if(auto* fx = dynamic_cast<EffectNode*>(node))
+    {
+        n["Type"] = "Effect";
+        n["combineDraws"] = fx->combineDraws; 
+    }
     else {
         n["Type"] = "Node";
     }
 
     n["Transform"] = SerializeTransform(node);
+
+    const auto& childList = node->getChildren();
+    if (!childList.empty())
+    {
+        YAML::Node childArray;
+        for (auto* childNode : childList)
+        {
+            YAML::Node childYAML = SerializeNode(childNode);
+
+            if(childYAML)
+                childArray.push_back(childYAML);
+        }
+        n["Children"] = childArray;
+    }
 
     return n;
 }
@@ -230,10 +250,57 @@ Node* SceneSerializer::DeserializeNode(const YAML::Node& nodeData, Scene& scene,
             DeserializeParticleNode(nodeData["ParticleData"], emitter);
         }
     }
+    else if(type == "Effect")
+    {
+        auto* fx = new EffectNode(name);
+        newNode = fx;
+
+        if(nodeData["combineDraws"]) {
+            fx->combineDraws = nodeData["combineDraws"].as<bool>();
+        }
+    }
     else{
         newNode = new Node(name);
     }
 
+    /*if(newNode)
+    {
+        // 1) Always put it in the Scene’s node list so we can do culling, iteration, etc.
+        scene.AddNode(newNode);
+
+        // 2) Then add it as a child of 'parent' if 'parent' is not null
+        if(parent)
+        {
+            // If the parent is an EffectNode and the new node is a ParticleNode, 
+            // we can also call `effect->addEmitter(...)` 
+            // but we *still* do scene.AddNode(...) above to ensure it's the same pointer in the scene.
+
+            if(auto* parentEffect = dynamic_cast<EffectNode*>(parent))
+            {
+                // If it’s a ParticleNode => effect->addEmitter(...) calls addChild internally
+                if(auto* childEmitter = dynamic_cast<ParticleNode*>(newNode))
+                    parentEffect->addEmitter(childEmitter);
+                else
+                    parentEffect->addChild(newNode);
+            }
+            else
+            {
+                // Normal parent-child
+                parent->addChild(newNode);
+            }
+        }
+
+        // 3) Recurse if we have child YAML
+        if(nodeData["Children"])
+        {
+            for(auto childData : nodeData["Children"])
+            {
+                DeserializeNode(childData, scene, newNode);
+            }
+        }
+    }*/
+
+    
     if(newNode){
         // Apply transform
         if(nodeData["Transform"]){
@@ -242,23 +309,32 @@ Node* SceneSerializer::DeserializeNode(const YAML::Node& nodeData, Scene& scene,
 
         // Deal with children
         if(parent){
-            parent->addChild(newNode);
-            scene.AddNode(newNode);
+            if(auto* parentEffect = dynamic_cast<EffectNode*>(parent))
+            {
+                if(auto* childEmitter = dynamic_cast<ParticleNode*>(newNode))
+                    parentEffect->addEmitter(childEmitter);
+                
+                else
+                    parentEffect->addChild(newNode);
+            }
+            else 
+            {
+                parent->addChild(newNode);
+            }
+            
         } else {
             scene.AddNode(newNode);
         }
-        // scene.AddNode(newNode);
 
-        // node has any children
         if(nodeData["Children"]){
             for(auto childData : nodeData["Children"]){
                 DeserializeNode(childData, scene, newNode);
             }
         }
     }
+    
     return newNode;
 }
-
 
 YAML::Node SceneSerializer::SerializeTransform(const Node* node)
 {
@@ -686,6 +762,7 @@ void SceneSerializer::DeserializeParticleNodeFromFile(const std::string& filePat
     outEmitter->Stop();
     outEmitter->Play();
 }
+
 void SceneSerializer::SaveEffectNode(EffectNode* effect, const std::string& filePath)
 {
     if(!effect) return;
@@ -728,7 +805,6 @@ void SceneSerializer::SaveEffectNode(EffectNode* effect, const std::string& file
 
     std::cout<<"[SceneSerializer] Saved Effect "<<effect->getName()<<" => "<<finalPath<<"\n";
 }
-
 EffectNode* SceneSerializer::LoadEffectNode(Scene& scene, const std::string& filePath)
 {
     YAML::Node root;
@@ -793,6 +869,7 @@ void SceneSerializer::SaveEmitter(ParticleNode* emitter, const std::string& file
 
     std::string final = filePath;
     if(final.find(".yaml")==std::string::npos){
+
         final += ".emitter"; //EMITTER WILL BE .EMITTER.YAML
         final += ".yaml";
     }
@@ -806,7 +883,6 @@ void SceneSerializer::SaveEmitter(ParticleNode* emitter, const std::string& file
 
     std::cout<<"[SceneSerializer] Saved Emitter => "<<final<<"\n";
 }
-
 ParticleNode* SceneSerializer::LoadEmitter(const std::string& filePath) //DECIDE IF SHOULD HARDCODEPATHS OR NOT
 {
     YAML::Node root;

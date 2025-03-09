@@ -35,6 +35,8 @@ Scene::~Scene() {
 void Scene::AddNode(Node* node) {
     if(node)
         m_nodes.push_back(node);
+
+    ReBuildTree();
 }
 
 void Scene::RemoveNode(Node* node)
@@ -45,6 +47,7 @@ void Scene::RemoveNode(Node* node)
         delete *it;
         m_nodes.erase(it);
     }
+    ReBuildTree();
 }
 
 
@@ -114,6 +117,14 @@ void Scene::ToggleUseDebugFrustum(Camera* c)
     m_useDebugFrustum  = !m_useDebugFrustum;
 }
 
+void InsertOctHierarchy(Node* node, OctTree* tree) {
+    if (!node) return;
+    tree->Insert(node);
+    for (Node* child : node->getChildren()) {
+        InsertOctHierarchy(child, tree);
+    }
+}
+
 void Scene::BuildOctTree()
 {
     using namespace chrono;
@@ -129,15 +140,30 @@ void Scene::BuildOctTree()
     m_octTree = new OctTree(sceneBounds3D);
 
     DebugRender::Instance().ClearLayer("Tree");
-    for (Node* n : m_nodes) {
-        m_octTree->Insert(n);
-    }
+    // for(auto node : m_nodes)
+    // {
+    //     m_octTree->Insert(node);
+    // }
     
+    for (Node* node : m_nodes) {
+        if (node->getParent() == nullptr) {
+            InsertOctHierarchy(node, m_octTree);
+        }
+    }
+
     auto t1 = high_resolution_clock::now();
     float buildTimeMs = duration<float, milli>(t1 - t0).count();
     m_lastQuadTreeBuildTimeMs = buildTimeMs;
     
     reDebug = true;
+}
+
+void InsertQuadHierarchy(Node* node, QuadTree* tree) {
+    if (!node) return;
+    tree->Insert(node);
+    for (Node* child : node->getChildren()) {
+        InsertQuadHierarchy(child, tree);
+    }
 }
 
 void Scene::BuildQuadTree() {
@@ -155,9 +181,15 @@ void Scene::BuildQuadTree() {
     m_quadTree = new QuadTree(sceneBounds);
 
     DebugRender::Instance().ClearLayer("Tree");
-    for(auto node : m_nodes)
-    {
-        m_quadTree->Insert(node);
+    // for(auto node : m_nodes)
+    // {
+    //     m_quadTree->Insert(node);
+    // }
+
+    for (Node* node : m_nodes) {
+        if (node->getParent() == nullptr) {
+            InsertQuadHierarchy(node, m_quadTree);
+        }
     }
     
     auto t1 = high_resolution_clock::now();

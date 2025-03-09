@@ -1,5 +1,5 @@
 #include "ParticleNode.h"
-#include "SphereVolume.h"
+#include "../samplefw/BoundingVolumes/SphereVolume.h"
 #include <glm/gtc/matrix_inverse.hpp>
 #include <algorithm>
 #include <cmath>
@@ -24,15 +24,10 @@ ParticleNode::ParticleNode(const std::string& name)
     SphereVolume* vol = new SphereVolume(glm::vec3(0), 20.0f);
     SetBoundingVolume(vol);
 
-    // m_material = volpe::MaterialManager::CreateMaterial("ParticleSystemMaterial");
-    // std:string s_name = name;
-    // if(name.empty()) s_name = "unnamed";
     m_material = volpe::MaterialManager::CreateMaterial(name + "Mat"); //to work for multiple particle systems.
     m_material->SetProgram("data/particle.vsh", "data/particle.fsh");
     SetReactToLight(false);
     Play();
-    // std::cout<<"Constuctor Material: "<<m_material<<"\n";
-    // std::cout<<"GetMaterial: "<<GetMaterial()<<"\n";
 }
 
 ParticleNode::~ParticleNode()
@@ -95,7 +90,6 @@ void ParticleNode::update(float dt)
 
     if(systemState == ParticleSystemState::Paused) {
         // not sure how to make them render and not update their position
-        // skip the rest
         return;
     }
     // prevDt = dt;

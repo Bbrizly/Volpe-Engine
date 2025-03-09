@@ -1,6 +1,6 @@
 #pragma once
 #include "Node.h"
-#include "AABBVolume.h"
+#include "../samplefw/BoundingVolumes/AABBVolume.h"
 #include "../volpe/Volpe.h"
 #include <glm/glm.hpp>
 #include <vector>
