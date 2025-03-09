@@ -655,8 +655,6 @@ void Program::DrawInspector()
             }
         }
     
-
-        std::cout<<"Final\n";
     }
     else if (auto* effect = dynamic_cast<EffectNode*>(g_selectedNode))
     {
@@ -762,7 +760,6 @@ void Program::DrawInspector()
         }
     }
 
-    std::cout<<"END\n";
     ImGui::End();
 }
 

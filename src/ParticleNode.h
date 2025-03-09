@@ -31,6 +31,8 @@ enum class ParticleSystemState
     Paused
 };
 
+static const int MAX_PARTICLES_INTERNAL = 50000; //increase for debugging
+
 class ParticleNode : public Node 
 {
 public:
@@ -78,7 +80,8 @@ public:
     ParticleNode(const std::string& name);
     virtual ~ParticleNode();    
     
-    std::vector<Particle> getParticles() {return m_particles;}
+    // std::vector<Particle> getParticles() {return m_particles;}
+    std::vector<Particle> getParticles() { return std::vector<Particle>(m_particles, m_particles + m_numParticles); }
     std::vector<Affector*> getAffectors() const {return m_affectors;}
 
     void AddAffector(Affector* x) { if(x) m_affectors.push_back(x);}
@@ -96,14 +99,14 @@ public:
     void Restart(); // does Stop(), then Play()
     void spawnParticles(int count);  // spawns immediately
 
-
-
     virtual void update(float dt) override;
     virtual void draw(const glm::mat4& proj, const glm::mat4& view) override;
 
 private:
 
-    std::vector<Particle> m_particles; 
+    // std::vector<Particle> m_particles; 
+    Particle m_particles[MAX_PARTICLES_INTERNAL];
+    int m_numParticles = 0;
     std::vector<Affector*> m_affectors;
     float  m_emissionAdder;             // for continuous spawning
     float  m_totalTime;                 // track total for bursts (ADD MORE FUNCTIONALITY LATER (LOOK INTO UNITY))

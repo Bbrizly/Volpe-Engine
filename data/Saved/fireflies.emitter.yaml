@@ -1,0 +1,61 @@
+Emitter:
+  name: ParticleSystemNode0
+  transform:
+    Position: [0, 5, 0]
+    Rotation: [0, 0, 0, 1]
+    Scale: [10, 5, 10]
+  particle:
+    emissionRate: 200
+    duration: -1
+    localSpace: false
+    maxParticles: 200
+    shape: 3
+    spawnPosition: [0, 0, 0]
+    spawnVelocity: [0, -0.45, 0]
+    lifetimeMin: 20
+    lifetimeMax: 20
+    startSizeMin: 0.5
+    startSizeMax: 0.5
+    startAlphaMin: 1
+    startAlphaMax: 1
+    rotationMin: 0
+    rotationMax: 360
+    rotationSpeedMin: -7.5
+    rotationSpeedMax: 7.5
+    velocityScaleMin: 5
+    velocityScaleMax: 5
+    colorKeys:
+      - time: 0
+        color: [0, 0, 0, 1]
+      - time: 0.123
+        color: [1, 1, 0, 1]
+      - time: 0.296
+        color: [0, 0, 0, 1]
+      - time: 0.447
+        color: [0.9705882, 1, 0, 1]
+      - time: 0.587
+        color: [0, 0, 0, 1]
+      - time: 0.682
+        color: [1, 0.91176474, 0, 1]
+      - time: 0.793
+        color: [0, 0, 0, 1]
+      - time: 0.894
+        color: [0.9705882, 1, 0, 1]
+      - time: 0.939
+        color: [0, 0, 0, 1]
+      - time: 1
+        color: [0.88235295, 1, 0, 1]
+    affectors:
+      - type: TowardsPoint
+        target:
+          - 0
+          - 5
+          - 0
+        strength: 3.7
+      - type: AwayFromPoint
+        center:
+          - 0
+          - 0
+          - 0
+        strength: 1
+    texturePath: data/Textures/smoke.png

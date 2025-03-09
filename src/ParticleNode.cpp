@@ -6,6 +6,7 @@
 #include "Scene.h"
 #include "iostream"
 
+
 ParticleNode::ParticleNode(const std::string& name)
 : Node(name)
 , emissionRate(10.0f)
@@ -27,12 +28,14 @@ ParticleNode::ParticleNode(const std::string& name)
     m_material = volpe::MaterialManager::CreateMaterial(name + "Mat"); //to work for multiple particle systems.
     m_material->SetProgram("data/particle.vsh", "data/particle.fsh");
     SetReactToLight(false);
+    m_numParticles = 0;
     Play();
 }
 
 ParticleNode::~ParticleNode()
 {
-    m_particles.clear();
+    m_numParticles = 0;
+    // m_particles.clear();
     if(m_vb) {
         volpe::BufferManager::DestroyBuffer(m_vb);
         m_vb = nullptr;
@@ -58,7 +61,8 @@ void ParticleNode::Stop()
 {
     systemState = ParticleSystemState::Stopped;
     // Clear all active
-    m_particles.clear();
+    m_numParticles = 0;
+    // m_particles.clear();
     m_emissionAdder = 0.0f;
     m_totalTime = 0.0f;
 }
@@ -84,7 +88,8 @@ void ParticleNode::update(float dt)
 
     if(systemState == ParticleSystemState::Stopped || (m_totalTime >= duration && duration > 0)) {
         // no update, no spawn, no existing
-        m_particles.clear();
+        // m_particles.clear();
+        m_numParticles = 0;
         return;
     }
 
@@ -107,7 +112,42 @@ void ParticleNode::update(float dt)
             spawnParticles(spawnCount);
         }
     }
+    int i = 0;
+    while(i < m_numParticles)
+    {
+        Particle& p = m_particles[i];
+        p.age += dt;
 
+        // swap of old age :)
+        if(p.age >= p.lifetime) {
+            m_particles[i] = m_particles[m_numParticles - 1];
+            m_numParticles--;
+            continue;
+        }
+
+        // Rotation
+        p.rotation += p.rotationSpeed * dt;
+        // Position
+        p.position += p.velocity * dt;
+
+        // Over-lifetime color
+        float t = (p.age / p.lifetime);
+        if(t>1.f) t=1.f;
+        p.color = EvaluateColorGradient(t);
+
+        // Apply affectors
+        for(auto x : m_affectors) {
+            x->Apply(p,dt);
+        }
+
+        i++;
+    }
+
+    if(m_numParticles > maxParticles) {
+        m_numParticles = maxParticles;
+    }
+
+    /*
     for(auto& p : m_particles) 
     {
         p.age += dt;
@@ -148,11 +188,31 @@ void ParticleNode::update(float dt)
     if((int)m_particles.size() > maxParticles) {
         m_particles.resize(maxParticles);
     }
+    */
 
 }
 
 void ParticleNode::UpdateBoundingVolume()
 {
+    if(m_numParticles > 0) {
+        glm::vec3 pMin = m_particles[0].position;
+        glm::vec3 pMax = m_particles[0].position;
+        for (int i=0; i<m_numParticles; i++) {
+            const Particle& p = m_particles[i];
+            pMin = glm::min(pMin, p.position);
+            pMax = glm::max(pMax, p.position);
+        }
+        glm::vec3 newCenter = (pMin + pMax) * 0.5f;
+        float newRadius = glm::length(pMax - newCenter);
+        SphereVolume* sphere = dynamic_cast<SphereVolume*>(m_boundingVolume);
+        if(sphere) {
+            sphere->center        = newCenter;
+            sphere->radius        = newRadius;
+            sphere->m_localCenter = newCenter;
+            sphere->m_initialRadius = newRadius;
+        }
+    }
+    /*
     if(!m_particles.empty()) {
         glm::vec3 pMin = m_particles[0].position;
         glm::vec3 pMax = m_particles[0].position;
@@ -169,30 +229,22 @@ void ParticleNode::UpdateBoundingVolume()
             sphere->m_localCenter = newCenter;
             sphere->m_initialRadius = newRadius;
         }
-    }
+    }*/
 }
 
 void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
 {
     
     // If not playing or no material skip
-    if(systemState != ParticleSystemState::Playing || m_particles.empty() || !m_material) {
+    if(systemState != ParticleSystemState::Playing || m_numParticles == 0 || !m_material) { // m_particles.empty()
         Node::draw(proj, view);
         return;
     }
 
-    // std::cout<<"Draw Material: "<<m_material<<"\n";
-    // std::cout<<"GetMaterial: "<<GetMaterial()<<"\n";
-
     // Get camera position 
-    glm::vec3 camPos = (glm::inverse(view))[3]; //Scene::Instance().GetActiveCamera()->getProjMatrix()
+    glm::vec3 camPos = (glm::inverse(view))[3];
 
-    // if(Scene::Instance().GetActiveCamera())
-    // {
-    //     std::cout<<"CamPos: "<<camPos.x<<", "<<camPos.y<<", "<<camPos.z<<"\n";
-    // }
-
-    std::sort(m_particles.begin(), m_particles.end(),
+    std::sort(m_particles, m_particles + m_numParticles,
     [&camPos](const Particle &a, const Particle &b) {
         float da = glm::dot(a.position - camPos, a.position - camPos);
         float db = glm::dot(b.position - camPos, b.position - camPos);
@@ -225,34 +277,8 @@ void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
     m_material->Apply();
     m_decl->Bind();
 
-    int totalVerts = (int)m_particles.size()*6;
-
-
-    
-
-    // glEnable(GL_BLEND);
-    // // glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    // // glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA); //Pre multiplied alpha
-    
-    // // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-    // // glDepthMask(GL_FALSE);
-    
-    // // glBlendFunc(GL_SRC_ALPHA, GL_ONE); //GLOW EFFECT
-
-    // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-    // glDepthMask(GL_FALSE);
-
-    // glDrawArrays(GL_TRIANGLES, 0, totalVerts);
-
-    // // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);// GLOW EFFECT
-
-    // glDepthMask(GL_TRUE);
-    // glDisable(GL_BLEND);
-    
-    //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    // int totalVerts = (int)m_particles.size()*6;
+    int totalVerts = m_numParticles * 6;
 
     glEnable(GL_BLEND);
 
@@ -274,10 +300,20 @@ void ParticleNode::spawnParticles(int count)
 
     for(int i=0; i<count; i++)
     {
+        if(m_numParticles >= maxParticles || m_numParticles >= MAX_PARTICLES_INTERNAL) {
+            break;
+        }
+        Particle p = createNewParticle();
+        m_particles[m_numParticles++] = p;
+    }
+
+    /*
+    for(int i=0; i<count; i++)
+    {
         if((int)m_particles.size() >= maxParticles) break;
         Particle p = createNewParticle();
         m_particles.push_back(p);
-    }
+    }*/
 }
 
 Particle ParticleNode::createNewParticle()
@@ -391,16 +427,20 @@ void ParticleNode::handleBursts(float dt)
 
 void ParticleNode::buildVertexData(const glm::mat4& view)
 {
-    if(m_particles.empty()) return;
+    // if(m_particles.empty()) return;
+    if(m_numParticles <= 0) return;
 
     std::vector<QuadVertex> data;
-    data.reserve(m_particles.size()*6);
+    data.reserve(m_numParticles*6);
+    // data.reserve(m_particles.size()*6);
 
     glm::vec3 camRight, camUp;
     getCameraRightUp(view, camRight, camUp);
 
-    for(const auto& p : m_particles)
+    // for(const auto& p : m_particles)
+    for(int i=0; i<m_numParticles; i++)
     {
+        const Particle& p = m_particles[i];
         if(p.age>=p.lifetime) continue;
 
         float t = p.age / p.lifetime;
@@ -438,11 +478,19 @@ void ParticleNode::buildVertexData(const glm::mat4& view)
         data.push_back(v1);
         data.push_back(v3);
     }
+    
     GLsizeiptr sz = (GLsizeiptr)(data.size()*sizeof(QuadVertex));
     //If try to update buffer, particle system breaks... Look into pooling
     if(!m_vb || sz != prevSZ) {
+        if(m_vb) {
+            volpe::BufferManager::DestroyBuffer(m_vb);
+            m_vb = nullptr;
+        }
         m_vb = volpe::BufferManager::CreateVertexBuffer(data.data(), (unsigned int)sz);
-
+        if(m_decl) {
+            delete m_decl;
+            m_decl = nullptr;
+        }
         m_decl = new volpe::VertexDeclaration();
         m_decl->Begin();
           m_decl->SetVertexBuffer(m_vb);
