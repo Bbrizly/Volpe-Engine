@@ -1,5 +1,5 @@
 #include "Scene.h"
-
+#include "ParticleNode.h"
 //REMOVE LATERRRR RMEOV EMRO ERMO
 #include <string>
 #include <sstream>
@@ -610,6 +610,7 @@ void Scene::Render(int screenWidth, int screenHeight) {
         }
         else        
         {
+            if(!dynamic_cast<ParticleNode*>(n))
             // if(n->GetReactToLight())
                 n->GetMaterial()->SetProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
         }              

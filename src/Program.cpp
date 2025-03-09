@@ -822,6 +822,12 @@ void Program::DrawTopBar()
                 EffectNode* effect = new EffectNode("Effect_" + to_string(addedNode++));
                 Scene::Instance().AddNode(effect);
             }
+            if (ImGui::MenuItem("BOIDSS"))
+            {
+                // Creates empty effect, Add button for loading effect from file l8r
+                EffectNode* effect = new EffectNode("Effect_" + to_string(addedNode++));
+                Scene::Instance().AddNode(effect);
+            }
             ImGui::EndMenu();
         }
         
