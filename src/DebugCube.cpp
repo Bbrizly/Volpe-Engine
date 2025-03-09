@@ -20,22 +20,24 @@ DebugCube::DebugCube(const std::string& name)
     SetBoundingVolume(box);
 
     volpe::Material* mat = volpe::MaterialManager::CreateMaterial("DebugCubeMat");
+    // volpe::Material* mat = volpe::MaterialManager::CreateMaterial(name + "DebugCubeMat"); //to work for multiple particle systems.
     mat->SetProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
     mat->SetDepthTest(true);
     mat->SetDepthWrite(true);
     
     SetMaterial(mat);
+    m_ownsMaterial = true;
 
     initGeometry();
 }
 
 DebugCube::~DebugCube()
 {
-    if(GetMaterial()) 
-    {
-        volpe::MaterialManager::DestroyMaterial(GetMaterial());
-        SetMaterial(nullptr);
-    }
+    // if(GetMaterial()) 
+    // {
+    //     volpe::MaterialManager::DestroyMaterial(GetMaterial());
+    //     SetMaterial(nullptr);
+    // }
 }
 
 void DebugCube::setColor(GLubyte r, GLubyte g, GLubyte b)

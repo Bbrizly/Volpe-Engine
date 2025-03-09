@@ -20,7 +20,7 @@ Node::~Node()
         delete m_boundingVolume;
     m_boundingVolume =nullptr;
 
-    if(m_material) {
+    if(m_material && m_ownsMaterial) {
         volpe::MaterialManager::DestroyMaterial(m_material);
         m_material = nullptr;
     }
@@ -111,17 +111,9 @@ void Node::UpdateBoundingVolume()
     
 }
 
-#include <glm/gtx/matrix_decompose.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/quaternion.hpp>
 
 void Node::getTransformDecomposed(glm::vec3& outPos, glm::quat& outRot, glm::vec3& outScale) const
 {
-    // If you want a robust approach: matrix_decompose
-    // or we can manually do it.
-    // matrix_decompose expects: T * R * S (i.e. scale is in the rotation part).
-    // We'll rely on matrix_decompose from glm/gtx/matrix_decompose.hpp.
-    // Note: it returns skew & perspective which we skip here
     glm::vec3 skew;
     glm::vec4 perspective;
     glm::decompose(m_localTransform, outScale, outRot, outPos, skew, perspective);
@@ -132,7 +124,7 @@ void Node::setTransformDecomposed(const glm::vec3& pos, const glm::quat& rot, co
     glm::mat4 T = glm::translate(glm::mat4(1.0f), pos);
     glm::mat4 R = glm::toMat4(rot);
     glm::mat4 S = glm::scale(glm::mat4(1.0f), scale);
-    // local transform is T*R*S
+    
     m_localTransform = T * R * S;
     if(m_boundingVolume){
         m_boundingVolume->UpdateVolume(getWorldTransform());

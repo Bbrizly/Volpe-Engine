@@ -11,6 +11,7 @@ EffectNode::EffectNode(const std::string& name)
 
 EffectNode::~EffectNode()
 {
+    SetReactToLight(false);
     // base Node::~Node() frees children (your ParticleNodes).
 }
 

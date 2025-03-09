@@ -1,4 +1,7 @@
 #pragma once
+#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include "../volpe/Volpe.h"
 #include <vector>
@@ -17,6 +20,7 @@ protected:
     std::vector<Node*> m_children;
 
     volpe::Material* m_material = nullptr;
+    bool m_ownsMaterial = false;
 
     BoundingVolume* m_boundingVolume;
     

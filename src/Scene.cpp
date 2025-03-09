@@ -41,6 +41,10 @@ void Scene::AddNode(Node* node) {
 
 void Scene::RemoveNode(Node* node)
 {
+    if (node && node->getParent()) {
+        node->getParent()->removeChild(node);
+    }
+
     auto it = std::find(m_nodes.begin(), m_nodes.end(), node);
     if (it != m_nodes.end())
     {
@@ -58,28 +62,22 @@ void Scene::AddLight(Light l)
 
 void Scene::DebugDrawFrustum(const Frustum& frustum)
 {
-    float planeSize = 5.0f; // half-extent
+    float planeSize = 5.0f;
 
     for (int i = 0; i < 6; ++i)
     {
         const glm::vec4& p = frustum.planes[i];
         glm::vec3 normal(p.x, p.y, p.z);
 
-        // Distance from origin
-        float dist = p.w;  // recall plane eq is A*x + B*y + C*z + D = 0
-                           // if plane is normalized, w = D => distance is -D
-        // For clarity, let's invert sign if we used D=+someValue:
-        // float d = -dist; 
+        float dist = p.w;
+        
         float d = -dist;
-
-        // Plane center in world space is normal * distance
+        
         glm::vec3 planeCenter = normal * d;
 
-        // Now we need 2 perpendicular vectors in the plane
-        // Let's pick an arbitrary up vector to cross with normal:
         glm::vec3 up(0,1,0);
         if (fabs(glm::dot(up, normal)) > 0.99f) {
-            up = glm::vec3(1,0,0); // if normal is near vertical, choose a different "up"
+            up = glm::vec3(1,0,0);
         }
         glm::vec3 right = glm::normalize(glm::cross(normal, up));
         glm::vec3 planeUp = glm::normalize(glm::cross(right, normal));
@@ -101,18 +99,6 @@ void Scene::DebugDrawFrustum(const Frustum& frustum)
 void Scene::ToggleUseDebugFrustum(Camera* c)
 {
     m_debugCamera = c;
-    //Left, Right, Bottom, Top, Near, Far
-    // m_debugFrustum.planes[0] = glm::vec4( 1, 0, 0,  10.0f);  //   x + 0*y + 0*z + 10 = 0
-    // m_debugFrustum.planes[1] = glm::vec4(-1, 0, 0,  10.0f);  //  -x + 0*y + 0*z + 10 = 0
-    // m_debugFrustum.planes[2] = glm::vec4( 0, 1, 0,   5.0f);  //   0*x +  y + 0*z +  5 = 0
-    // m_debugFrustum.planes[3] = glm::vec4( 0,-1, 0,   5.0f);  //   0*x + -y + 0*z +  5 = 0
-    // m_debugFrustum.planes[4] = glm::vec4( 0, 0, 1,   1.0f);  //   0*x + 0*y +  z +  1 = 0
-    // m_debugFrustum.planes[5] = glm::vec4( 0, 0,-1, 100.0f);  //   0*x + 0*y + -z +100 = 0
-
-    // for (int i = 0; i < 6; ++i) {
-    //     float length = glm::length(glm::vec3(m_debugFrustum.planes[i]));
-    //     m_debugFrustum.planes[i] /= length;
-    // }
 
     m_useDebugFrustum  = !m_useDebugFrustum;
 }
@@ -181,10 +167,6 @@ void Scene::BuildQuadTree() {
     m_quadTree = new QuadTree(sceneBounds);
 
     DebugRender::Instance().ClearLayer("Tree");
-    // for(auto node : m_nodes)
-    // {
-    //     m_quadTree->Insert(node);
-    // }
 
     for (Node* node : m_nodes) {
         if (node->getParent() == nullptr) {
@@ -217,11 +199,11 @@ void Scene::RandomInitScene(int amount)
     Clear();
     m_pGrid = new Grid3D(m_bounds);
     // /* GRID 
-    int gridSize = std::ceil(std::cbrt(amount)); // Determine the grid dimensions (N x N x N)
-    float spacing = (2.0f * m_bounds) / gridSize; // Adjust spacing to fit within bounds
+    int gridSize = std::ceil(std::cbrt(amount)); 
+    float spacing = (2.0f * m_bounds) / gridSize; 
 
     random_device rd;
-    // mt19937 gen(rd());
+    
     mt19937 gen(100);
     uniform_real_distribution<float> distPos(-m_bounds, m_bounds);
     uniform_real_distribution<float> rgb(0.0f, 255.0f);
@@ -230,7 +212,7 @@ void Scene::RandomInitScene(int amount)
     for (int     x = 0; x < gridSize && cubeCount < amount; x++) {
         for (int y = 0; y < gridSize && cubeCount < amount; y++) {
             for (int z = 0; z < gridSize && cubeCount < amount; z++) {
-                // Map (x, y, z) to a position within -bounds to bounds
+
                 float posX = -m_bounds + x * spacing;
                 float posY = -m_bounds + y * spacing;
                 float posZ = -m_bounds + z * spacing;
@@ -254,44 +236,6 @@ void Scene::RandomInitScene(int amount)
             }
         }
     }
-    // */
-    
-    /*
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_real_distribution<float> distPos(-bounds, bounds);
-    uniform_real_distribution<float> rgb(0.0f, 255.0f);
-    // rgb = new vec3(rgb(gen),rgb(gen),rgb(gen));
-    
-
-    for (int i = 1; i <= amount; ++i)
-    {
-        DebugCube* newCube = new DebugCube("cube_" + to_string(i));
-        glm::vec3 randomPos(distPos(gen), distPos(gen), distPos(gen));
-        newCube->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
-        GLubyte r = rgb(gen)
-               ,g = rgb(gen)
-               ,b = rgb(gen);
-        newCube->setColor(r,g,b);
-        
-        // DebugRender::Instance().DrawCircle(randomPos, 0.2f, glm::vec3(1.0f));
-        AddNode(newCube);
-    }
-    for (int i = 0; i < 2; i++)
-    {
-        glm::vec3 pos = glm::vec3(distPos(gen), distPos(gen), distPos(gen));
-        m_lights.push_back( Light(pos,  glm::vec3(1,1,1), 1.0f, 10.0f));
-        // DebugRender::Instance().DrawCircle(pos, 0.2f, glm::vec3(1.0f));
-    }
-    
-    */
-    // DebugCube* cube = new DebugCube("Cube_");// + to_string(cubeCount));
-    // cube->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0,2,0)));
-    // AddNode(cube); // Add cube to scene
-    // m_lights.push_back( Light(glm::vec3(0, 5, 0),  glm::vec3(1,1,1), 10.0f, 10.0f));
-    // m_lights.push_back( Light(glm::vec3(-5, 0, 0), glm::vec3(0,1,0), 1.0f, 10.0f));
-    // m_lights.push_back( Light(glm::vec3(0, 0, 5), glm::vec3(0,0,1), 1.0f, 10.0f));
-
     
     auto t1 = high_resolution_clock::now();
     m_avgCreation = duration<float, milli>(t1 - t0).count();
@@ -634,9 +578,10 @@ void Scene::Render(int screenWidth, int screenHeight) {
     {   
         if(n->m_affectingLights.size() > 0 && n->GetReactToLight())
         {
-            n->SetMaterial(m_matPoint);
+            // n->SetMaterial(m_matPoint);
             volpe::Material* mat = n->GetMaterial();
-
+            mat->SetProgram("data/PointLights.vsh", "data/PointLights.fsh"); 
+            
             int maxLights = 5;
             int lightCount = std::min(static_cast<int>(n->m_affectingLights.size()), maxLights);
 
@@ -665,8 +610,8 @@ void Scene::Render(int screenWidth, int screenHeight) {
         }
         else        
         {
-            if(n->GetReactToLight())
-                n->SetMaterial(m_matUnlit);
+            // if(n->GetReactToLight())
+                n->GetMaterial()->SetProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
         }              
         n->draw(proj, view);
     }

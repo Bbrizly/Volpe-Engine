@@ -6,6 +6,8 @@
 class Affector
 {
 public:
+    bool localToNode = false;
+
     virtual ~Affector() {}
     virtual void Apply(Particle& p, float dt)=0;
 };
@@ -81,6 +83,11 @@ public:
 
     virtual void Apply(Particle& p, float dt) override
     {
+        // if (localToNode)
+        // {
+        //     // Make target change relative to the node direction
+        //     // so its local to node transform.
+        // }
         glm::vec3 dir = target - p.position;
         float dist = glm::length(dir);
         if(dist < 0.0001f) return;

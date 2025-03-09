@@ -27,6 +27,7 @@ ParticleNode::ParticleNode(const std::string& name)
 
     m_material = volpe::MaterialManager::CreateMaterial(name + "Mat"); //to work for multiple particle systems.
     m_material->SetProgram("data/particle.vsh", "data/particle.fsh");
+    m_ownsMaterial = true;
     SetReactToLight(false);
     m_numParticles = 0;
     Play();
@@ -517,7 +518,6 @@ void ParticleNode::getCameraRightUp(const glm::mat4& view, glm::vec3& outRight, 
 glm::vec4 ParticleNode::EvaluateColorGradient(float t)
 {
     if(colorKeys.empty()) {
-        // fallback to some default
         return glm::vec4(1.0f);
     }
     if(t <= colorKeys.front().time) {

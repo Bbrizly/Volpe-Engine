@@ -65,14 +65,18 @@ static glm::mat4 MakeTransform(const glm::vec3& position, const glm::vec3& scale
 
 void DrawNodeRecursive(Node* node, int indentLevel) {
     if (!node) return;
-    ImGui::Indent(indentLevel * 15.0f); // 15 pixels per indent???
+    
+    if (indentLevel > 0) 
+        ImGui::Indent(indentLevel * 15.0f);
 
     bool isSelected = (node == g_selectedNode);
     
     if (ImGui::Selectable(node->getName().c_str(), isSelected))
         g_selectedNode = node;
+        
+    if (indentLevel > 0)
+        ImGui::Unindent(indentLevel * 15.0f);
     
-    ImGui::Unindent(indentLevel * 15.0f);
     for (Node* child : node->getChildren())
         DrawNodeRecursive(child, indentLevel + 1);
 }
@@ -91,7 +95,7 @@ void Program::DrawSceneHierarchy()
 
     ImGui::Checkbox("Culled", &culled);
     ImGui::SameLine();
-    ImGui::Text("Top level Nodes: %i", Scene::Instance().GetNodes().size());
+    ImGui::Text("|Top lev Nodes: %i", Scene::Instance().GetNodes().size());
     vector<Node*> nodes;
     if(culled) nodes = Scene::Instance().GetNodesToRender();
     else       nodes = Scene::Instance().GetNodes();
@@ -249,12 +253,19 @@ void Program::DrawInspector()
             glm::quat newQ = glm::quat(glm::radians(eulerDegrees));
             g_selectedNode->setTransformDecomposed(pos, newQ, scl);
         }
+
+        bool react = g_selectedNode->GetReactToLight(); //REACT TO LIGHT SHIT
+        if (ImGui::Checkbox("React to Light", &react))
+        {
+            g_selectedNode->SetReactToLight(react);
+        }
     }
 
     // Node specific BUT once I convert codebase to entity system, this will muchhh simpler
     if (auto* cube = dynamic_cast<DebugCube*>(g_selectedNode))
     {
         glm::vec3 c = cube->getColor();
+
         float color[3] = { c.r, c.g, c.b };
         if (ImGui::ColorEdit3("Cube Color", color))
         {
@@ -474,11 +485,9 @@ void Program::DrawInspector()
         ImGui::SameLine();
         if(ImGui::Button("Add Affector"))
         {
-            // Based on selectedAffType, create the affector
             Affector* newA = nullptr;
             if(selectedAffType == 0) // Acceleration
             {
-                // example: add zero velocity
                 newA = new AccelerationAffector(glm::vec3(0,0,0));
             }
             else if(selectedAffType == 1) // FadeOverLife
@@ -491,7 +500,7 @@ void Program::DrawInspector()
             }
             else if(selectedAffType == 3) // TowardsPoint
             {
-                newA = new TowardsPointAffector(glm::vec3(0,5,0), 1.0f);
+                newA = new TowardsPointAffector(glm::vec3(0,0,0), 1.0f);
             }
             else if(selectedAffType == 4) // AwayFromPoint
             {
@@ -508,16 +517,18 @@ void Program::DrawInspector()
         {
             ImGui::PushID(i);
             Affector* A = affList[i];
+            std::string uniqueID = "##" + std::to_string(i);
 
             // DYNAMIC CAST HELL 
             if(auto* av = dynamic_cast<AccelerationAffector*>(A))
             {
                 ImGui::Text("AccelerationAffector");
-                static float vel[3] = { av->velocityToAdd.x, av->velocityToAdd.y, av->velocityToAdd.z };
-                if(ImGui::DragFloat3("Acc##aff", vel, 0.1f))
+                float vel[3] = { av->velocityToAdd.x, av->velocityToAdd.y, av->velocityToAdd.z };
+                if(ImGui::DragFloat3("Acc##aff" , vel, 0.1f))
                 {
                     av->velocityToAdd = glm::vec3(vel[0], vel[1], vel[2]);
                 }
+                ImGui::Checkbox("Local to Node", &av->localToNode);
             }
             else if(auto* fo = dynamic_cast<FadeOverLifeAffector*>(A))
             {
@@ -534,22 +545,24 @@ void Program::DrawInspector()
             else if(auto* tp = dynamic_cast<TowardsPointAffector*>(A))
             {
                 ImGui::Text("TowardsPointAffector");
-                static float p[3] = { tp->target.x, tp->target.y, tp->target.z };
+                float p[3] = { tp->target.x, tp->target.y, tp->target.z };
                 if(ImGui::DragFloat3("Target##tpa", p, 0.1f))
                 {
                     tp->target = glm::vec3(p[0], p[1], p[2]);
                 }
                 ImGui::DragFloat("Strength", &tp->strength, 0.1f, -999.f, 999.f);
+                ImGui::Checkbox("Local to Node", &tp->localToNode);
             }                                                           //ADD ABIlity to maybe set a node as pointAffector??? WOULD BE SICK WITH THE SUN
             else if(auto* aw = dynamic_cast<AwayFromPointAffector*>(A)) //OMG I JUST REALIZED AWAY FROM POINT IS JUST TOWARDS POINT BUT NEGATIVEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE FUCKING DUMBASS
             {
                 ImGui::Text("AwayFromPointAffector");
-                static float c[3] = { aw->center.x, aw->center.y, aw->center.z };
+                float c[3] = { aw->center.x, aw->center.y, aw->center.z };
                 if(ImGui::DragFloat3("Center##awa", c, 0.1f))
                 {
                     aw->center = glm::vec3(c[0], c[1], c[2]);
                 }
                 ImGui::DragFloat("Strength", &aw->strength, 0.1f, -999.f, 999.f);
+                ImGui::Checkbox("Local to Node", &aw->localToNode);
             }
             else
             {
@@ -1016,7 +1029,7 @@ void BuildAsteroidField(int count, float innerRadius, float outerRadius)
         if(distShape(gen) < 0.5f)
         {
             asteroid = new DebugSphere("AsteroidSphere_" + std::to_string(i),
-                                       distScale(gen));  // sphere radius
+                                       distScale(gen));
 
             DebugSphere* sphere = dynamic_cast<DebugSphere*>(asteroid);
             sphere->setColor(r, g, b);
@@ -1087,15 +1100,15 @@ void BuildSolarSystem(int bounds)
 
     sun->SetReactToLight(false);
     Scene::Instance().AddLight(Light(vec3(0.0f), vec3(1,1,1), 1.0f, 50.0f));
-    Scene::Instance().AddNode(gMoon);
-    Scene::Instance().AddNode(gEarthOrbit);
-    Scene::Instance().AddNode(gJupiterOrbit);
-    Scene::Instance().AddNode(gVenusOrbit);
+    // Scene::Instance().AddNode(gMoon);
+    // Scene::Instance().AddNode(gEarthOrbit);
+    // Scene::Instance().AddNode(gJupiterOrbit);
+    // Scene::Instance().AddNode(gVenusOrbit);
 
-    Scene::Instance().AddNode(moon);
-    Scene::Instance().AddNode(earth);
-    Scene::Instance().AddNode(Jupiter);
-    Scene::Instance().AddNode(venus);
+    // Scene::Instance().AddNode(moon);
+    // Scene::Instance().AddNode(earth);
+    // Scene::Instance().AddNode(Jupiter);
+    // Scene::Instance().AddNode(venus);
 
     Scene::Instance().AddNode(sun);
 
@@ -1232,12 +1245,11 @@ void Program::init()
     orbitCamera->focusOn(glm::vec3(-10.0f,-10.0f,-10.0f),glm::vec3(10.0f,10.0f,10.0f));
 
     Scene::Instance().SetActiveCamera(fpsCamera);
-
-    Scene::Instance().ShowDebugText();
     
     Scene::Instance().InitLights();
 
-    buildParticleScene();
+    // buildParticleScene();
+    BuildSolarSystem(bounds);
     Scene& scene = Scene::Instance();
 }
 
@@ -1313,44 +1325,6 @@ void Program::update(float dt)
         }
     }
 
-    /* MOVED ALL THIS TO IMGUI SCENE UIII
-    if (m_pApp->isKeyJustDown('F') || m_pApp->isKeyJustDown('f')) {
-        Scene::Instance().ToggleUseDebugFrustum(fpsCamera);}
-
-    if (m_pApp->isKeyJustDown('B') || m_pApp->isKeyJustDown('b')) {
-        solarSystem = true;
-
-        Scene::Instance().Clear();
-        BuildSolarSystem(bounds);
-
-        Scene::Instance().BuildOctTree();}
-
-    if(m_pApp->isKeyJustDown('R') || m_pApp->isKeyJustDown('r'))
-    {
-        solarSystem = false;
-
-        Scene::Instance().Clear();
-        RecreateSceneHelper(bounds);
-        // Scene::Instance().RandomInitScene(amount);
-
-        if(Scene::Instance().getWhichTree())
-            Scene::Instance().BuildQuadTree();
-        else
-            Scene::Instance().BuildOctTree();
-    }
-
-    if(m_pApp->isKeyJustDown('Q') || m_pApp->isKeyJustDown('q'))
-    {
-        Scene::Instance().ToggleQuadTreeRender();
-    }
-
-    if(m_pApp->isKeyJustDown('L')) { //HOLD L TO MOVE LIGHTS
-        // random move lights
-        Scene::Instance().MoveLights();}
-    if(m_pApp->isKeyJustDown('G')) { //TOGGLE BOUNDING VOLUME 
-        Scene::Instance().ToggleBoundingVolumeDebug();}
-
-    */
     if(m_pApp->isKeyJustDown('C')) { //switch cameras
         whichCamera = !whichCamera;
         if(whichCamera)
@@ -1359,28 +1333,17 @@ void Program::update(float dt)
             Scene::Instance().SetActiveCamera(fpsCamera);
     }
     
-    //DEBUGGING THE TEXT POSITIONS CUZ ITS SHIT
-    //looks funny keeping for now
-    // if(m_pApp->isKeyDown('W') || m_pApp->isKeyJustDown('s')) //Move FPS counter
-    // {
-    //     std::random_device rd;
-    //     std::mt19937 gen(rd());
-    //     // -640.0f, 360.0f
-    //     std::uniform_real_distribution<float> distPos(0.0f, 20.0f);
-    //     Scene::Instance().setTextBoxPos(-640.0f + distPos(gen), 360.0f - distPos(gen));
-    // }
-
     Scene::Instance().Update(dt, m_pApp->getScreenSize().x, m_pApp->getScreenSize().y);
 }
 
 void Program::draw(int width, int height)
 {
-    // if(solarSystem)
-        // glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    // else
+    if(solarSystem)
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    else
         glClearColor(0.0f, 0.5f, 0.5f, 0.0f);
 
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    // glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     Scene::Instance().Render(width, height);
