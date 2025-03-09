@@ -285,7 +285,7 @@ void Program::DrawInspector()
     else if (auto* emitter = dynamic_cast<ParticleNode*>(g_selectedNode))
     {
 
-        #pragma region SAVING AND LOADING
+        #pragma region SAVING AND LOADING && TEXTURE SWITCHING
         if (ImGui::Button("Save Emitter"))
         {
             static char emitterFileName[256] = "MyEmitter.emitter.yaml"; // default
@@ -345,6 +345,34 @@ void Program::DrawInspector()
                     // Scene::Instance().AddNode(loaded);
                     // ...
                 }
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel##EmitterLoad"))
+            {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Load Texture"))
+        {
+            ImGui::OpenPopup("LoadTexturePopup");
+        }
+
+        if (ImGui::BeginPopupModal("LoadTexturePopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            static char loadFileName[256] = "";
+            ImGui::InputText("Texture File", loadFileName, IM_ARRAYSIZE(loadFileName));
+            if (ImGui::Button("Load##TextureLoad"))
+            {
+                
+                std::string filename = std::string("data/Textures/") + loadFileName;
+                volpe::Texture* texture0 = volpe::TextureManager().CreateTexture(filename);
+                if(texture0)
+                    emitter->GetMaterial()->SetTexture("u_texture", texture0);
+                
                 ImGui::CloseCurrentPopup();
             }
             ImGui::SameLine();

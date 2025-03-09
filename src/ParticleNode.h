@@ -89,8 +89,6 @@ public:
         delete A;     
     }
 
-    void LoadFromXML(const std::string& xmlPath);
-
     // =-=-=-=-=-=-=-=-= Controlling partcisystm =-=-=-=-=-=-=-=-=-=
     void Play();
     void Stop();
@@ -115,8 +113,7 @@ private:
 
     volpe::VertexBuffer*      m_vb   = nullptr;
     volpe::VertexDeclaration* m_decl = nullptr;
-    GLsizeiptr prevSZ; // previous size of vertex buffer FOR UPDATE
-    // volpe::Material*          m_material = nullptr;
+    GLsizeiptr prevSZ;
 
     struct QuadVertex {
         GLfloat x, y, z;        // Position
