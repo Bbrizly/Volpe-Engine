@@ -1,6 +1,6 @@
 #include "Program.h"
 #include "SceneSerializer.h"
-
+#include "BoidNode.h"
 using namespace std;
 
 Program::Program(volpe::App* pApp)
@@ -724,7 +724,6 @@ void Program::DrawInspector()
             ImGui::EndPopup();
         }
 
-
         #pragma endregion
         ImGui::Separator();
         ImGui::Text("Effect Controls");
@@ -770,6 +769,92 @@ void Program::DrawInspector()
             newEmitter->GetMaterial()->SetTexture("u_texture", volpe::TextureManager().CreateTexture("data/Textures/smoke.png"));
 
             effect->addEmitter(newEmitter);
+        }
+    }
+    else if (auto* boidNode = dynamic_cast<BoidNode*>(g_selectedNode))
+    {
+        ImGui::Text("Boid Node Inspector");
+        ImGui::Separator();
+
+        // Edit overall BoidNode properties
+        ImGui::DragInt("Max Boids", &boidNode->maxBoids, 1, 1, 10000);
+        ImGui::DragFloat("World Bounds", &boidNode->worldBounds, 0.1f, 1.0f, 100.0f);
+        // ImGui::SameLine();
+        if (ImGui::Button("Load Texture"))
+        {
+            ImGui::OpenPopup("LoadTexturePopup");
+        }
+
+        if (ImGui::BeginPopupModal("LoadTexturePopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            static char loadFileName[256] = "";
+            ImGui::InputText("Texture File", loadFileName, IM_ARRAYSIZE(loadFileName));
+            if (ImGui::Button("Load##BoidTextureLoad"))
+            {
+                
+                std::string filename = std::string("data/Textures/") + loadFileName;
+                volpe::Texture* texture0 = volpe::TextureManager().CreateTexture(filename);
+                if(texture0)
+                boidNode->GetMaterial()->SetTexture("u_texture", texture0);
+                
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel##BoidLoad"))
+            {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        ImGui::Checkbox("Wrap Around", &boidNode->wrapAround);
+        ImGui::Checkbox("Alignment", &boidNode->doAlignment);
+        ImGui::Checkbox("Cohesion", &boidNode->doCohesion);
+        ImGui::Checkbox("Separation", &boidNode->doSeparation);
+        
+        // Display the current number of boids
+        int currentCount = (int)boidNode->getBoids().size();
+        ImGui::Text("Current Boids: %d", currentCount);
+        
+        // Allow spawning a new set of boids with a desired count.
+        static int spawnCount = 10;
+        ImGui::DragInt("Spawn Count", &spawnCount, 1, 1, 1000);
+        if (ImGui::Button("Respawn Boids"))
+        {
+            boidNode->SpawnBoids(spawnCount);
+        }
+        
+        ImGui::Separator();
+
+        if (ImGui::CollapsingHeader("Boid Default Parameters", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            static float defaultMaxSpeed      = 5.0f;
+            static float defaultMaxForce      = 0.25f;
+            static float defaultNeighborRadius = 4.0f;
+            static float defaultSeparationDist = 1.0f;
+            static float defaultSize          = 0.5f;
+            static float defaultRotation      = 0.0f;
+            
+            ImGui::PushItemWidth(100.0f);
+            if (ImGui::DragFloat("Default Max Speed",       &defaultMaxSpeed, 0.1f, 0.1f, 100.0f)){}
+            if (ImGui::DragFloat("Default Max Force",       &defaultMaxForce, 0.01f, 0.01f, 10.0f)){}
+            if (ImGui::DragFloat("Default Neighbor Radius", &defaultNeighborRadius, 0.1f, 0.1f, 100.0f)){}
+            if (ImGui::DragFloat("Default Separation Dist", &defaultSeparationDist, 0.1f, 0.1f, 100.0f)){}
+            if (ImGui::DragFloat("Default Boid Size",       &defaultSize, 0.01f, 0.1f, 10.0f)){}
+            if (ImGui::DragFloat("Default Boid Rotation",   &defaultRotation, 0.1f, -360.0f, 360.0f)){}
+            if (ImGui::Button("Apply Defaults to Existing Boids"))
+            {
+                //Had to make list of boids public but will refactor later
+                for (auto& b : boidNode->m_boids) {
+                    b.maxSpeed       = defaultMaxSpeed;
+                    b.maxForce       = defaultMaxForce;
+                    b.neighborRadius = defaultNeighborRadius;
+                    b.separationDist = defaultSeparationDist;
+                    b.size           = defaultSize;
+                    b.rotation       = defaultRotation;
+                }
+            }
+            ImGui::PopItemWidth();
         }
     }
 
@@ -824,9 +909,8 @@ void Program::DrawTopBar()
             }
             if (ImGui::MenuItem("BOIDSS"))
             {
-                // Creates empty effect, Add button for loading effect from file l8r
-                EffectNode* effect = new EffectNode("Effect_" + to_string(addedNode++));
-                Scene::Instance().AddNode(effect);
+                BoidNode* boid = new BoidNode("BoidNode_" + to_string(addedNode++));
+                Scene::Instance().AddNode(boid);
             }
             ImGui::EndMenu();
         }
@@ -938,18 +1022,10 @@ void RecreateSceneHelper(int bounds)
     bounds = 10;
     Scene::Instance().SetBounds(bounds, true);
     
-
     random_device rd;
     mt19937 gen(rd());
     uniform_real_distribution<float> distPos(-bounds, bounds);
     uniform_real_distribution<float> rgb(0.0f, 255.0f);
-
-    // ParticleNode* Emitter = new ParticleNode("ParticleSystemNode");
-
-    // Emitter->setTransform(glm::mat4(1.0f));
-    // Emitter->Play();
-    // Emitter->spawnParticles(20);
-    // Scene::Instance().AddNode(Emitter);
 
     for (int i = 1; i <= amount/2; ++i)
     {
@@ -957,13 +1033,6 @@ void RecreateSceneHelper(int bounds)
 
         glm::vec3 randomPos(distPos(gen), distPos(gen) / 4, distPos(gen));
         cube->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
-        
-        // GLubyte color = rgb(gen);//i * 20;
-
-        // GLubyte r = color
-        //        ,g = color
-        //        ,b = color;
-
         
         GLubyte r = rgb(gen)
                ,g = rgb(gen)
@@ -980,12 +1049,6 @@ void RecreateSceneHelper(int bounds)
         glm::vec3 randomPos(distPos(gen), distPos(gen) / 4, distPos(gen));
         sphere->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
         
-        // GLubyte color = rgb(gen);//i * 20;
-
-        // GLubyte r = color
-        //        ,g = color
-        //        ,b = color;
-        
         GLubyte r = rgb(gen)
                ,g = rgb(gen)
                ,b = rgb(gen);
@@ -1000,7 +1063,6 @@ void RecreateSceneHelper(int bounds)
         Scene::Instance().AddLight(Light(pos,  glm::vec3(1,1,1), 10.0f, 10.0f));
         DebugRender::Instance().DrawCircle(pos, 10.0f, vec3(1,1,0));
     }
-    
 }
 
 void BuildAsteroidField(int count, float innerRadius, float outerRadius)
@@ -1255,7 +1317,9 @@ void Program::init()
     Scene::Instance().InitLights();
 
     // buildParticleScene();
-    BuildSolarSystem(bounds);
+    // BuildSolarSystem(bounds);
+    RecreateSceneHelper(bounds);
+
     Scene& scene = Scene::Instance();
 }
 
