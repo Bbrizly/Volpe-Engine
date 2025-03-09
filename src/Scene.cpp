@@ -573,8 +573,17 @@ void Scene::Render(int screenWidth, int screenHeight) {
     glm::mat4 view = m_activeCamera->getViewMatrix();
     if(m_pGrid)
         m_pGrid->render(view,proj);
+        
+    std::vector<Node*> opaqueNodes;
+    std::vector<Node*> particleNodes;
+    for (auto* n : m_nodesToRender) {
+            if (dynamic_cast<ParticleNode*>(n))
+                particleNodes.push_back(n);
+            else
+                opaqueNodes.push_back(n);
+    }
 
-    for(auto* n : m_nodesToRender) //m_nodesToRender //m_nodes
+    for(auto* n : opaqueNodes) //m_nodesToRender //m_nodes
     {   
         if(n->m_affectingLights.size() > 0 && n->GetReactToLight())
         {
@@ -617,6 +626,10 @@ void Scene::Render(int screenWidth, int screenHeight) {
         n->draw(proj, view);
     }
     
+    for (auto* n : particleNodes) {
+        n->draw(proj, view);
+   }
+
     #pragma region debug
     
     if(m_debugCamera != NULL && m_useDebugFrustum)

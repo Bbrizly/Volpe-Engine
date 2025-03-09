@@ -1,0 +1,43 @@
+Emitter:
+  name: Pow
+  transform:
+    Position: [9.6, 0, 0]
+    Rotation: [0, 0, 0, 1]
+    Scale: [1, 1, 1]
+  particle:
+    emissionRate: 0
+    duration: 1.7
+    localSpace: false
+    maxParticles: 1000
+    shape: 0
+    spawnPosition: [0, 0, 0]
+    spawnVelocity: [0, 6, 0]
+    lifetimeMin: 1.7
+    lifetimeMax: 1.7
+    startSizeMin: 1
+    startSizeMax: 1
+    startAlphaMin: 1
+    startAlphaMax: 1
+    rotationMin: 0
+    rotationMax: 0
+    rotationSpeedMin: 0
+    rotationSpeedMax: 0
+    velocityScaleMin: 2.8
+    velocityScaleMax: 3.3
+    bursts:
+      - time: 0.1
+        count: 3
+    colorKeys: ~
+    affectors:
+      - type: Acceleration
+        velocity:
+          - 0
+          - -6.5
+          - 0
+      - type: ScaleOverLife
+        startScale: 1
+        endScale: 0
+      - type: FadeOverLife
+        startAlpha: 1
+        endAlpha: 0
+    texturePath: data/Textures/pow.png

@@ -4,10 +4,11 @@ Nodes:
     Type: ParticleNode
     ParticleData:
       emissionRate: 40
+      duration: -1
       localSpace: false
+      glow: true
       maxParticles: 40
       shape: 1
-      globalAcceleration: [0, 10, 0]
       spawnPosition: [0, 0, 0]
       spawnVelocity: [0, 1, 0]
       lifetimeMin: 1
@@ -22,8 +23,6 @@ Nodes:
       rotationSpeedMax: 7.5
       velocityScaleMin: 0
       velocityScaleMax: 0.8
-      sizeOverLife: 0.5
-      alphaOverLife: 0.6
       colorKeys:
         - time: 0
           color: [1, 0.9411765, 0, 1]

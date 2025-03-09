@@ -396,6 +396,7 @@ YAML::Node SceneSerializer::SerializeParticleNode(const ParticleNode* emitter)
     n["emissionRate"]       = emitter->emissionRate;
     n["duration"]           = emitter->duration;
     n["localSpace"]         = emitter->localSpace;
+    n["glow"]              = emitter->glow;
     n["maxParticles"]       = emitter->maxParticles;
     n["shape"]              = (int) emitter->shape;
 
@@ -460,8 +461,9 @@ void SceneSerializer::DeserializeParticleNode(const YAML::Node& n, ParticleNode*
 {
     // basic fields
     if(n["emissionRate"])       emitter->emissionRate       = n["emissionRate"].as<float>();
-    if(n["duration"])      emitter->duration       = n["duration"].as<float>();
+    if(n["duration"])           emitter->duration           = n["duration"].as<float>();
     if(n["localSpace"])         emitter->localSpace         = n["localSpace"].as<bool>();
+    if(n["glow"])               emitter->glow               = n["glow"].as<bool>();
     if(n["maxParticles"])       emitter->maxParticles       = n["maxParticles"].as<int>();
 
     // if(n["shape"])              emitter->shape              = (EmitterShape)n["shape"].as<int>();
@@ -493,6 +495,7 @@ void SceneSerializer::DeserializeParticleNode(const YAML::Node& n, ParticleNode*
     if(n["startSizeMax"])  emitter->startSizeMax  = n["startSizeMax"].as<float>();
     if(n["startAlphaMin"]) emitter->startAlphaMin = n["startAlphaMin"].as<float>();
     if(n["startAlphaMax"]) emitter->startAlphaMax = n["startAlphaMax"].as<float>();
+
 
     // rotation
     if(n["rotationMin"])      emitter->rotationMin = n["rotationMin"].as<float>();

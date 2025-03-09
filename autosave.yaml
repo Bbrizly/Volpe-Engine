@@ -1,0 +1,31 @@
+Scene: VolpeScene
+Nodes:
+  - Name: ParticleSystemNode_6
+    Type: ParticleNode
+    ParticleData:
+      emissionRate: 10
+      duration: -1
+      localSpace: false
+      maxParticles: 1000
+      shape: 0
+      spawnPosition: [0, 0, 0]
+      spawnVelocity: [0, 1, 0]
+      lifetimeMin: 1
+      lifetimeMax: 4
+      startSizeMin: 0.5
+      startSizeMax: 1.5
+      startAlphaMin: 1
+      startAlphaMax: 1
+      rotationMin: 0
+      rotationMax: 360
+      rotationSpeedMin: -7.5
+      rotationSpeedMax: 7.5
+      velocityScaleMin: 0
+      velocityScaleMax: 2
+      colorKeys: ~
+      texturePath: data/Textures/baby.png
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0, 1]
+      Scale: [1, 1, 1]
+Lights: ~

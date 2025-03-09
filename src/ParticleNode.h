@@ -61,6 +61,7 @@ public:
     float duration;           // spawn N particles per second
 
     bool  localSpace;             // local or world coordinate system
+    bool glow;
     int   maxParticles;           // max particles
     EmitterShape shape;           // spawn shape
     glm::vec3 spawnPosition;      // offset

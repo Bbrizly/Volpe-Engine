@@ -11,6 +11,7 @@ ParticleNode::ParticleNode(const std::string& name)
 : Node(name)
 , emissionRate(10.0f)
 , localSpace(false)
+, glow(false)
 , maxParticles(1000)
 , shape(EmitterShape::Point)
 , spawnPosition(0.0f)
@@ -278,13 +279,15 @@ void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
     m_material->Apply();
     m_decl->Bind();
 
-    // int totalVerts = (int)m_particles.size()*6;
     int totalVerts = m_numParticles * 6;
 
-    glEnable(GL_BLEND);
-
-    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_FALSE);
+    glEnable(GL_BLEND);
+    if(glow)
+        glBlendFunc(GL_ONE,GL_ONE);
+    else
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+    
 
     glDrawArrays(GL_TRIANGLES, 0, totalVerts);
 
@@ -467,10 +470,10 @@ void ParticleNode::buildVertexData(const glm::mat4& view)
         // QuadVertex v2 = { tl.x, tl.y, tl.z, 0.f, 1.f };
         // QuadVertex v3 = { tr.x, tr.y, tr.z, 1.f, 1.f };
         
-        QuadVertex v0 = {bl.x, bl.y, bl.z,  0.f, 0.f, texLayer, color.r, color.g, color.b, finalAlpha};
-        QuadVertex v1 = {br.x, br.y, br.z,  1.f, 0.f, texLayer, color.r, color.g, color.b, finalAlpha};
-        QuadVertex v2 = {tl.x, tl.y, tl.z,  0.f, 1.f, texLayer, color.r, color.g, color.b, finalAlpha};
-        QuadVertex v3 = {tr.x, tr.y, tr.z,  1.f, 1.f, texLayer, color.r, color.g, color.b, finalAlpha};
+        QuadVertex v0 = {bl.x, bl.y, bl.z,  0.f, 1.f, texLayer, color.r, color.g, color.b, finalAlpha};
+        QuadVertex v1 = {br.x, br.y, br.z,  1.f, 1.f, texLayer, color.r, color.g, color.b, finalAlpha};
+        QuadVertex v2 = {tl.x, tl.y, tl.z,  0.f, 0.f, texLayer, color.r, color.g, color.b, finalAlpha};
+        QuadVertex v3 = {tr.x, tr.y, tr.z,  1.f, 0.f, texLayer, color.r, color.g, color.b, finalAlpha};
 
         data.push_back(v0);
         data.push_back(v1);
@@ -499,11 +502,11 @@ void ParticleNode::buildVertexData(const glm::mat4& view)
           m_decl->AppendAttribute(volpe::AT_TexCoord1,  3, volpe::CT_Float);
           m_decl->AppendAttribute(volpe::AT_Color,      4, volpe::CT_Float);
         m_decl->End();
+        prevSZ = sz;//FOR FIXING UPDATE BUFFER 
     } else {
         // std::cout<<"SAVED COMPUTING POWER\n";
         volpe::BufferManager::UpdateVertexBuffer(m_vb, data.data(), (unsigned int)sz);
-    }
-    prevSZ = sz; //FOR FIXING UPDATE BUFFER 
+    } 
 }
 
 // =-=-=-=-=-=-=-=-=HELPERS=-=-=-=-=-=-=-=-=-=

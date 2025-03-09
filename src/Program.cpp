@@ -81,7 +81,6 @@ void DrawNodeRecursive(Node* node, int indentLevel) {
         DrawNodeRecursive(child, indentLevel + 1);
 }
 
-
 float debugWindowHeight = 500.0f;
 bool culled = false;
 void Program::DrawSceneHierarchy()
@@ -430,6 +429,8 @@ void Program::DrawInspector()
         ImGui::DragFloat("Emission Rate", &emitter->emissionRate, 0.1f, 0.f, 9999.f);
 
         ImGui::Checkbox("Local Space", &emitter->localSpace);
+        ImGui::SameLine();
+        ImGui::Checkbox("Glow", &emitter->glow);
 
         
         // Emitter shape
@@ -445,8 +446,8 @@ void Program::DrawInspector()
         ImGui::DragFloat(" - ##lifetime", (float*)&emitter->lifetimeMin, 0.05f); ImGui::SameLine();
         ImGui::DragFloat("Lifetime range", (float*)&emitter->lifetimeMax, 0.05f);
         
-        // ImGui::DragFloat(" - ##rot", (float*)&emitter->rotationMin, 0.05f); ImGui::SameLine();
-        // ImGui::DragFloat("Rotation range", (float*)&emitter->rotationMax, 0.05f);
+        ImGui::DragFloat(" - ##rot", (float*)&emitter->rotationMin, 0.05f); ImGui::SameLine();
+        ImGui::DragFloat("Rotation range", (float*)&emitter->rotationMax, 0.05f);
         
         ImGui::DragFloat(" - ##rotSpeed", (float*)&emitter->rotationSpeedMin, 0.05f); ImGui::SameLine();
         ImGui::DragFloat("Rotation Speed range", (float*)&emitter->rotationSpeedMax, 0.05f);
@@ -915,6 +916,12 @@ void Program::DrawTopBar()
             ImGui::EndMenu();
         }
         
+        if (ImGui::MenuItem("New Scene"))
+        {
+            SwitchScene(SceneType::Random);
+            Scene::Instance().Clear();
+            Scene::Instance().BuildOctTree();
+        }
         if (ImGui::MenuItem("Solar System"))
             SwitchScene(SceneType::SolarSystem);
         if (ImGui::MenuItem("Random Scene"))
@@ -1408,12 +1415,12 @@ void Program::update(float dt)
 
 void Program::draw(int width, int height)
 {
-    if(solarSystem)
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    else
-        glClearColor(0.0f, 0.5f, 0.5f, 0.0f);
+    // if(solarSystem)
+    //     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    // else
+    //     glClearColor(0.0f, 0.5f, 0.5f, 0.0f);
 
-    // glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     Scene::Instance().Render(width, height);
