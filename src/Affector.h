@@ -1,7 +1,7 @@
 #pragma once
-// #include "Particle.h"
 #include "ParticleNode.h"
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 class Affector
 {
@@ -9,7 +9,8 @@ public:
     bool localToNode = false;
 
     virtual ~Affector() {}
-    virtual void Apply(Particle& p, float dt)=0;
+    
+    virtual void Apply(Particle& p, float dt, const glm::mat4& emitterWorldMatrix)=0;
 };
 
 class AccelerationAffector : public Affector
@@ -21,9 +22,15 @@ public:
     : velocityToAdd(vel)
     {}
 
-    virtual void Apply(Particle& p, float dt) override
+    virtual void Apply(Particle& p, float dt, const glm::mat4& emitterWorldMatrix) override
     {
-        p.velocity += velocityToAdd*dt;
+        glm::vec3 accel = velocityToAdd;
+        if(localToNode)
+        {
+            glm::mat3 rot = glm::mat3(emitterWorldMatrix);
+            accel = rot * velocityToAdd;
+        }
+        p.velocity += accel * dt;
     }
 };
 
@@ -37,7 +44,7 @@ public:
     : startScale(s), endScale(e)
     {}
 
-    virtual void Apply(Particle& p, float /*dt*/) override
+    virtual void Apply(Particle& p, float, const glm::mat4&) override
     {
         if(p.lifetime<=0.f) return;
         float t= p.age/p.lifetime;
@@ -57,7 +64,7 @@ public:
     : startAlpha(s), endAlpha(e)
     {}
 
-    virtual void Apply(Particle& p, float /*dt*/) override
+    virtual void Apply(Particle& p, float, const glm::mat4&) override
     {
         if(p.lifetime<=0.f) return;
         float t= p.age/p.lifetime;
@@ -67,10 +74,6 @@ public:
     }
 };
 
-/*
-  TowardsPointAffector:
-  Accelerates the particle toward a specified point in space.
-*/
 class TowardsPointAffector : public Affector
 {
 public:
@@ -81,26 +84,24 @@ public:
     : target(tgt), strength(s)
     {}
 
-    virtual void Apply(Particle& p, float dt) override
+    virtual void Apply(Particle& p, float dt, const glm::mat4& emitterWorldMatrix) override
     {
-        // if (localToNode)
-        // {
-        //     // Make target change relative to the node direction
-        //     // so its local to node transform.
-        // }
-        glm::vec3 dir = target - p.position;
+        glm::vec3 finalTarget = target;
+        if(localToNode)
+        {
+            glm::vec4 tmp = emitterWorldMatrix * glm::vec4(target,1.f);
+            finalTarget = glm::vec3(tmp);
+        }
+
+        glm::vec3 dir = finalTarget - p.position;
         float dist = glm::length(dir);
         if(dist < 0.0001f) return;
         dir = glm::normalize(dir);
-        // accelerate toward target
+        
         p.velocity += dir * strength * dt;
     }
 };
 
-/*
-  AwayFromPointAffector:
-  Applies force pushing the particle away from a point.
-*/
 class AwayFromPointAffector : public Affector
 {
 public:
@@ -111,9 +112,16 @@ public:
     : center(c), strength(s)
     {}
 
-    virtual void Apply(Particle& p, float dt) override
+    virtual void Apply(Particle& p, float dt, const glm::mat4& emitterWorldMatrix) override
     {
-        glm::vec3 dir = p.position - center;
+        glm::vec3 finalCenter = center;
+        if(localToNode)
+        {
+            glm::vec4 tmp = emitterWorldMatrix * glm::vec4(center,1.f);
+            finalCenter = glm::vec3(tmp);
+        }
+
+        glm::vec3 dir = p.position - finalCenter;
         float dist = glm::length(dir);
         if(dist < 0.0001f) return;
         dir = glm::normalize(dir);

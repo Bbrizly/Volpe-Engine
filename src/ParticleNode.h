@@ -9,6 +9,12 @@
 #include "Particle.h"
 #include "Affector.h"
 
+enum class EmitterMode
+{
+    Continuous,
+    Burst
+};
+
 enum class EmitterShape
 {
     Point,
@@ -31,7 +37,7 @@ enum class ParticleSystemState
     Paused
 };
 
-static const int MAX_PARTICLES_INTERNAL = 50000; //increase for debugging
+static const int MAX_PARTICLES_INTERNAL = 100000; //increase for debugging
 
 class ParticleNode : public Node 
 {
@@ -66,6 +72,12 @@ public:
     EmitterShape shape;           // spawn shape
     glm::vec3 spawnPosition;      // offset
     glm::vec3 spawnVelocity;      // base velocity
+    
+    EmitterMode emitterMode = EmitterMode::Continuous;
+    
+    bool faceCamera = true;
+    glm::vec3 customLookDir = glm::vec3(0,0,1); 
+    glm::vec3 customUpDir   = glm::vec3(0,1,0);
 
     // BURST
     std::vector<float> burstTimes;    // times at which to emit many at once

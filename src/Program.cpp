@@ -92,6 +92,11 @@ void Program::DrawSceneHierarchy()
     ImGui::SetNextWindowSize(ImVec2(sceneWidth, sceneHeight));
     ImGui::Begin("Scene Hierarchy", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
+    ImGui::Checkbox("Show Grid", &Scene::Instance().showGrid);
+    ImGui::SameLine();
+    ImGui::Checkbox("Rebuild by frame", &rebuildTreeEveryFrame);
+    
+
     ImGui::Checkbox("Culled", &culled);
     ImGui::SameLine();
     ImGui::Text("|Top lev Nodes: %i", Scene::Instance().GetNodes().size());
@@ -160,18 +165,28 @@ void Program::DrawDebugWindow()
         }
         if (ImGui::BeginTabItem("Controls"))
         {
-            if (ImGui::Button("Toggle Debug Frustum"))
-            {
-                Scene::Instance().ToggleUseDebugFrustum(fpsCamera);
-            }
             if (ImGui::Button("Toggle Tree Render"))
             {
                 Scene::Instance().ToggleQuadTreeRender();
             }
-            if (ImGui::Button("Toggle Bounding Vol Debug"))
+            if (ImGui::Button("    Add Bounding Vol debug"))
             {
                 Scene::Instance().ToggleBoundingVolumeDebug();
             }
+            if (ImGui::Button("Switch Spatial Tree"))
+            {
+                if(Scene::Instance().getWhichTree()) //true is quad, false is oct. here theyre swapped to switch
+                    Scene::Instance().BuildOctTree();
+                else
+                    Scene::Instance().BuildQuadTree();
+            }
+            if (ImGui::Button("Toggle Debug Frustum"))
+            {
+                Scene::Instance().ToggleUseDebugFrustum(fpsCamera);
+            }
+            
+            
+            
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
@@ -340,20 +355,7 @@ void Program::DrawInspector()
                 ParticleNode* loaded = SceneSerializer::LoadEmitter(filename);
                 if (loaded)
                 {
-                    // The question is: do you want to replace
-                    // the currently selected emitter’s parameters?
-                    // Or do you want to spawn a brand new emitter node?
-                    
-                    // Option A: Overwrite current emitter
-                    //   by transferring loaded’s fields
-                    //   or just do it the “hacky” way:
-                    *emitter = *loaded; 
-                    // not recommended though, can break pointer-based data
-                    // Better is: copy your fields manually from 'loaded' to 'emitter'.
-                    
-                    // Option B: add 'loaded' as a brand new node:
-                    // Scene::Instance().AddNode(loaded);
-                    // ...
+                    *emitter = *loaded;
                 }
                 ImGui::CloseCurrentPopup();
             }
@@ -431,8 +433,14 @@ void Program::DrawInspector()
         ImGui::Checkbox("Local Space", &emitter->localSpace);
         ImGui::SameLine();
         ImGui::Checkbox("Glow", &emitter->glow);
+        if(ImGui::Checkbox("Face Camera", &emitter->faceCamera)) {}
 
-        
+        if(!emitter->faceCamera)
+        {
+            ImGui::DragFloat3("Custom Look Dir", (float*)&emitter->customLookDir, 0.05f);
+            ImGui::DragFloat3("Custom Up Dir",   (float*)&emitter->customUpDir,   0.05f);
+        }
+
         // Emitter shape
         static const char* shapeNames[] = {"Point","Sphere","Cone","Box","Mesh"};
         int shapeIdx = (int)emitter->shape;
@@ -864,11 +872,9 @@ void Program::DrawInspector()
 
 void Program::DrawTopBar()
 {
-    // These flags will store the popup open requests
     static bool open_save_popup = false;
     static bool open_load_popup = false;
 
-    // Draw main menu bar.
     if (ImGui::BeginMainMenuBar())
     {             
         if (ImGui::BeginMenu("File"))
@@ -889,11 +895,13 @@ void Program::DrawTopBar()
             {
                 DebugCube* cube = new DebugCube("cube_" + to_string(addedNode++));
                 Scene::Instance().AddNode(cube);
+                g_selectedNode = cube;
             }
             if (ImGui::MenuItem("Sphere"))
             {
                 DebugSphere* sphere = new DebugSphere("sphere_" + to_string(addedNode++), 0.5);
                 Scene::Instance().AddNode(sphere);
+                g_selectedNode = sphere; //for sexy convenience
             }
             if (ImGui::MenuItem("Particle Node"))
             {
@@ -901,17 +909,20 @@ void Program::DrawTopBar()
                 volpe::Texture* texture0 = volpe::TextureManager().CreateTexture("data/Textures/smoke.png");
                 Emitter->GetMaterial()->SetTexture("u_texture", texture0);
                 Scene::Instance().AddNode(Emitter);
+                g_selectedNode = Emitter;
             }
             if (ImGui::MenuItem("Effect"))
             {
                 // Creates empty effect, Add button for loading effect from file l8r
                 EffectNode* effect = new EffectNode("Effect_" + to_string(addedNode++));
                 Scene::Instance().AddNode(effect);
+                g_selectedNode = effect;
             }
             if (ImGui::MenuItem("BOIDSS"))
             {
                 BoidNode* boid = new BoidNode("BoidNode_" + to_string(addedNode++));
                 Scene::Instance().AddNode(boid);
+                g_selectedNode = boid;
             }
             ImGui::EndMenu();
         }
@@ -1236,7 +1247,7 @@ void buildParticleScene()
     ParticleNode* Emitter2 = new ParticleNode("ParticleSystemNode2");
 
     volpe::Texture* texture0 = volpe::TextureManager().CreateTexture("data/Textures/smoke.png");
-    volpe::Texture* texture1 = volpe::TextureManager().CreateTexture("data/Textures/baby1.png");
+    volpe::Texture* texture1 = volpe::TextureManager().CreateTexture("data/Textures/minecraft.png");
     volpe::Texture* texture2 = volpe::TextureManager().CreateTexture("data/Textures/baby.png");
 
     Emitter->GetMaterial()->SetTexture("u_texture", texture0);
@@ -1245,9 +1256,6 @@ void buildParticleScene()
     std::cout<<"E2: "<<Emitter1->GetMaterial()<<"\n";
     Emitter2->GetMaterial()->SetTexture("u_texture", texture2);
     std::cout<<"E3: "<<Emitter2->GetMaterial()<<"\n";
-
-    // Emitter->setTransform(glm::mat4(1.0f));
-    // Emitter->Play();
 
     
 
@@ -1345,13 +1353,15 @@ void Program::update(float dt)
 
     DrawPerformanceGraphs();
 
+    if(rebuildTreeEveryFrame)
+        Scene::Instance().ReBuildTree();
+
     if(m_pApp->isKeyJustDown('J') || m_pApp->isKeyJustDown('j'))
     {
         // buildParticleScene();
         Scene::Instance().Clear();
         SceneSerializer::LoadScene(Scene::Instance() ,"autosave");
         Scene::Instance().ReBuildTree();
-        
     }
     if(m_pApp->isKeyJustDown('H') || m_pApp->isKeyJustDown('h'))
     {
@@ -1387,7 +1397,6 @@ void Program::update(float dt)
             speedMultipler *= 1.2;
         
         UpdateSolarSystem(dt);
-        Scene::Instance().BuildOctTree();  //REAL TIME CULLING OF MOVING OBJECTS!!! :D
     }
     else
     {

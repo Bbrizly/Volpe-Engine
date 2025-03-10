@@ -83,37 +83,39 @@ private:
 
 public:
 
-#pragma region GETTERS FOR IMGUI
+    bool showGrid = true;
 
-float getFPS() const { return m_lastKnownFps; }  // m_lastKnownFps should be updated in Update()
-bool getShowDebug() const { return m_ShowDebug; }
-bool getShowBoundingVolumes() const { return m_ShowBoundingVolumes; }
-bool getUseDebugFrustum() const { return m_useDebugFrustum; }
-std::string getActiveTreeName() const { return m_useQuadTreeOrOct ? "Quad" : "Oct"; }
-float getSceneCreationTime() const { return m_avgCreation; }
-float getTreeBuildTime() const { return m_lastQuadTreeBuildTimeMs; }
-float getAvgCameraUpdateMs() const { return m_avgCameraUpdateMs; }
-float getAvgNodeUpdateMs() const { return m_avgNodeUpdateMs; }
-float getAvgBoundingVolumeMs() const { return m_avgBoundingVolumeMs; }
-float getAvgFrustumExtractMs() const { return m_avgFrustumExtractMs; }
-float getAvgQuadTreeQueryMs() const { return m_avgQuadTreeQueryMs; }
-float getAvgLightQuery() const { return m_avgLightQuery; }
-size_t getNodesAffectedByLight() const
-{
-    size_t count = 0;
-    for (const auto* node : m_nodes)
+    #pragma region GETTERS FOR IMGUI
+
+    float getFPS() const { return m_lastKnownFps; }  // m_lastKnownFps should be updated in Update()
+    bool getShowDebug() const { return m_ShowDebug; }
+    bool getShowBoundingVolumes() const { return m_ShowBoundingVolumes; }
+    bool getUseDebugFrustum() const { return m_useDebugFrustum; }
+    std::string getActiveTreeName() const { return m_useQuadTreeOrOct ? "Quad" : "Oct"; }
+    float getSceneCreationTime() const { return m_avgCreation; }
+    float getTreeBuildTime() const { return m_lastQuadTreeBuildTimeMs; }
+    float getAvgCameraUpdateMs() const { return m_avgCameraUpdateMs; }
+    float getAvgNodeUpdateMs() const { return m_avgNodeUpdateMs; }
+    float getAvgBoundingVolumeMs() const { return m_avgBoundingVolumeMs; }
+    float getAvgFrustumExtractMs() const { return m_avgFrustumExtractMs; }
+    float getAvgQuadTreeQueryMs() const { return m_avgQuadTreeQueryMs; }
+    float getAvgLightQuery() const { return m_avgLightQuery; }
+    size_t getNodesAffectedByLight() const
     {
-        if (node && !node->m_affectingLights.empty())
-            count++;
+        size_t count = 0;
+        for (const auto* node : m_nodes)
+        {
+            if (node && !node->m_affectingLights.empty())
+                count++;
+        }
+        return count;
     }
-    return count;
-}
 
-const std::vector<Light>& GetLights() const { return m_lights; }
-const std::vector<Node*>& GetNodes() const { return m_nodes; }
-const std::vector<Node*>& GetNodesToRender() const { return m_nodesToRender; }
+    const std::vector<Light>& GetLights() const { return m_lights; }
+    const std::vector<Node*>& GetNodes() const { return m_nodes; }
+    const std::vector<Node*>& GetNodesToRender() const { return m_nodesToRender; }
 
-#pragma endregion
+    #pragma endregion
 
 
     static Scene& Instance();

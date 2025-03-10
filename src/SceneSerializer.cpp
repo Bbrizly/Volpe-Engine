@@ -399,6 +399,26 @@ YAML::Node SceneSerializer::SerializeParticleNode(const ParticleNode* emitter)
     n["glow"]              = emitter->glow;
     n["maxParticles"]       = emitter->maxParticles;
     n["shape"]              = (int) emitter->shape;
+    
+    n["emitterMode"]   = (emitter->emitterMode == EmitterMode::Continuous) ? 0 : 1;
+    n["faceCamera"]    = emitter->faceCamera;
+    //for face camera vectors:
+    {
+        YAML::Node look;
+        look.SetStyle(YAML::EmitterStyle::Flow);
+        look.push_back(emitter->customLookDir.x);
+        look.push_back(emitter->customLookDir.y);
+        look.push_back(emitter->customLookDir.z);
+        n["customLookDir"] = look;
+    }
+    {
+        YAML::Node up;
+        up.SetStyle(YAML::EmitterStyle::Flow);
+        up.push_back(emitter->customUpDir.x);
+        up.push_back(emitter->customUpDir.y);
+        up.push_back(emitter->customUpDir.z);
+        n["customUpDir"] = up;
+    }
 
     n["spawnPosition"].SetStyle(YAML::EmitterStyle::Flow);
     n["spawnPosition"].push_back(emitter->spawnPosition.x);
@@ -466,12 +486,33 @@ void SceneSerializer::DeserializeParticleNode(const YAML::Node& n, ParticleNode*
     if(n["glow"])               emitter->glow               = n["glow"].as<bool>();
     if(n["maxParticles"])       emitter->maxParticles       = n["maxParticles"].as<int>();
 
-    // if(n["shape"])              emitter->shape              = (EmitterShape)n["shape"].as<int>();
-
     if(n["shape"]){
         int shapeVal = n["shape"].as<int>();
         emitter->shape = (EmitterShape) shapeVal;
     }
+
+    if(n["emitterMode"]){
+        int modeVal = n["emitterMode"].as<int>();
+        emitter->emitterMode = (modeVal == 0) ? EmitterMode::Continuous : EmitterMode::Burst;
+    }
+
+    if(n["faceCamera"]){
+        emitter->faceCamera = n["faceCamera"].as<bool>();
+    }
+
+    if(n["customLookDir"] && n["customLookDir"].IsSequence() && n["customLookDir"].size()==3)
+    {
+        emitter->customLookDir.x = n["customLookDir"][0].as<float>();
+        emitter->customLookDir.y = n["customLookDir"][1].as<float>();
+        emitter->customLookDir.z = n["customLookDir"][2].as<float>();
+    }
+    if(n["customUpDir"] && n["customUpDir"].IsSequence() && n["customUpDir"].size()==3)
+    {
+        emitter->customUpDir.x = n["customUpDir"][0].as<float>();
+        emitter->customUpDir.y = n["customUpDir"][1].as<float>();
+        emitter->customUpDir.z = n["customUpDir"][2].as<float>();
+    }
+    
 
     if(n["spawnPosition"] && n["spawnPosition"].IsSequence() && n["spawnPosition"].size()==3)
     {

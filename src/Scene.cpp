@@ -54,7 +54,6 @@ void Scene::RemoveNode(Node* node)
     ReBuildTree();
 }
 
-
 void Scene::AddLight(Light l)
 {
     m_lights.push_back(l);
@@ -571,7 +570,7 @@ void Scene::Render(int screenWidth, int screenHeight) {
         return;
     glm::mat4 proj = m_activeCamera->getProjMatrix(screenWidth, screenHeight);
     glm::mat4 view = m_activeCamera->getViewMatrix();
-    if(m_pGrid)
+    if(m_pGrid && showGrid)
         m_pGrid->render(view,proj);
         
     std::vector<Node*> opaqueNodes;

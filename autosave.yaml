@@ -1,15 +1,16 @@
 Scene: VolpeScene
 Nodes:
-  - Name: ParticleSystemNode_6
+  - Name: magic
     Type: ParticleNode
     ParticleData:
-      emissionRate: 10
+      emissionRate: 1
       duration: -1
       localSpace: false
-      maxParticles: 1000
+      glow: false
+      maxParticles: 1
       shape: 0
       spawnPosition: [0, 0, 0]
-      spawnVelocity: [0, 1, 0]
+      spawnVelocity: [0, 0, 0]
       lifetimeMin: 1
       lifetimeMax: 4
       startSizeMin: 0.5
@@ -21,9 +22,9 @@ Nodes:
       rotationSpeedMin: -7.5
       rotationSpeedMax: 7.5
       velocityScaleMin: 0
-      velocityScaleMax: 2
+      velocityScaleMax: 0
       colorKeys: ~
-      texturePath: data/Textures/baby.png
+      texturePath: data/Textures/smoke.png
     Transform:
       Position: [0, 0, 0]
       Rotation: [0, 0, 0, 1]

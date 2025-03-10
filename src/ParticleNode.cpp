@@ -88,32 +88,47 @@ void ParticleNode::update(float dt)
     Node::update(dt);
     if(dt <= 0.0f) return;
 
+    #pragma region System State
     if(systemState == ParticleSystemState::Stopped || (m_totalTime >= duration && duration > 0)) {
-        // no update, no spawn, no existing
-        // m_particles.clear();
         m_numParticles = 0;
         return;
     }
-
-    if(systemState == ParticleSystemState::Paused) {
-        // not sure how to make them render and not update their position
-        return;
+    if(systemState == ParticleSystemState::Paused)
+        dt = 0;
+    #pragma endregion
+    
+    #pragma region Emitter Mode
+    if(emitterMode == EmitterMode::Continuous)
+    {
+        if(emissionRate > 0.0f)
+        {
+            m_emissionAdder += (emissionRate * dt);
+            int spawnCount = (int)std::floor(m_emissionAdder);
+            if(spawnCount>0)
+            {
+                m_emissionAdder -= spawnCount;
+                spawnParticles(spawnCount);
+            }
+        }
     }
-    // prevDt = dt;
+    else if (emitterMode == EmitterMode::Burst)
+    {
+        if (!burstTimes.empty()) {
+            
+            float maxBurst = *std::max_element(burstTimes.begin(), burstTimes.end());
+            
+            if (m_totalTime > maxBurst && m_numParticles == 0) {
+                m_totalTime = 0.0f;
+            }
+        }
+    }
 
-    //FOR BURSTS
     m_totalTime += dt;
     handleBursts(dt);
 
-    //
-    if(emissionRate > 0.0f) {
-        m_emissionAdder += (emissionRate * dt);
-        int spawnCount = (int)std::floor(m_emissionAdder);
-        if(spawnCount > 0) {
-            m_emissionAdder -= spawnCount;
-            spawnParticles(spawnCount);
-        }
-    }
+    #pragma endregion
+
+    #pragma region Update each particle
     int i = 0;
     while(i < m_numParticles)
     {
@@ -139,7 +154,7 @@ void ParticleNode::update(float dt)
 
         // Apply affectors
         for(auto x : m_affectors) {
-            x->Apply(p,dt);
+            x->Apply(p,dt,getWorldTransform());
         }
 
         i++;
@@ -148,49 +163,7 @@ void ParticleNode::update(float dt)
     if(m_numParticles > maxParticles) {
         m_numParticles = maxParticles;
     }
-
-    /*
-    for(auto& p : m_particles) 
-    {
-        p.age += dt;
-        if(p.age >= p.lifetime) continue; // remove soon
-
-        // Rotation
-        p.rotation += p.rotationSpeed * dt;
-
-        // Position
-        p.position += p.velocity * dt;
-
-        
-        // =-=-=-=-=-=-=-=-=TWEENING=-=-=-=-=-=-=-=-=-=
-        
-        float t = (p.age / p.lifetime);
-        if(t>1.f) t=1.f;
-
-        p.color = EvaluateColorGradient(t);
-
-        for( auto x : m_affectors)
-        {
-            std::cout<<"\naffector: "<<x;
-            x->Apply(p,dt);
-        }
-
-    }
-
-    //delete of old age
-    m_particles.erase(
-        std::remove_if(m_particles.begin(), m_particles.end(),
-            [&](const Particle& part){
-                return (part.age >= part.lifetime);
-            }
-        ),
-        m_particles.end()
-    );
-
-    if((int)m_particles.size() > maxParticles) {
-        m_particles.resize(maxParticles);
-    }
-    */
+    #pragma endregion
 
 }
 
@@ -214,31 +187,13 @@ void ParticleNode::UpdateBoundingVolume()
             sphere->m_initialRadius = newRadius;
         }
     }
-    /*
-    if(!m_particles.empty()) {
-        glm::vec3 pMin = m_particles[0].position;
-        glm::vec3 pMax = m_particles[0].position;
-        for (const auto& p : m_particles) {
-            pMin = glm::min(pMin, p.position);
-            pMax = glm::max(pMax, p.position);
-        }
-        glm::vec3 newCenter = (pMin + pMax) * 0.5f;
-        float newRadius = glm::length(pMax - newCenter);
-        SphereVolume* sphere = dynamic_cast<SphereVolume*>(m_boundingVolume);
-        if(sphere) {
-            sphere->center = newCenter;
-            sphere->radius = newRadius;
-            sphere->m_localCenter = newCenter;
-            sphere->m_initialRadius = newRadius;
-        }
-    }*/
 }
 
 void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
 {
     
     // If not playing or no material skip
-    if(systemState != ParticleSystemState::Playing || m_numParticles == 0 || !m_material) { // m_particles.empty()
+    if(systemState == ParticleSystemState::Stopped || m_numParticles == 0 || !m_material) {
         Node::draw(proj, view);
         return;
     }
@@ -310,14 +265,6 @@ void ParticleNode::spawnParticles(int count)
         Particle p = createNewParticle();
         m_particles[m_numParticles++] = p;
     }
-
-    /*
-    for(int i=0; i<count; i++)
-    {
-        if((int)m_particles.size() >= maxParticles) break;
-        Particle p = createNewParticle();
-        m_particles.push_back(p);
-    }*/
 }
 
 Particle ParticleNode::createNewParticle()
@@ -372,8 +319,8 @@ Particle ParticleNode::createNewParticle()
             float r = 1.f*m_dist01(m_randGen);
             float aa=2.f*3.14159f*m_dist01(m_randGen);
             localSpawn.x = r*std::cos(aa)*angle;
-            localSpawn.y = r*std::sin(aa)*angle;
-            localSpawn.z = 0.0f;
+            localSpawn.y = 0.0f;
+            localSpawn.z = r*std::sin(aa)*angle;
         }
         break;
         case EmitterShape::Box:
@@ -406,6 +353,7 @@ Particle ParticleNode::createNewParticle()
                         m_dist01(m_randGen) - 0.5f);
     randomDir = glm::normalize(randomDir);
     float sp = velocityScaleMin + (velocityScaleMax - velocityScaleMin) * m_dist01(m_randGen);
+    //Give ability to lock directions
     p.velocity = spawnVelocity + randomDir * sp;
 
     // transform velocity if not local
@@ -431,17 +379,23 @@ void ParticleNode::handleBursts(float dt)
 
 void ParticleNode::buildVertexData(const glm::mat4& view)
 {
-    // if(m_particles.empty()) return;
     if(m_numParticles <= 0) return;
 
     std::vector<QuadVertex> data;
     data.reserve(m_numParticles*6);
-    // data.reserve(m_particles.size()*6);
 
     glm::vec3 camRight, camUp;
-    getCameraRightUp(view, camRight, camUp);
+    if(faceCamera)
+    {
+        getCameraRightUp(view, camRight, camUp);
+    }
+    else
+    {
+        camUp           = glm::normalize(customUpDir);
+        glm::vec3 fwd   = glm::normalize(customLookDir);
+        camRight        = glm::normalize(glm::cross(camUp,fwd));
+    }
 
-    // for(const auto& p : m_particles)
     for(int i=0; i<m_numParticles; i++)
     {
         const Particle& p = m_particles[i];
@@ -464,11 +418,6 @@ void ParticleNode::buildVertexData(const glm::mat4& view)
         glm::vec3 tr = p.position + rRot + uRot;
 
         float texLayer = p.textureIndex;
-
-        // QuadVertex v0 = { bl.x, bl.y, bl.z, 0.f, 0.f };
-        // QuadVertex v1 = { br.x, br.y, br.z, 1.f, 0.f };
-        // QuadVertex v2 = { tl.x, tl.y, tl.z, 0.f, 1.f };
-        // QuadVertex v3 = { tr.x, tr.y, tr.z, 1.f, 1.f };
         
         QuadVertex v0 = {bl.x, bl.y, bl.z,  0.f, 1.f, texLayer, color.r, color.g, color.b, finalAlpha};
         QuadVertex v1 = {br.x, br.y, br.z,  1.f, 1.f, texLayer, color.r, color.g, color.b, finalAlpha};
@@ -524,7 +473,7 @@ glm::vec4 ParticleNode::EvaluateColorGradient(float t)
         return glm::vec4(1.0f);
     }
     if(t <= colorKeys.front().time) {
-        return colorKeys.front().color;
+        return colorKeys.front().color; //KEEPS FUCKING BREAKING //fix limit to 8 keys // fixed & removed limit
     }
     if(t >= colorKeys.back().time) {
         return colorKeys.back().color;
@@ -539,7 +488,7 @@ glm::vec4 ParticleNode::EvaluateColorGradient(float t)
         {
             float range = k2.time - k1.time;
             float alpha = (t - k1.time)/range;
-            // Lerp
+            // Lerp between
             return glm::mix(k1.color, k2.color, alpha);
         }
     }

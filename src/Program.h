@@ -49,6 +49,7 @@ private:
     int   m_perfBufferIndex = 0;
     
     int addedNode = 0;
+    bool rebuildTreeEveryFrame = false;
 
     void DrawSceneManagerUI();
     void SwitchScene(SceneType newScene);

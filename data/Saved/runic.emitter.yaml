@@ -1,0 +1,41 @@
+Emitter:
+  name: magic
+  transform:
+    Position: [0, 0, 0]
+    Rotation: [0, 0, 0, 1]
+    Scale: [1, 1, 1]
+  particle:
+    emissionRate: 9999
+    duration: -1
+    localSpace: false
+    glow: false
+    maxParticles: 1
+    shape: 0
+    spawnPosition: [0, 0, 0]
+    spawnVelocity: [0, 0, 0]
+    lifetimeMin: 5
+    lifetimeMax: 5
+    startSizeMin: 8
+    startSizeMax: 8
+    startAlphaMin: 100
+    startAlphaMax: 100
+    rotationMin: 0
+    rotationMax: 360
+    rotationSpeedMin: 50
+    rotationSpeedMax: 50
+    velocityScaleMin: 0
+    velocityScaleMax: 0
+    colorKeys:
+      - time: 0
+        color: [1, 1, 1, 0]
+      - time: 0.157
+        color: [1, 1, 1, 1]
+      - time: 0.905
+        color: [1, 1, 1, 1]
+      - time: 1
+        color: [1, 1, 1, 0]
+    affectors:
+      - type: ScaleOverLife
+        startScale: 0.5
+        endScale: 1.5
+    texturePath: data/Textures/magicshit.png
