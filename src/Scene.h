@@ -5,7 +5,7 @@
 #include "DebugSphere.h"
 #include "QuadTree.h"
 #include "OctTree.h"
-#include "Light.h"
+#include "LightNode.h"
 #include "../samplefw/Camera.h"
 #include "../samplefw/Grid3D.h"
 #include "../samplefw/Sphere.h"
@@ -34,7 +34,7 @@ private:
 
     vector<Node*> m_nodes;
     vector<Node*> m_nodesToRender;
-    vector<Light> m_lights; 
+    // vector<Light> m_lights; 
     Camera* m_activeCamera;
     Camera* m_movemenetCamera;
     QuadTree* m_quadTree;
@@ -52,7 +52,7 @@ private:
     TextBox* textBox = nullptr;
     TextBox* debugTextBox = nullptr;
 
-    vector<Light> pickLightsForNode(const Node* node);
+    // vector<Light> pickLightsForNode(const Node* node);
 
     Frustum m_debugFrustum;
     bool m_useDebugFrustum = false;
@@ -75,6 +75,7 @@ private:
     //BOUNDS
     float m_bounds = 10.0f;
 
+    bool shownLights = false;
     bool reDebug = false;
     
     const float m_smoothAlpha = 0.01f;
@@ -111,7 +112,7 @@ public:
         return count;
     }
 
-    const std::vector<Light>& GetLights() const { return m_lights; }
+    // const std::vector<Light>& GetLights() const { return m_lights; }
     const std::vector<Node*>& GetNodes() const { return m_nodes; }
     const std::vector<Node*>& GetNodesToRender() const { return m_nodesToRender; }
 
@@ -119,7 +120,7 @@ public:
 
 
     static Scene& Instance();
-    
+    void AddLight(const glm::vec3& position, const glm::vec3& color, float intensity, float radius);
     void AddNode(Node* node);
     void RemoveNode(Node* node);
 
@@ -132,11 +133,8 @@ public:
     void Update(float dt, int screenWidth, int screenHeight);
     void Render(int screenWidth, int screenHeight);
 
-    void AddLight(Light l);
     void InitLights();         // rando lgihts
     void UpdateLighting();     // choose which cubes get which program
-    void MoveLights();
-    
 
     void setTextBoxPos(float x, float y)
     {

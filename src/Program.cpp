@@ -37,6 +37,239 @@ static Node* gJupiterOrbit = nullptr;
 vec3 OrbitAxis = vec3(0,1,0);
 float speedMultipler = 1.0f;
 
+#pragma region Helper Creations
+void RecreateSceneHelper(int bounds)
+{
+    bounds = 10;
+    Scene::Instance().SetBounds(bounds, true);
+    
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<float> distPos(-bounds, bounds);
+    uniform_real_distribution<float> rgb(0.0f, 255.0f);
+
+    for (int i = 1; i <= amount/2; ++i)
+    {
+        DebugCube* cube = new DebugCube("cube_" + to_string(i));
+
+        glm::vec3 randomPos(distPos(gen), distPos(gen) / 4, distPos(gen));
+        cube->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
+        
+        GLubyte r = rgb(gen)
+               ,g = rgb(gen)
+               ,b = rgb(gen);
+        
+        cube->setColor(r,g,b);
+        Scene::Instance().AddNode(cube);
+    }
+
+    for (int i = 1; i <= amount/2; ++i)
+    {
+        DebugSphere* sphere = new DebugSphere("sphere_" + to_string(i), 0.5);
+
+        glm::vec3 randomPos(distPos(gen), distPos(gen) / 4, distPos(gen));
+        sphere->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
+        
+        GLubyte r = rgb(gen)
+               ,g = rgb(gen)
+               ,b = rgb(gen);
+
+        sphere->setColor(r,g,b);
+        Scene::Instance().AddNode(sphere);
+    }
+
+    for (int i = 0; i < 2; i++)
+    {
+        glm::vec3 pos = glm::vec3(distPos(gen), distPos(gen), distPos(gen));
+        // LightNode * light = new LightNode("light_" + to_string(i), glm::vec3(1.0f, 1.0f, 1.0), 10.0, 10);
+        Scene::Instance().AddLight(pos, glm::vec3(1,1,1), 10.0f, 10.0f);
+        // Scene::Instance().AddLight(Light(pos,  glm::vec3(1,1,1), 10.0f, 10.0f));
+        // DebugRender::Instance().DrawCircle(pos, 10.0f, vec3(1,1,0));
+    }
+}
+
+void BuildAsteroidField(int count, float innerRadius, float outerRadius)
+{
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> distAngle(0.0f, 360.0f);
+    std::uniform_real_distribution<float> distRadius(innerRadius, outerRadius);
+    std::uniform_real_distribution<float> distShape(0.0f, 1.0f);  // 50% chance sphere/cube
+    std::uniform_real_distribution<float> distHeight(-5.0f, 5.0f); // random offset
+    std::uniform_real_distribution<float> distScale(0.2f, 1.0f);   // random size
+    std::uniform_real_distribution<float> distColor(100.0f, 255.0f);
+
+    for(int i = 0; i < count; i++)
+    {
+        float angleDeg = distAngle(gen);
+        float angleRad = glm::radians(angleDeg);
+        float radius   = distRadius(gen);
+
+        // Random position in ring
+        float x = radius * cos(angleRad);
+        float z = radius * sin(angleRad);
+        float y = distHeight(gen);
+
+        GLubyte r = (GLubyte)distColor(gen);
+        GLubyte g = (GLubyte)distColor(gen);
+        GLubyte b = (GLubyte)distColor(gen);
+
+        // Randomly pick sphere or cube
+        Node* asteroid;
+        if(distShape(gen) < 0.5f)
+        {
+            asteroid = new DebugSphere("AsteroidSphere_" + std::to_string(i),
+                                       distScale(gen));
+
+            DebugSphere* sphere = dynamic_cast<DebugSphere*>(asteroid);
+            sphere->setColor(r, g, b);
+        }
+        else
+        {   asteroid = new DebugCube("AsteroidCube_" + std::to_string(i)); 
+            DebugCube* cube = dynamic_cast<DebugCube*>(asteroid);
+            cube->setColor(r, g, b);
+        }
+
+        glm::mat4 T = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
+        asteroid->setTransform(T);
+
+        //astroid doesnt render if not added to scene
+        Scene::Instance().AddNode(asteroid);
+    }
+}
+
+void BuildSolarSystem(int bounds)
+{
+    bounds = 40;
+    Scene::Instance().SetBounds(bounds);
+
+    //SUN                                    ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///
+    DebugSphere* sun = new DebugSphere("Sun", 3.0f);
+    sun->setTransform(glm::mat4(1.0f)); // at origin
+    sun->setColor(255, 255, 0);          // yellow
+
+    //Orbit node for Earth (child of sunn)   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///
+    gEarthOrbit = new Node("EarthOrbit");
+    gEarthOrbit->setTransform(glm::mat4(1.0f));
+    sun->addChild(gEarthOrbit);
+
+    DebugSphere* earth = new DebugSphere("Earth", 1.0f);
+    earth->setTransform(glm::translate(glm::mat4(1.0f), vec3(10.0f, 0.0f, 0.0f)));
+    earth->setColor(0, 0, 255);
+    gEarthOrbit->addChild(earth);
+
+    //Orbit node for Moon (child of earth)   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///
+    gMoonOrbit = new Node("MoonOrbit");
+    gMoonOrbit->setTransform(glm::mat4(1.0f));
+    earth->addChild(gMoonOrbit);
+
+    DebugSphere* moon = new DebugSphere("Moon", 0.3f);
+    moon->setTransform(glm::translate(glm::mat4(1.0f), vec3(2.0f, 0.0f, 0.0f)));
+    moon->setColor(200, 200, 200);
+    gMoonOrbit->addChild(moon);
+
+    //Orbit node for Jupiter (child of sun)   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///
+    gJupiterOrbit = new Node("JupiterOrbit");
+    gJupiterOrbit->setTransform(glm::mat4(1.0f));
+    sun->addChild(gJupiterOrbit);
+
+    DebugSphere* Jupiter = new DebugSphere("Jupiter", 0.8f); //DebugCube
+    Jupiter->setTransform(glm::translate(glm::mat4(1.0f), vec3(15.0f, 0.0f, 0.0f)));
+    Jupiter->setColor(200, 160, 120);
+    gJupiterOrbit->addChild(Jupiter);
+
+    //Orbit node for Venus (child of sun)   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///
+    gVenusOrbit = new Node("VenusOrbit");
+    gVenusOrbit->setTransform(glm::mat4(1.0f));
+    sun->addChild(gVenusOrbit);
+
+    DebugSphere* venus = new DebugSphere("Venus", 0.8f);
+    venus->setTransform(glm::translate(glm::mat4(1.0f), vec3(-8.0f, 0.0f, 0.0f)));
+    venus->setColor(255, 150, 100);
+    gVenusOrbit->addChild(venus);
+
+    sun->SetReactToLight(false);
+    Scene::Instance().AddLight(vec3(0.0f), glm::vec3(1,1,1), 1.0f, 50.0f);
+    // Scene::Instance().AddNode(gMoon);
+    // Scene::Instance().AddNode(gEarthOrbit);
+    // Scene::Instance().AddNode(gJupiterOrbit);
+    // Scene::Instance().AddNode(gVenusOrbit);
+
+    // Scene::Instance().AddNode(moon);
+    // Scene::Instance().AddNode(earth);
+    // Scene::Instance().AddNode(Jupiter);
+    // Scene::Instance().AddNode(venus);
+
+    Scene::Instance().AddNode(sun);
+
+}
+
+void UpdateSolarSystem(float dt)
+{
+    static float earthOrbitSpeed = 0.5f;
+    static float moonOrbitSpeed  = 0.9f;
+    static float venusOrbitSpeed = 0.35f;
+    static float jupiterOrbitSpeed = 0.35f;
+
+    static float earthAngle = 0.0f;
+    static float moonAngle  = 0.0f;
+    static float venusAngle = 0.0f;
+    static float jupiterAngle = 0.0f;
+
+    //See faster orbits
+    dt *= speedMultipler;
+
+    earthAngle   += dt * earthOrbitSpeed;
+    moonAngle    += dt * moonOrbitSpeed;
+    venusAngle   += dt * venusOrbitSpeed;
+    jupiterAngle += dt * jupiterOrbitSpeed;
+
+    //Adding funny rotations :) ()
+    if(OrbitAxis == vec3(0))
+        OrbitAxis = vec3(0,1,0);
+
+
+    if(gEarthOrbit)
+        gEarthOrbit->setTransform(glm::rotate(glm::mat4(1.0f),  earthAngle, OrbitAxis));
+    if(gMoonOrbit)
+        gMoonOrbit->setTransform(glm::rotate(glm::mat4(1.0f),   moonAngle,  OrbitAxis));
+    if(gVenusOrbit)
+        gVenusOrbit->setTransform(glm::rotate(glm::mat4(1.0f),  venusAngle, OrbitAxis));
+    if(gJupiterOrbit)
+        gJupiterOrbit->setTransform(glm::rotate(glm::mat4(1.0f),  jupiterAngle, OrbitAxis));
+}
+
+void buildParticleScene()
+{
+    Scene::Instance().Clear();
+    
+    Scene::Instance().SetBounds(bounds, true);
+
+    ParticleNode* Emitter = new ParticleNode("ParticleSystemNode0");
+    ParticleNode* Emitter1 = new ParticleNode("ParticleSystemNode1");
+    ParticleNode* Emitter2 = new ParticleNode("ParticleSystemNode2");
+
+    volpe::Texture* texture0 = volpe::TextureManager().CreateTexture("data/Textures/smoke.png");
+    volpe::Texture* texture1 = volpe::TextureManager().CreateTexture("data/Textures/minecraft.png");
+    volpe::Texture* texture2 = volpe::TextureManager().CreateTexture("data/Textures/baby.png");
+
+    Emitter->GetMaterial()->SetTexture("u_texture", texture0);
+    std::cout<<"E1: "<<Emitter->GetMaterial()<<"\n";
+    Emitter1->GetMaterial()->SetTexture("u_texture", texture1);
+    std::cout<<"E2: "<<Emitter1->GetMaterial()<<"\n";
+    Emitter2->GetMaterial()->SetTexture("u_texture", texture2);
+    std::cout<<"E3: "<<Emitter2->GetMaterial()<<"\n";
+
+    
+
+    Scene::Instance().AddNode(Emitter);
+    Scene::Instance().AddNode(Emitter1);
+    Scene::Instance().AddNode(Emitter2);
+}
+
+#pragma endregion
+
 #pragma region SCENE UI
 
 
@@ -61,6 +294,21 @@ static glm::mat4 MakeTransform(const glm::vec3& position, const glm::vec3& scale
     glm::mat4 T = glm::translate(glm::mat4(1.0f), position);
     glm::mat4 S = glm::scale(glm::mat4(1.0f), scale);
     return T * S;
+}
+
+bool IsChild(Node* candidate, Node* node)
+{
+    if (!node)
+        return false;
+        
+    for (Node* child : node->getChildren())
+    {
+        if (child == candidate)
+            return true;
+        if (IsChild(candidate, child))
+            return true;
+    }
+    return false;
 }
 
 void DrawNodeRecursive(Node* node, int indentLevel) {
@@ -94,12 +342,11 @@ void Program::DrawSceneHierarchy()
 
     ImGui::Checkbox("Show Grid", &Scene::Instance().showGrid);
     ImGui::SameLine();
-    ImGui::Checkbox("Rebuild by frame", &rebuildTreeEveryFrame);
+    ImGui::Checkbox("Rebuild Tree", &rebuildTreeEveryFrame);
     
-
     ImGui::Checkbox("Culled", &culled);
     ImGui::SameLine();
-    ImGui::Text("|Top lev Nodes: %i", Scene::Instance().GetNodes().size());
+    ImGui::Text("| Top Nodes: %i", Scene::Instance().GetNodes().size());
     vector<Node*> nodes;
     if(culled) nodes = Scene::Instance().GetNodesToRender();
     else       nodes = Scene::Instance().GetNodes();
@@ -142,7 +389,7 @@ void Program::DrawDebugWindow()
             ImGui::Text("Scene Debug:");
             ImGui::Text("Existing Nodes: %d", (int)Scene::Instance().GetNodes().size());
             ImGui::Text("Nodes Visible: %d", (int)Scene::Instance().GetNodesToRender().size());
-            ImGui::Text("Lights In Scene: %d", (int)Scene::Instance().GetLights().size());
+            // ImGui::Text("Lights In Scene: %d", (int)Scene::Instance().GetLights().size());
             ImGui::Text("Nodes Affected by Light: %d", (int)Scene::Instance().getNodesAffectedByLight());
             ImGui::Separator();
             ImGui::Text("Toggles:");
@@ -276,7 +523,31 @@ void Program::DrawInspector()
     }
 
     // Node specific BUT once I convert codebase to entity system, this will muchhh simpler
-    if (auto* cube = dynamic_cast<DebugCube*>(g_selectedNode))
+    if (auto* light = dynamic_cast<LightNode*>(g_selectedNode))
+    {
+        ImGui::Text("Light Node Inspector");
+        ImGui::Separator();
+        
+        glm::vec3 lightColor = light->color;
+        if (ImGui::ColorEdit3("Light Color", (float*)&lightColor))
+            light->color = lightColor;
+
+        float intensity = light->intensity;
+        if (ImGui::DragFloat("Intensity", &intensity, 0.1f, 0.0f, 100.0f))
+            light->intensity = intensity;
+
+        float radius = light->radius;
+        if (ImGui::DragFloat("Radius", &radius, 0.1f, 0.0f, 100.0f))
+        {
+            light->radius = radius;
+            if (light->GetBoundingVolume())
+            {
+                if (auto* sphere = dynamic_cast<SphereVolume*>(light->GetBoundingVolume()))
+                    sphere->radius = radius;
+            }
+        }
+    }
+    else if (auto* cube = dynamic_cast<DebugCube*>(g_selectedNode))
     {
         glm::vec3 c = cube->getColor();
 
@@ -309,7 +580,6 @@ void Program::DrawInspector()
     }
     else if (auto* emitter = dynamic_cast<ParticleNode*>(g_selectedNode))
     {
-
         #pragma region SAVING AND LOADING && TEXTURE SWITCHING
         if (ImGui::Button("Save Emitter"))
         {
@@ -419,6 +689,15 @@ void Program::DrawInspector()
            (emitter->systemState == ParticleSystemState::Playing) ? "Playing" :
            (emitter->systemState == ParticleSystemState::Paused)  ? "Paused"  : 
                                                                    "Stopped");
+
+        //Emitter mode
+        
+        static const char* emitterModeNames[] = {"Continuous","Burst"};
+        int currentModeIndex = (emitter->emitterMode == EmitterMode::Continuous) ? 0 : 1;
+        if(ImGui::Combo("Emitter Mode", &currentModeIndex, emitterModeNames, IM_ARRAYSIZE(emitterModeNames)))
+        {
+            emitter->emitterMode = (currentModeIndex == 0) ? EmitterMode::Continuous : EmitterMode::Burst;
+        }                                                
 
         ImGui::Text("Active Particles: %d", emitter->getParticles().size());
 
@@ -867,6 +1146,65 @@ void Program::DrawInspector()
         }
     }
 
+    //=-=-=-=- REPARENTING AT RUNTIMEE -=-=-=-=-=
+    ImGui::Separator();
+    if (ImGui::CollapsingHeader("Reparent"))
+    {
+        if (ImGui::Button("Set as Root"))
+        {
+            if (g_selectedNode->getParent())
+                g_selectedNode->getParent()->removeChild(g_selectedNode);
+        }
+        
+        //list all possible parent nodes
+        std::vector<Node*> allNodes = Scene::Instance().GetNodes();
+        std::vector<Node*> possibleParents;
+        std::vector<std::string> parentNames;
+        for (Node* n : allNodes)
+        {
+            //remove any current nodes children and self from lsit
+            if (n == g_selectedNode || IsChild(n, g_selectedNode))
+                continue;
+            possibleParents.push_back(n);
+            parentNames.push_back(n->getName());
+        }
+        
+        static int selectedParentIndex = -1;
+        if (!parentNames.empty())
+        {
+            const char* comboLabel = (selectedParentIndex >= 0 && selectedParentIndex < parentNames.size()) ? parentNames[selectedParentIndex].c_str() : "None";
+
+            if (ImGui::BeginCombo("New Parent", comboLabel))
+            {
+                for (int i = 0; i < parentNames.size(); i++)
+                {
+                    bool isSelected = (selectedParentIndex == i);
+                    if (ImGui::Selectable(parentNames[i].c_str(), isSelected))
+                        selectedParentIndex = i;
+                    if (isSelected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+            
+            if (selectedParentIndex >= 0 && selectedParentIndex < possibleParents.size())
+            {
+                if (ImGui::Button("Make Child Of Selected Parent"))
+                {
+                    // Remove child's parents 
+                    if (g_selectedNode->getParent())
+                        g_selectedNode->getParent()->removeChild(g_selectedNode);
+                    // Add node as child of our node
+                    possibleParents[selectedParentIndex]->addChild(g_selectedNode);
+                }
+            }
+        }
+        else
+        {
+            ImGui::Text("No valid parent nodes available");
+        }
+    }
+
     ImGui::End();
 }
 
@@ -903,6 +1241,12 @@ void Program::DrawTopBar()
                 Scene::Instance().AddNode(sphere);
                 g_selectedNode = sphere; //for sexy convenience
             }
+            if (ImGui::MenuItem("Light"))
+            {
+                LightNode* light = new LightNode("light_" + to_string(addedNode++), vec3(1),5,5);
+                Scene::Instance().AddNode(light);
+                g_selectedNode = light;
+            }
             if (ImGui::MenuItem("Particle Node"))
             {
                 ParticleNode* Emitter = new ParticleNode("ParticleSystemNode_" + to_string(addedNode++));
@@ -933,8 +1277,21 @@ void Program::DrawTopBar()
             Scene::Instance().Clear();
             Scene::Instance().BuildOctTree();
         }
-        if (ImGui::MenuItem("Solar System"))
-            SwitchScene(SceneType::SolarSystem);
+        if (ImGui::BeginMenu("Solar System"))
+        {
+            if (ImGui::MenuItem("Default solar system"))
+            {
+                SwitchScene(SceneType::SolarSystem);
+                // BuildSolarSystem(true);
+            }
+            if (ImGui::MenuItem("Astroids included?"))
+            {
+                SwitchScene(SceneType::SolarSystem);
+                // BuildSolarSystem(true);
+                BuildAsteroidField(200, 25.0f, 40.0f);
+            }
+            ImGui::EndMenu();
+        }
         if (ImGui::MenuItem("Random Scene"))
             SwitchScene(SceneType::Random);
         if (ImGui::MenuItem("Particle Scene"))
@@ -1030,238 +1387,6 @@ void Program::DrawPerformanceGraphs() {
     ImGui::PlotLines("##LightQuery", m_lightQueryTimes, kPerfBufferSize, m_perfBufferIndex, nullptr, graphMin, graphMax, graphSize);
 
     ImGui::End();
-}
-
-#pragma endregion
-
-#pragma region Helper Creations
-void RecreateSceneHelper(int bounds)
-{
-    bounds = 10;
-    Scene::Instance().SetBounds(bounds, true);
-    
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_real_distribution<float> distPos(-bounds, bounds);
-    uniform_real_distribution<float> rgb(0.0f, 255.0f);
-
-    for (int i = 1; i <= amount/2; ++i)
-    {
-        DebugCube* cube = new DebugCube("cube_" + to_string(i));
-
-        glm::vec3 randomPos(distPos(gen), distPos(gen) / 4, distPos(gen));
-        cube->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
-        
-        GLubyte r = rgb(gen)
-               ,g = rgb(gen)
-               ,b = rgb(gen);
-        
-        cube->setColor(r,g,b);
-        Scene::Instance().AddNode(cube);
-    }
-
-    for (int i = 1; i <= amount/2; ++i)
-    {
-        DebugSphere* sphere = new DebugSphere("sphere_" + to_string(i), 0.5);
-
-        glm::vec3 randomPos(distPos(gen), distPos(gen) / 4, distPos(gen));
-        sphere->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
-        
-        GLubyte r = rgb(gen)
-               ,g = rgb(gen)
-               ,b = rgb(gen);
-
-        sphere->setColor(r,g,b);
-        Scene::Instance().AddNode(sphere);
-    }
-
-    for (int i = 0; i < 2; i++)
-    {
-        glm::vec3 pos = glm::vec3(distPos(gen), distPos(gen), distPos(gen));
-        Scene::Instance().AddLight(Light(pos,  glm::vec3(1,1,1), 10.0f, 10.0f));
-        DebugRender::Instance().DrawCircle(pos, 10.0f, vec3(1,1,0));
-    }
-}
-
-void BuildAsteroidField(int count, float innerRadius, float outerRadius)
-{
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> distAngle(0.0f, 360.0f);
-    std::uniform_real_distribution<float> distRadius(innerRadius, outerRadius);
-    std::uniform_real_distribution<float> distShape(0.0f, 1.0f);  // 50% chance sphere/cube
-    std::uniform_real_distribution<float> distHeight(-5.0f, 5.0f); // random offset
-    std::uniform_real_distribution<float> distScale(0.2f, 1.0f);   // random size
-    std::uniform_real_distribution<float> distColor(100.0f, 255.0f);
-
-    for(int i = 0; i < count; i++)
-    {
-        float angleDeg = distAngle(gen);
-        float angleRad = glm::radians(angleDeg);
-        float radius   = distRadius(gen);
-
-        // Random position in ring
-        float x = radius * cos(angleRad);
-        float z = radius * sin(angleRad);
-        float y = distHeight(gen);
-
-        GLubyte r = (GLubyte)distColor(gen);
-        GLubyte g = (GLubyte)distColor(gen);
-        GLubyte b = (GLubyte)distColor(gen);
-
-        // Randomly pick sphere or cube
-        Node* asteroid;
-        if(distShape(gen) < 0.5f)
-        {
-            asteroid = new DebugSphere("AsteroidSphere_" + std::to_string(i),
-                                       distScale(gen));
-
-            DebugSphere* sphere = dynamic_cast<DebugSphere*>(asteroid);
-            sphere->setColor(r, g, b);
-        }
-        else
-        {   asteroid = new DebugCube("AsteroidCube_" + std::to_string(i)); 
-            DebugCube* cube = dynamic_cast<DebugCube*>(asteroid);
-            cube->setColor(r, g, b);
-        }
-
-        glm::mat4 T = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z));
-        asteroid->setTransform(T);
-
-        //astroid doesnt render if not added to scene
-        Scene::Instance().AddNode(asteroid);
-    }
-}
-
-void BuildSolarSystem(int bounds)
-{
-    bounds = 40;
-    Scene::Instance().SetBounds(bounds);
-
-    //SUN                                    ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///
-    DebugSphere* sun = new DebugSphere("Sun", 3.0f);
-    sun->setTransform(glm::mat4(1.0f)); // at origin
-    sun->setColor(255, 255, 0);          // yellow
-
-    //Orbit node for Earth (child of sunn)   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///
-    gEarthOrbit = new Node("EarthOrbit");
-    gEarthOrbit->setTransform(glm::mat4(1.0f));
-    sun->addChild(gEarthOrbit);
-
-    DebugSphere* earth = new DebugSphere("Earth", 1.0f);
-    earth->setTransform(glm::translate(glm::mat4(1.0f), vec3(10.0f, 0.0f, 0.0f)));
-    earth->setColor(0, 0, 255);
-    gEarthOrbit->addChild(earth);
-
-    //Orbit node for Moon (child of earth)   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///
-    gMoonOrbit = new Node("MoonOrbit");
-    gMoonOrbit->setTransform(glm::mat4(1.0f));
-    earth->addChild(gMoonOrbit);
-
-    DebugSphere* moon = new DebugSphere("Moon", 0.3f);
-    moon->setTransform(glm::translate(glm::mat4(1.0f), vec3(2.0f, 0.0f, 0.0f)));
-    moon->setColor(200, 200, 200);
-    gMoonOrbit->addChild(moon);
-
-    //Orbit node for Jupiter (child of sun)   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///
-    gJupiterOrbit = new Node("JupiterOrbit");
-    gJupiterOrbit->setTransform(glm::mat4(1.0f));
-    sun->addChild(gJupiterOrbit);
-
-    DebugSphere* Jupiter = new DebugSphere("Jupiter", 0.8f); //DebugCube
-    Jupiter->setTransform(glm::translate(glm::mat4(1.0f), vec3(15.0f, 0.0f, 0.0f)));
-    Jupiter->setColor(200, 160, 120);
-    gJupiterOrbit->addChild(Jupiter);
-
-    //Orbit node for Venus (child of sun)   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///   ///
-    gVenusOrbit = new Node("VenusOrbit");
-    gVenusOrbit->setTransform(glm::mat4(1.0f));
-    sun->addChild(gVenusOrbit);
-
-    DebugSphere* venus = new DebugSphere("Venus", 0.8f);
-    venus->setTransform(glm::translate(glm::mat4(1.0f), vec3(-8.0f, 0.0f, 0.0f)));
-    venus->setColor(255, 150, 100);
-    gVenusOrbit->addChild(venus);
-
-    sun->SetReactToLight(false);
-    Scene::Instance().AddLight(Light(vec3(0.0f), vec3(1,1,1), 1.0f, 50.0f));
-    // Scene::Instance().AddNode(gMoon);
-    // Scene::Instance().AddNode(gEarthOrbit);
-    // Scene::Instance().AddNode(gJupiterOrbit);
-    // Scene::Instance().AddNode(gVenusOrbit);
-
-    // Scene::Instance().AddNode(moon);
-    // Scene::Instance().AddNode(earth);
-    // Scene::Instance().AddNode(Jupiter);
-    // Scene::Instance().AddNode(venus);
-
-    Scene::Instance().AddNode(sun);
-
-    BuildAsteroidField(200, 25.0f, 40.0f);
-}
-
-void UpdateSolarSystem(float dt)
-{
-    static float earthOrbitSpeed = 0.5f;
-    static float moonOrbitSpeed  = 0.9f;
-    static float venusOrbitSpeed = 0.35f;
-    static float jupiterOrbitSpeed = 0.35f;
-
-    static float earthAngle = 0.0f;
-    static float moonAngle  = 0.0f;
-    static float venusAngle = 0.0f;
-    static float jupiterAngle = 0.0f;
-
-    //See faster orbits
-    dt *= speedMultipler;
-
-    earthAngle   += dt * earthOrbitSpeed;
-    moonAngle    += dt * moonOrbitSpeed;
-    venusAngle   += dt * venusOrbitSpeed;
-    jupiterAngle += dt * jupiterOrbitSpeed;
-
-    //Adding funny rotations :) ()
-    if(OrbitAxis == vec3(0))
-        OrbitAxis = vec3(0,1,0);
-
-
-    if(gEarthOrbit)
-        gEarthOrbit->setTransform(glm::rotate(glm::mat4(1.0f),  earthAngle, OrbitAxis));
-    if(gMoonOrbit)
-        gMoonOrbit->setTransform(glm::rotate(glm::mat4(1.0f),   moonAngle,  OrbitAxis));
-    if(gVenusOrbit)
-        gVenusOrbit->setTransform(glm::rotate(glm::mat4(1.0f),  venusAngle, OrbitAxis));
-    if(gJupiterOrbit)
-        gJupiterOrbit->setTransform(glm::rotate(glm::mat4(1.0f),  jupiterAngle, OrbitAxis));
-}
-
-void buildParticleScene()
-{
-    Scene::Instance().Clear();
-    
-    Scene::Instance().SetBounds(bounds, true);
-
-    ParticleNode* Emitter = new ParticleNode("ParticleSystemNode0");
-    ParticleNode* Emitter1 = new ParticleNode("ParticleSystemNode1");
-    ParticleNode* Emitter2 = new ParticleNode("ParticleSystemNode2");
-
-    volpe::Texture* texture0 = volpe::TextureManager().CreateTexture("data/Textures/smoke.png");
-    volpe::Texture* texture1 = volpe::TextureManager().CreateTexture("data/Textures/minecraft.png");
-    volpe::Texture* texture2 = volpe::TextureManager().CreateTexture("data/Textures/baby.png");
-
-    Emitter->GetMaterial()->SetTexture("u_texture", texture0);
-    std::cout<<"E1: "<<Emitter->GetMaterial()<<"\n";
-    Emitter1->GetMaterial()->SetTexture("u_texture", texture1);
-    std::cout<<"E2: "<<Emitter1->GetMaterial()<<"\n";
-    Emitter2->GetMaterial()->SetTexture("u_texture", texture2);
-    std::cout<<"E3: "<<Emitter2->GetMaterial()<<"\n";
-
-    
-
-    Scene::Instance().AddNode(Emitter);
-    Scene::Instance().AddNode(Emitter1);
-    Scene::Instance().AddNode(Emitter2);
 }
 
 #pragma endregion

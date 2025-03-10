@@ -58,32 +58,32 @@ void SceneSerializer::SaveScene(Scene& scene, const std::string& givenFilePath)
     }
     root["Nodes"] = allNodes;
 
-    YAML::Node lightsArr;
-    for(auto& L : scene.GetLights()){
-        YAML::Node ln;
-        // position
-        {
-            YAML::Node pos;
-            pos.SetStyle(YAML::EmitterStyle::Flow);
-            pos.push_back(L.position.x);
-            pos.push_back(L.position.y);
-            pos.push_back(L.position.z);
-            ln["Position"] = pos;
-        }
-        // color
-        {
-            YAML::Node col;
-            col.SetStyle(YAML::EmitterStyle::Flow);
-            col.push_back(L.color.r);
-            col.push_back(L.color.g);
-            col.push_back(L.color.b);
-            ln["Color"] = col;
-        }
-        ln["Radius"]    = L.radius;
-        ln["Intensity"] = L.intensity;
-        lightsArr.push_back(ln);
-    }
-    root["Lights"] = lightsArr;
+    // YAML::Node lightsArr;
+    // for(auto& L : scene.GetLights()){
+    //     YAML::Node ln;
+    //     // position
+    //     {
+    //         YAML::Node pos;
+    //         pos.SetStyle(YAML::EmitterStyle::Flow);
+    //         pos.push_back(L.position.x);
+    //         pos.push_back(L.position.y);
+    //         pos.push_back(L.position.z);
+    //         ln["Position"] = pos;
+    //     }
+    //     // color
+    //     {
+    //         YAML::Node col;
+    //         col.SetStyle(YAML::EmitterStyle::Flow);
+    //         col.push_back(L.color.r);
+    //         col.push_back(L.color.g);
+    //         col.push_back(L.color.b);
+    //         ln["Color"] = col;
+    //     }
+    //     ln["Radius"]    = L.radius;
+    //     ln["Intensity"] = L.intensity;
+    //     lightsArr.push_back(ln);
+    // }
+    // root["Lights"] = lightsArr;
 
     // filePath += ".yaml";
     std::string filePath = givenFilePath;
@@ -127,25 +127,25 @@ void SceneSerializer::LoadScene(Scene& scene, const std::string& givenFilePath)
         DeserializeNode(n, scene, nullptr);
     }
 
-    if(root["Lights"]){
-        auto Ls = root["Lights"];
-        for(auto ln : Ls){
-            Light l;
-            if(ln["Position"] && ln["Position"].IsSequence() && ln["Position"].size() == 3){
-                l.position.x = ln["Position"][0].as<float>();
-                l.position.y = ln["Position"][1].as<float>();
-                l.position.z = ln["Position"][2].as<float>();
-            }
-            if(ln["Color"] && ln["Color"].IsSequence() && ln["Color"].size() == 3){
-                l.color.r = ln["Color"][0].as<float>();
-                l.color.g = ln["Color"][1].as<float>();
-                l.color.b = ln["Color"][2].as<float>();
-            }
-            if(ln["Radius"])    l.radius    = ln["Radius"].as<float>();
-            if(ln["Intensity"]) l.intensity = ln["Intensity"].as<float>();
-            scene.AddLight(l);
-        }
-    }
+    // if(root["Lights"]){
+    //     auto Ls = root["Lights"];
+    //     for(auto ln : Ls){
+    //         Light l;
+    //         if(ln["Position"] && ln["Position"].IsSequence() && ln["Position"].size() == 3){
+    //             l.position.x = ln["Position"][0].as<float>();
+    //             l.position.y = ln["Position"][1].as<float>();
+    //             l.position.z = ln["Position"][2].as<float>();
+    //         }
+    //         if(ln["Color"] && ln["Color"].IsSequence() && ln["Color"].size() == 3){
+    //             l.color.r = ln["Color"][0].as<float>();
+    //             l.color.g = ln["Color"][1].as<float>();
+    //             l.color.b = ln["Color"][2].as<float>();
+    //         }
+    //         if(ln["Radius"])    l.radius    = ln["Radius"].as<float>();
+    //         if(ln["Intensity"]) l.intensity = ln["Intensity"].as<float>();
+    //         scene.AddLight(l);
+    //     }
+    // }
 
     std::cout<<"[SceneSerializer] Scene loaded from "<<filePath<<"\n";
 }
@@ -165,6 +165,18 @@ YAML::Node SceneSerializer::SerializeNode(Node* node)
         colNode.push_back(col.g);
         colNode.push_back(col.b);
         n["Color"] = colNode;
+    }
+    else if (auto* ln = dynamic_cast<LightNode*>(node))
+    {
+        n["Type"] = "LightNode";
+        YAML::Node colNode;
+        colNode.SetStyle(YAML::EmitterStyle::Flow);
+        colNode.push_back(ln->color.r);
+        colNode.push_back(ln->color.g);
+        colNode.push_back(ln->color.b);
+        n["Color"] = colNode;
+        n["Intensity"] = ln->intensity;
+        n["Radius"] = ln->radius;
     }
     else if(auto* s = dynamic_cast<DebugSphere*>(node)){
         n["Type"] = "DebugSphere";
@@ -219,7 +231,25 @@ Node* SceneSerializer::DeserializeNode(const YAML::Node& nodeData, Scene& scene,
 
     Node* newNode = nullptr;
 
-    if(type == "DebugCube"){
+    if (type == "LightNode")
+    {
+        glm::vec3 col(1.0f, 1.0f, 1.0f);
+        if (nodeData["Color"] && nodeData["Color"].IsSequence() && nodeData["Color"].size() == 3)
+        {
+            col.x = nodeData["Color"][0].as<float>();
+            col.y = nodeData["Color"][1].as<float>();
+            col.z = nodeData["Color"][2].as<float>();
+        }
+        float intensity = 1.0f;
+        if (nodeData["Intensity"])
+            intensity = nodeData["Intensity"].as<float>();
+        float radius = 1.0f;
+        if (nodeData["Radius"])
+            radius = nodeData["Radius"].as<float>();
+        auto* ln = new LightNode(name, col, intensity, radius);
+        newNode = ln;
+    }
+    else if(type == "DebugCube"){
         auto* c = new DebugCube(name);
         newNode = c;
         if(nodeData["Color"] && nodeData["Color"].IsSequence() && nodeData["Color"].size() == 3){
@@ -512,7 +542,7 @@ void SceneSerializer::DeserializeParticleNode(const YAML::Node& n, ParticleNode*
         emitter->customUpDir.y = n["customUpDir"][1].as<float>();
         emitter->customUpDir.z = n["customUpDir"][2].as<float>();
     }
-    
+
 
     if(n["spawnPosition"] && n["spawnPosition"].IsSequence() && n["spawnPosition"].size()==3)
     {

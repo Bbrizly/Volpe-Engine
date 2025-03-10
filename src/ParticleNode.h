@@ -37,7 +37,7 @@ enum class ParticleSystemState
     Paused
 };
 
-static const int MAX_PARTICLES_INTERNAL = 100000; //increase for debugging
+static const int MAX_PARTICLES_INTERNAL = 50000; //increase for debugging
 
 class ParticleNode : public Node 
 {

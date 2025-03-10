@@ -19,7 +19,7 @@ Scene::~Scene() {
     // for (auto node : m_nodes)
     //     delete node;
     m_nodes.clear();
-    m_lights.clear();
+    // m_lights.clear(); shownLights = false;
     delete m_pGrid;
     if(m_quadTree) {
         delete m_quadTree;
@@ -54,9 +54,17 @@ void Scene::RemoveNode(Node* node)
     ReBuildTree();
 }
 
-void Scene::AddLight(Light l)
+void Scene::AddLight(const glm::vec3& position, const glm::vec3& color, float intensity, float radius)
 {
-    m_lights.push_back(l);
+    static int s_lightCounter = 0;
+    std::string nodeName = "Light_" + std::to_string(s_lightCounter++);
+
+    LightNode* ln = new LightNode(nodeName, color, intensity, radius);
+
+    glm::mat4 T = glm::translate(glm::mat4(1.0f), position);
+    ln->setTransform(T);
+
+    AddNode(ln); 
 }
 
 void Scene::DebugDrawFrustum(const Frustum& frustum)
@@ -458,7 +466,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     info += "Tree Build Time: " + to_string(m_lastQuadTreeBuildTimeMs) + " ms\n";
     info += "Existing Nodes : " + to_string(m_nodes.size()) + "\n";
     info += "Nodes Visible  : " + to_string(m_nodesToRender.size()) + "\n";
-    info += "Lights In Scene: " + to_string(m_lights.size()) + "\n";
+    // info += "Lights In Scene: " + to_string(m_lights.size()) + "\n";
     info += "Nodes Affected by light: " + to_string(nodesAffectedByLight) + "\n";
     info += "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
     info += "Camera Update      : " + to_string(m_avgCameraUpdateMs)    + " ms\n";
@@ -490,6 +498,50 @@ void Scene::InitLights()
 }
 
 void Scene::UpdateLighting()
+{
+    for(auto* nd : m_nodes)
+        nd->m_affectingLights.clear();
+    
+    std::vector<LightNode*> lightNodes;
+    for(auto* nd : m_nodes)
+    {
+        auto* ln = dynamic_cast<LightNode*>(nd);
+        if(ln) {
+            lightNodes.push_back(ln);
+        }
+    }
+
+    for(int i = 0; i < (int)lightNodes.size(); i++)
+    {
+        LightNode* ln = lightNodes[i];
+        float range    = ln->radius;
+        glm::vec3 pos  = ln->getWorldTransform()[3];
+        // glm::vec3 pos  = ln->getWorldPosition();
+
+        std::vector<Node*> inRange;
+        if(m_useQuadTreeOrOct && m_quadTree) {
+            m_quadTree->QueryLight(pos, range, inRange);
+        }
+        else if(!m_useQuadTreeOrOct && m_octTree) {
+            m_octTree->QueryLight(pos, range, inRange);
+        }
+        else {
+            for(auto* node : m_nodes)
+            {
+                auto* bv = node->GetBoundingVolume();
+                if(!bv) continue;
+                SphereVolume s(pos, range);
+                if(s.Overlaps(*bv)) 
+                    inRange.push_back(node);
+            }
+        }
+
+        for(auto* node : inRange)
+            node->m_affectingLights.push_back(i);  
+    }
+}
+
+/*void Scene::UpdateLighting()
 {
     for(auto* node : m_nodes)
     {
@@ -527,37 +579,15 @@ void Scene::UpdateLighting()
             n->m_affectingLights.push_back(i);
         }
     }
-}
-
-void Scene::MoveLights()
-{
-    if(m_lights.empty()) return;
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> distPos(-m_bounds, m_bounds);
-
-    for(auto& light : m_lights)
-    {
-        light.position.x = distPos(gen);
-        light.position.y = distPos(gen);
-        light.position.z = distPos(gen);
-    }
-}
+}*/
 
 void Scene::Clear()
 {
     if(!m_nodes.empty())
         m_nodes.clear();
-    
-    if(!m_lights.empty())
-        m_lights.clear();
 
     if(!m_nodesToRender.empty())
         m_nodesToRender.clear();
-
-    // m_quadTree->~QuadTree();
-    // m_octTree
 
     BuildOctTree();
 
@@ -584,7 +614,7 @@ void Scene::Render(int screenWidth, int screenHeight) {
 
     for(auto* n : opaqueNodes) //m_nodesToRender //m_nodes
     {   
-        if(n->m_affectingLights.size() > 0 && n->GetReactToLight())
+        if(n->m_affectingLights.size() > 0 && n->GetReactToLight() && !dynamic_cast<LightNode*>(n)) //light node shit cuz if user turns on react to light
         {
             // n->SetMaterial(m_matPoint);
             volpe::Material* mat = n->GetMaterial();
@@ -597,8 +627,15 @@ void Scene::Render(int screenWidth, int screenHeight) {
             //     lightCount = maxLights;
             
             mat->SetUniform("lightsInRange", lightCount);
+
+            std::vector<LightNode*> allLights;
+            for(auto* nd : m_nodes)
+            {
+                if(auto* ln = dynamic_cast<LightNode*>(nd))
+                    allLights.push_back(ln);
+            }
             
-            for(int i=0; i<lightCount; i++)
+            /*for(int i=0; i<lightCount; i++)
             {
                 int lightIdx = n->m_affectingLights[i]; 
                 Light& L     = m_lights[lightIdx];
@@ -613,12 +650,31 @@ void Scene::Render(int screenWidth, int screenHeight) {
                 mat->SetUniform(base+".PositionRange", vec4(pos, radius));
                 mat->SetUniform(base+".Color",              col);
                 mat->SetUniform(base+".Strength",           strength);
+            }*/
+            for(int i = 0; i < lightCount; i++)
+            {
+                int lightIdx = n->m_affectingLights[i];
+                if(lightIdx >= (int)allLights.size()) 
+                    break; // safety check
+                LightNode* L = allLights[lightIdx];
+                
+                std::string base = "pointLights[" + std::to_string(i) + "]";
+
+                glm::vec3 pos  = L->getWorldTransform()[3];
+                // glm::vec3 pos  = L->getWorldPosition();
+                float radius   = L->radius;
+                glm::vec3 col  = L->color;
+                float strength = L->intensity;
+
+                mat->SetUniform(base + ".PositionRange", glm::vec4(pos, radius));
+                mat->SetUniform(base + ".Color",         col);
+                mat->SetUniform(base + ".Strength",      strength);
             }
             mat->SetUniform("fade", 1.0f);
         }
         else        
         {
-            if(!dynamic_cast<ParticleNode*>(n))
+            if(!dynamic_cast<ParticleNode*>(n) && !dynamic_cast<LightNode*>(n))
             // if(n->GetReactToLight())
                 n->GetMaterial()->SetProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
         }              
@@ -648,10 +704,14 @@ void Scene::Render(int screenWidth, int screenHeight) {
                 {  n->GetBoundingVolume()->DrawMe();  }
             }
         } else { DebugRender::Instance().ClearLayer("BoundingVolumes");}
-        for (Light l : m_lights)
-        {
-            DebugRender::Instance().DrawSphere(l.position,l.radius,vec3(1));
-        }
+
+        // if (!shownLights)
+        // {
+        //     for (Light l : m_lights)
+        //     {
+        //         DebugRender::Instance().DrawSphere(l.position,l.radius,vec3(1), "lights");
+        //     }
+        // }else { DebugRender::Instance().ClearLayer("lights"); }
 
         if(reDebug) // if there was a change
         {
