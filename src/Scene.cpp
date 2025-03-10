@@ -514,7 +514,7 @@ void Scene::UpdateLighting()
     for(int i = 0; i < (int)lightNodes.size(); i++)
     {
         LightNode* ln = lightNodes[i];
-        float range    = ln->radius;
+        float range    = ln->GetRadius();
         glm::vec3 pos  = ln->getWorldTransform()[3];
         // glm::vec3 pos  = ln->getWorldPosition();
 
@@ -661,8 +661,7 @@ void Scene::Render(int screenWidth, int screenHeight) {
                 std::string base = "pointLights[" + std::to_string(i) + "]";
 
                 glm::vec3 pos  = L->getWorldTransform()[3];
-                // glm::vec3 pos  = L->getWorldPosition();
-                float radius   = L->radius;
+                float radius   = L->GetRadius();
                 glm::vec3 col  = L->color;
                 float strength = L->intensity;
 

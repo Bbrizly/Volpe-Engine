@@ -83,10 +83,6 @@ public:
     std::vector<float> burstTimes;    // times at which to emit many at once
     std::vector<int>   burstCounts;   // how many particsl for each burst
 
-    // Over-lifetime multipliers (CUrrently linear, use imgui curves maybe)
-    // float sizeOverLife;
-    // float alphaOverLife;
-
     // =-=-=-=-=-=-=-=-= State =-=-=-=-=-=-=-=-=-=
     ParticleSystemState systemState;
 

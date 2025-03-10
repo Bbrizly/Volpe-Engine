@@ -129,3 +129,58 @@ public:
     }
 };
 
+class DiePastAxisAffector : public Affector
+{
+public:
+    int axis;           
+    float threshold;    
+    bool greaterThan; //choose greather than or less than
+    DiePastAxisAffector(int axis, float threshold, bool greaterThan = true)
+        : axis(axis), threshold(threshold), greaterThan(greaterThan) {}
+
+    virtual void Apply(Particle& p, float dt, const glm::mat4& emitterWorldMatrix) override
+    {
+        float posComponent = 0.f;
+        glm::vec3 emitterPos = emitterWorldMatrix[3];
+        float testThreshold = threshold;
+
+        if (axis == 0) //x
+        {
+            if(localToNode)
+            {
+                testThreshold += emitterPos.x;
+            }
+            posComponent = p.position.x;
+        }
+        else if (axis == 1)//y
+        {
+            if(localToNode)
+            {
+                testThreshold += emitterPos.y;
+            }
+            posComponent = p.position.y;
+        }
+        else if (axis == 2) //Z
+        {
+            if(localToNode)
+            {
+                testThreshold += emitterPos.z;
+            }
+            posComponent = p.position.z;
+
+        }
+
+        if (greaterThan)
+        {
+            if (posComponent > testThreshold)
+                p.age = p.lifetime - 0.00001f; // particle dies
+                // p.age = p.lifetime - 0.01f; // particle dies
+        }
+        else
+        {
+            if (posComponent < testThreshold)
+                p.age = p.lifetime - 0.000001f;
+        }
+    }
+};
+

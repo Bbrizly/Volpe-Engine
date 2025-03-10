@@ -82,7 +82,7 @@ void RecreateSceneHelper(int bounds)
     {
         glm::vec3 pos = glm::vec3(distPos(gen), distPos(gen), distPos(gen));
         // LightNode * light = new LightNode("light_" + to_string(i), glm::vec3(1.0f, 1.0f, 1.0), 10.0, 10);
-        Scene::Instance().AddLight(pos, glm::vec3(1,1,1), 10.0f, 10.0f);
+        Scene::Instance().AddLight(pos, glm::vec3(1,1,1), 10.0f, 1.0f);
         // Scene::Instance().AddLight(Light(pos,  glm::vec3(1,1,1), 10.0f, 10.0f));
         // DebugRender::Instance().DrawCircle(pos, 10.0f, vec3(1,1,0));
     }
@@ -261,7 +261,8 @@ void buildParticleScene()
     Emitter2->GetMaterial()->SetTexture("u_texture", texture2);
     std::cout<<"E3: "<<Emitter2->GetMaterial()<<"\n";
 
-    
+    Affector* a = new DiePastAxisAffector(1,-10,true);
+    Emitter1->AddAffector(a);
 
     Scene::Instance().AddNode(Emitter);
     Scene::Instance().AddNode(Emitter1);
@@ -536,15 +537,10 @@ void Program::DrawInspector()
         if (ImGui::DragFloat("Intensity", &intensity, 0.1f, 0.0f, 100.0f))
             light->intensity = intensity;
 
-        float radius = light->radius;
+        float radius = light->GetRadius();
         if (ImGui::DragFloat("Radius", &radius, 0.1f, 0.0f, 100.0f))
         {
-            light->radius = radius;
-            if (light->GetBoundingVolume())
-            {
-                if (auto* sphere = dynamic_cast<SphereVolume*>(light->GetBoundingVolume()))
-                    sphere->radius = radius;
-            }
+            light->SetRadius(radius);
         }
     }
     else if (auto* cube = dynamic_cast<DebugCube*>(g_selectedNode))
@@ -754,7 +750,7 @@ void Program::DrawInspector()
         #pragma region AFFECTORS
         ImGui::Separator();
         ImGui::Text("Affectors:");
-        static const char* affectorTypes[] = { "Acceleration", "FadeOverLife", "ScaleOverLife", "TowardsPoint", "AwayFromPoint" };
+        static const char* affectorTypes[] = { "Acceleration", "FadeOverLife", "ScaleOverLife", "TowardsPoint", "AwayFromPoint", "DiePastAxis" };
         static int selectedAffType = 0;
 
         if(ImGui::BeginCombo("##affTypes", affectorTypes[selectedAffType]))
@@ -793,6 +789,10 @@ void Program::DrawInspector()
             else if(selectedAffType == 4) // AwayFromPoint
             {
                 newA = new AwayFromPointAffector(glm::vec3(0,0,0), 1.0f);
+            }
+            if(selectedAffType == 5) // DiePastAxis
+            {
+                newA = new DiePastAxisAffector(1, -10.0f, true);
             }
             if(newA)
             {
@@ -851,6 +851,20 @@ void Program::DrawInspector()
                 }
                 ImGui::DragFloat("Strength", &aw->strength, 0.1f, -999.f, 999.f);
                 ImGui::Checkbox("Local to Node", &aw->localToNode);
+            }
+            else if(auto* dpa = dynamic_cast<DiePastAxisAffector*>(A))
+            {
+                ImGui::Text("DiePastAxisAffector");
+                // Combo box for axis selection:
+                const char* axisNames[] = { "X", "Y", "Z" };
+                int axisInt = dpa->axis;
+                if(ImGui::Combo("Axis", &axisInt, axisNames, IM_ARRAYSIZE(axisNames)))
+                {
+                    dpa->axis = axisInt;
+                }
+                ImGui::DragFloat("Threshold", &dpa->threshold, 0.1f, -1000.f, 1000.f);
+                ImGui::Checkbox("Die if > Threshold", &dpa->greaterThan);
+                ImGui::Checkbox("Local to Node", &dpa->localToNode);
             }
             else
             {

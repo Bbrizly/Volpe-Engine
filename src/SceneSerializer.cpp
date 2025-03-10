@@ -176,7 +176,7 @@ YAML::Node SceneSerializer::SerializeNode(Node* node)
         colNode.push_back(ln->color.b);
         n["Color"] = colNode;
         n["Intensity"] = ln->intensity;
-        n["Radius"] = ln->radius;
+        n["Radius"] = ln->GetRadius();
     }
     else if(auto* s = dynamic_cast<DebugSphere*>(node)){
         n["Type"] = "DebugSphere";
@@ -1040,7 +1040,13 @@ YAML::Node SceneSerializer::SerializeAffectors(const std::vector<Affector*>& aff
             one["center"]   = c;
             one["strength"] = away->strength;
         }
-        
+        else if (auto* dpa = dynamic_cast<DiePastAxisAffector*>(A))
+        {
+            one["type"] = "DiePastAxis";
+            one["axis"] = dpa->axis;
+            one["threshold"] = dpa->threshold;
+            one["greaterThan"] = dpa->greaterThan;
+        }
         arr.push_back(one);
     }
 
@@ -1106,5 +1112,19 @@ void SceneSerializer::DeserializeAffectors(const YAML::Node& n, ParticleNode* em
             if(affN["strength"]) str= affN["strength"].as<float>();
             emitter->AddAffector(new AwayFromPointAffector(c, str));
         }
+        else if(t=="DiePastAxis")
+        {
+            int axis = 1;
+            if(affN["axis"])
+                axis = affN["axis"].as<int>();
+            float threshold = 10.0f;
+            if(affN["threshold"])
+                threshold = affN["threshold"].as<float>();
+            bool greaterThan = true;
+            if(affN["greaterThan"])
+                greaterThan = affN["greaterThan"].as<bool>();
+            emitter->AddAffector(new DiePastAxisAffector(axis, threshold, greaterThan));
+        }
+
     }
 }

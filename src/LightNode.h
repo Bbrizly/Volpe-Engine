@@ -8,7 +8,7 @@ class LightNode : public Node
 public:
     glm::vec3 color;
     float     intensity;
-    float     radius;
+    float     m_radius;
 
     LightNode(const std::string& name,
               const glm::vec3& colorIn,
@@ -17,15 +17,25 @@ public:
     : Node(name)
     , color(colorIn)
     , intensity(intensityIn)
-    , radius(radiusIn)
+    , m_radius(radiusIn)
     {
-        SphereVolume* sphere = new SphereVolume(glm::vec3(0,0,0), radius);
+        SphereVolume* sphere = new SphereVolume(glm::vec3(0,0,0), m_radius);
         SetBoundingVolume(sphere);
         reactToLight = false;
     }
 
     virtual ~LightNode() = default;
-
+    float GetRadius() const { return m_radius; }
+    void SetRadius(float r)
+    {
+        m_radius = r;
+        if(m_boundingVolume) {
+            if(auto* x = dynamic_cast<SphereVolume*>(m_boundingVolume))
+            {
+                x->radius = r;
+            }
+        }
+    }
     // glm::vec3 getWorldPosition() const
     // {
     //     return getWorldTransform()[3];
