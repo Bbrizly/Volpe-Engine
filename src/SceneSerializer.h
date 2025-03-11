@@ -31,6 +31,7 @@ public:
     static ParticleNode* LoadEmitter(const std::string& filePath);
 
 private:
+    int variance = 0;
     static YAML::Node SerializeNode(Node* node);
     static Node*     DeserializeNode(const YAML::Node& nodeData, Scene& scene, Node* parent);
 

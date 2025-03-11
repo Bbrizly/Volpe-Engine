@@ -1,0 +1,129 @@
+Scene: VolpeScene
+Nodes:
+  - Name: Droplets
+    Type: ParticleNode
+    ParticleData:
+      emissionRate: 70
+      duration: -1
+      localSpace: false
+      glow: true
+      glowIntensity: 0.25
+      maxParticles: 70
+      shape: 3
+      emitterMode: 0
+      faceCamera: false
+      customLookDir: [0, 1, 0]
+      customUpDir: [0, 0, 1]
+      spawnPosition: [0, 0, 0]
+      spawnVelocity: [0, 0, 0]
+      lifetimeMin: 0.4
+      lifetimeMax: 0.6
+      startSizeMin: 0.5
+      startSizeMax: 1
+      startAlphaMin: 1
+      startAlphaMax: 1
+      lockXAxis: false
+      lockYAxis: false
+      rotationMin: 0
+      rotationMax: 360
+      rotationSpeedMin: -7.5
+      rotationSpeedMax: 7.5
+      velocityScaleMin: 0
+      velocityScaleMax: 0
+      colorKeys:
+        - time: 0.14
+          color: [0.4166667, 1, 1, 1]
+        - time: 0.43
+          color: [0.2710496, 0.47628742, 0.58823526, 1]
+        - time: 1
+          color: [0.16078432, 0.16078432, 1, 0]
+      affectors:
+        - type: ScaleOverLife
+          startScale: 0.1
+          endScale: 1
+        - type: FadeOverLife
+          startAlpha: 1
+          endAlpha: 0.95
+      texturePath: data/Textures/circleblur.png
+    Transform:
+      Position: [0, 0.01, 0]
+      Rotation: [9.098998e-24, 2.9802319e-08, -3.0531133e-16, 1]
+      Scale: [20, 0.001, 20]
+  - Name: Rain
+    Type: ParticleNode
+    ParticleData:
+      emissionRate: 200
+      duration: -1
+      localSpace: false
+      glow: true
+      glowIntensity: 0
+      maxParticles: 1000
+      shape: 3
+      emitterMode: 0
+      faceCamera: true
+      customLookDir: [0, 0, 1]
+      customUpDir: [0, 1, 0]
+      spawnPosition: [0, 0, 0]
+      spawnVelocity: [0, -5, 0]
+      lifetimeMin: 0.8
+      lifetimeMax: 0.5
+      startSizeMin: 0.5
+      startSizeMax: 0.5
+      startAlphaMin: 0.5
+      startAlphaMax: 0.9
+      lockXAxis: false
+      lockYAxis: false
+      rotationMin: 0
+      rotationMax: 0
+      rotationSpeedMin: -7.5
+      rotationSpeedMax: 7.5
+      velocityScaleMin: 0
+      velocityScaleMax: 0
+      colorKeys:
+        - time: 0
+          color: [0.37773928, 0.579941, 0.64215684, 1]
+      affectors:
+        - type: Acceleration
+          velocity:
+            - 0
+            - -4.4
+            - 0
+        - type: DiePastAxis
+          axis: 1
+          threshold: 0
+          greaterThan: false
+      texturePath: data/Textures/bar.png
+    Transform:
+      Position: [0, 20, 0]
+      Rotation: [0, 0, 0, 1]
+      Scale: [20, 0.1, 20]
+  - Name: ground
+    Type: DebugCube
+    Color: [0.09411765, 0.30980393, 0.15294118]
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0, 1]
+      Scale: [20, 0.001, 20]
+  - Name: Wall
+    Type: DebugCube
+    Color: [0.16078432, 0.45490196, 0.45490196]
+    Transform:
+      Position: [0, 10, 10]
+      Rotation: [0, 0, 0, 1]
+      Scale: [20, 20, 0.001]
+  - Name: wall2
+    Type: DebugCube
+    Color: [0.17254902, 0.17254902, 0.17254902]
+    Transform:
+      Position: [-10, 10, 0]
+      Rotation: [-8.881785e-16, 2.9802322e-08, 2.6469783e-23, 1]
+      Scale: [0.001, 20, 20]
+  - Name: light_0
+    Type: LightNode
+    Color: [1, 1, 1]
+    Intensity: 10
+    Radius: 17.5
+    Transform:
+      Position: [0, 14, 0]
+      Rotation: [0, 0, 0, 1]
+      Scale: [1, 1, 1]

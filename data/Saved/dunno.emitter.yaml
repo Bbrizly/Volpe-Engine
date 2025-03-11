@@ -1,0 +1,48 @@
+Emitter:
+  name: orbitEffect
+  transform:
+    Position: [0, 0, 0]
+    Rotation: [0.70710665, 0, 0, 0.7071069]
+    Scale: [25, 99.99999, 24.999819]
+  particle:
+    emissionRate: 50000
+    duration: -1
+    localSpace: false
+    glow: false
+    maxParticles: 5000
+    shape: 2
+    emitterMode: 0
+    faceCamera: true
+    customLookDir: [0, 0, 1]
+    customUpDir: [0, 1, 0]
+    spawnPosition: [0, 0, 0]
+    spawnVelocity: [0, -1336.6, 0]
+    lifetimeMin: 30
+    lifetimeMax: 40
+    startSizeMin: 0.5
+    startSizeMax: 1.5
+    startAlphaMin: 1
+    startAlphaMax: 1
+    rotationMin: 0
+    rotationMax: 360
+    rotationSpeedMin: -7.5
+    rotationSpeedMax: 7.5
+    velocityScaleMin: 10
+    velocityScaleMax: 10
+    colorKeys:
+      - time: 0
+        color: [1, 1, 0, 1]
+      - time: 0.329
+        color: [0, 1, 1, 1]
+      - time: 0.653
+        color: [0.9999995, 0, 1, 1]
+      - time: 1
+        color: [0.2936371, 0.31715745, 0.31862748, 1]
+    affectors:
+      - type: TowardsPoint
+        target:
+          - 0
+          - 0
+          - 0
+        strength: 5
+    texturePath: data/Textures/smoke.png

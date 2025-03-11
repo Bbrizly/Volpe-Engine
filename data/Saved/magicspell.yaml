@@ -1,0 +1,196 @@
+Scene: VolpeScene
+Nodes:
+  - Name: MAGIC SPELL
+    Type: Effect
+    combineDraws: false
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0, 1]
+      Scale: [1, 1, 1]
+    Children:
+      - Name: magic
+        Type: ParticleNode
+        ParticleData:
+          emissionRate: 9999
+          duration: -1
+          localSpace: false
+          glow: true
+          maxParticles: 1
+          shape: 0
+          emitterMode: 0
+          faceCamera: false
+          customLookDir: [0, 1, 0]
+          customUpDir: [0, 0, 1]
+          spawnPosition: [0, 0, 0]
+          spawnVelocity: [0, 0, 0]
+          lifetimeMin: 5
+          lifetimeMax: 5
+          startSizeMin: 8
+          startSizeMax: 8
+          startAlphaMin: 100
+          startAlphaMax: 100
+          rotationMin: 0
+          rotationMax: 360
+          rotationSpeedMin: 20
+          rotationSpeedMax: 20
+          velocityScaleMin: 0
+          velocityScaleMax: 0
+          colorKeys:
+            - time: 0
+              color: [1, 0, 0, 0]
+            - time: 0.157
+              color: [1, 0, 0, 1]
+            - time: 0.905
+              color: [1, 0, 0, 1]
+            - time: 1
+              color: [1, 0, 0, 0]
+          affectors:
+            - type: ScaleOverLife
+              startScale: 0
+              endScale: 0.5
+          texturePath: data/Textures/magicshit.png
+        Transform:
+          Position: [0, 0, 0]
+          Rotation: [0, 0, 0, 1]
+          Scale: [1, 1, 1]
+      - Name: redCircle
+        Type: ParticleNode
+        ParticleData:
+          emissionRate: 400
+          duration: -1
+          localSpace: false
+          glow: true
+          maxParticles: 1000
+          shape: 2
+          emitterMode: 0
+          faceCamera: true
+          customLookDir: [0, 0, 1]
+          customUpDir: [0, 1, 0]
+          spawnPosition: [0, 0, 0]
+          spawnVelocity: [0, 0.1, 0]
+          lifetimeMin: 1
+          lifetimeMax: 1
+          startSizeMin: 0.5
+          startSizeMax: 0.5
+          startAlphaMin: 1
+          startAlphaMax: 1
+          rotationMin: 0
+          rotationMax: 360
+          rotationSpeedMin: -7.5
+          rotationSpeedMax: 7.5
+          velocityScaleMin: 0
+          velocityScaleMax: 1
+          colorKeys:
+            - time: 0
+              color: [0, 0, 0, 1]
+            - time: 0.279
+              color: [0, 0.20242214, 0.25490195, 1]
+            - time: 0.441
+              color: [1, 0, 0, 1]
+          affectors:
+            - type: Acceleration
+              velocity:
+                - 0
+                - 3
+                - 0
+            - type: ScaleOverLife
+              startScale: 0.5
+              endScale: 0
+          texturePath: data/Textures/smoke.png
+        Transform:
+          Position: [0, 0, 0]
+          Rotation: [0, 0, 0, 1]
+          Scale: [1, 1, 1]
+  - Name: redCircle
+    Type: ParticleNode
+    ParticleData:
+      emissionRate: 400
+      duration: -1
+      localSpace: false
+      glow: true
+      maxParticles: 1000
+      shape: 2
+      emitterMode: 0
+      faceCamera: true
+      customLookDir: [0, 0, 1]
+      customUpDir: [0, 1, 0]
+      spawnPosition: [0, 0, 0]
+      spawnVelocity: [0, 0.1, 0]
+      lifetimeMin: 1
+      lifetimeMax: 1
+      startSizeMin: 0.5
+      startSizeMax: 0.5
+      startAlphaMin: 1
+      startAlphaMax: 1
+      rotationMin: 0
+      rotationMax: 360
+      rotationSpeedMin: -7.5
+      rotationSpeedMax: 7.5
+      velocityScaleMin: 0
+      velocityScaleMax: 1
+      colorKeys:
+        - time: 0
+          color: [0, 0, 0, 1]
+        - time: 0.279
+          color: [0, 0.20242214, 0.25490195, 1]
+        - time: 0.441
+          color: [1, 0, 0, 1]
+      affectors:
+        - type: Acceleration
+          velocity:
+            - 0
+            - 3
+            - 0
+        - type: ScaleOverLife
+          startScale: 0.5
+          endScale: 0
+      texturePath: data/Textures/smoke.png
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0, 1]
+      Scale: [1, 1, 1]
+  - Name: magic
+    Type: ParticleNode
+    ParticleData:
+      emissionRate: 9999
+      duration: -1
+      localSpace: false
+      glow: true
+      maxParticles: 1
+      shape: 0
+      emitterMode: 0
+      faceCamera: false
+      customLookDir: [0, 1, 0]
+      customUpDir: [0, 0, 1]
+      spawnPosition: [0, 0, 0]
+      spawnVelocity: [0, 0, 0]
+      lifetimeMin: 5
+      lifetimeMax: 5
+      startSizeMin: 8
+      startSizeMax: 8
+      startAlphaMin: 100
+      startAlphaMax: 100
+      rotationMin: 0
+      rotationMax: 360
+      rotationSpeedMin: 20
+      rotationSpeedMax: 20
+      velocityScaleMin: 0
+      velocityScaleMax: 0
+      colorKeys:
+        - time: 0
+          color: [1, 0, 0, 0]
+        - time: 0.157
+          color: [1, 0, 0, 1]
+        - time: 0.905
+          color: [1, 0, 0, 1]
+        - time: 1
+          color: [1, 0, 0, 0]
+      affectors:
+        - type: ScaleOverLife
+          startScale: 0
+          endScale: 0.5
+      texturePath: data/Textures/magicshit.png
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0, 1]
+      Scale: [1, 1, 1]

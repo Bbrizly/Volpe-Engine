@@ -16,6 +16,7 @@ public:
     void Play();
     void Stop();
     void Pause();
+    void End();
     void Restart();
 
     virtual void update(float dt) override;

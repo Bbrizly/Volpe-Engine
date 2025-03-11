@@ -55,6 +55,7 @@ ParticleNode::~ParticleNode()
 // =-=-=-=-=-=-=-=-=CONTROL SHITS=-=-=-=-=-=-=-=-=-=
 void ParticleNode::Play()
 {
+    ended = false;
     if(systemState == ParticleSystemState::Playing) return;
     systemState = ParticleSystemState::Playing;
 }
@@ -62,9 +63,17 @@ void ParticleNode::Play()
 void ParticleNode::Stop()
 {
     systemState = ParticleSystemState::Stopped;
-    // Clear all active
+
     m_numParticles = 0;
-    // m_particles.clear();
+
+    m_emissionAdder = 0.0f;
+    m_totalTime = 0.0f;
+}
+void ParticleNode::End()
+{
+    systemState = ParticleSystemState::Stopped;
+    ended = true;
+
     m_emissionAdder = 0.0f;
     m_totalTime = 0.0f;
 }
@@ -89,10 +98,15 @@ void ParticleNode::update(float dt)
     if(dt <= 0.0f) return;
 
     #pragma region System State
-    if(systemState == ParticleSystemState::Stopped || (m_totalTime >= duration && duration > 0)) {
+    if (m_totalTime >= duration && duration > 0)
+    {
+        End();
+    }
+    else if(systemState == ParticleSystemState::Stopped && !ended) {
         m_numParticles = 0;
         return;
     }
+
     if(systemState == ParticleSystemState::Paused)
         dt = 0;
     #pragma endregion
@@ -193,7 +207,7 @@ void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
 {
     
     // If not playing or no material skip
-    if(systemState == ParticleSystemState::Stopped || m_numParticles == 0 || !m_material) {
+    if((systemState == ParticleSystemState::Stopped && !ended) || m_numParticles == 0 || !m_material) {
         Node::draw(proj, view);
         return;
     }
@@ -214,6 +228,11 @@ void ParticleNode::draw(const glm::mat4& proj, const glm::mat4& view)
         Node::draw(proj, view);
         return;
     }
+
+    if(glow)
+        m_material->SetUniform("u_glowIntensity", glowIntensity);
+    else
+        m_material->SetUniform("u_glowIntensity", 0.0f);
 
     m_material->SetUniform("projection", proj);
     m_material->SetUniform("view",       view);
@@ -292,6 +311,8 @@ Particle ParticleNode::createNewParticle()
     // size
     p.initialSize = startSizeMin + (startSizeMax - startSizeMin) * m_dist01(m_randGen);
     p.size        = p.initialSize;
+    
+    p.stretch = defaultStretch;
 
     // acceleration
     p.acceleration = glm::vec3(0);
@@ -328,6 +349,29 @@ Particle ParticleNode::createNewParticle()
             localSpawn.x = 2.f*m_dist01(m_randGen)-1.f;
             localSpawn.y = 2.f*m_dist01(m_randGen)-1.f;
             localSpawn.z = 2.f*m_dist01(m_randGen)-1.f;
+        }
+        break;
+        case EmitterShape::Donut:
+        {
+            float majorRadius = 1.5f;
+            float minorRadius = 0.2f;
+
+            float u = 2.0f * PI * m_dist01(m_randGen);
+            float v = 2.0f * PI * m_dist01(m_randGen);
+
+            float cosU = cosf(u);
+            float sinU = sinf(u);
+            float cosV = cosf(v);
+            float sinV = sinf(v);
+
+            float R = majorRadius;
+            float r = minorRadius;
+
+            float x = (R + r*cosV) * cosU;
+            float z = (R + r*cosV) * sinU;
+            float y = r * sinV;
+
+            localSpawn = glm::vec3(x, y, z);
         }
         break;
         case EmitterShape::Mesh:
@@ -409,8 +453,11 @@ void ParticleNode::buildVertexData(const glm::mat4& view)
         float c = std::cos(glm::radians(p.rotation));
         float s = std::sin(glm::radians(p.rotation));
 
-        glm::vec3 rRot = ( c*camRight + s*camUp )*(p.size*0.5f);
-        glm::vec3 uRot = (-s*camRight + c*camUp )*(p.size*0.5f);
+        float halfStretchX = p.size * p.stretch.x * 0.5f;
+        float halfStretchY = p.size * p.stretch.y * 0.5f;
+
+        glm::vec3 rRot = ( c*camRight + s*camUp ) * halfStretchX;
+        glm::vec3 uRot = (-s*camRight + c*camUp ) * halfStretchY;
 
         glm::vec3 bl = p.position - rRot - uRot;
         glm::vec3 br = p.position + rRot - uRot;
@@ -461,8 +508,21 @@ void ParticleNode::buildVertexData(const glm::mat4& view)
 // =-=-=-=-=-=-=-=-=HELPERS=-=-=-=-=-=-=-=-=-=
 void ParticleNode::getCameraRightUp(const glm::mat4& view, glm::vec3& outRight, glm::vec3& outUp)
 {
-    //billboard codee
     glm::mat3 rot = glm::inverse(glm::mat3(view));
+    //billboard codee
+    if(lockYAxis) {
+        
+        glm::vec3 camDir = glm::normalize(glm::vec3(rot[2][0], rot[2][1], rot[2][2]));
+        outUp = glm::vec3(0,1,0);
+        outRight = glm::normalize(glm::cross(camDir, outUp));
+        return;
+    }
+    else if(lockXAxis) {
+        glm::vec3 camDir = glm::normalize(glm::vec3(rot[2][0], rot[2][1], rot[2][2]));
+        outRight = glm::vec3(1,0,0);
+        outUp = glm::normalize(glm::cross(outRight, camDir));
+        return;
+    }
     outRight = glm::normalize(glm::vec3(rot[0][0], rot[0][1], rot[0][2]));
     outUp    = glm::normalize(glm::vec3(rot[1][0], rot[1][1], rot[1][2]));
 }

@@ -2,7 +2,7 @@ effect:
   name: FullFire
   combineDraws: false
   emitters:
-    - EmitterName: FireSparks
+    - EmitterName: FireSparksk
       Transform:
         Position: [0.4, 0, 0]
         Rotation: [0, 0, 0, 1]
@@ -56,7 +56,7 @@ effect:
               - 0
             strength: 1
         texturePath: data/Textures/smoke.png
-    - EmitterName: Smoke
+    - EmitterName: Smokek
       Transform:
         Position: [0, 4.4, 0]
         Rotation: [0, 0, 0, 1]
@@ -95,7 +95,7 @@ effect:
             startAlpha: 0.6
             endAlpha: 0
         texturePath: data/Textures/smoke2.png
-    - EmitterName: Firebase
+    - EmitterName: Firebasek
       Transform:
         Position: [0.2, 0, 0]
         Rotation: [0, 0, 0, 1]

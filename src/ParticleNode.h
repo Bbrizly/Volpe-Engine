@@ -19,6 +19,7 @@ enum class EmitterShape
 {
     Point,
     Sphere,
+    Donut,
     Cone,
     Box,
     Mesh
@@ -49,6 +50,11 @@ public:
     std::vector<ColorKey> colorKeys;
 
     // =-=-=-=-=-=-=-=-= Emitter Controls =-=-=-=-=-=-=-=-=-=
+
+    glm::vec2 defaultStretch = glm::vec2(1.0f, 1.0f);
+    
+    bool lockXAxis = false;
+    bool lockYAxis = false;
     
     float startSizeMin = 0.5f;   // min size at birth
     float startSizeMax = 1.5f;   // max size at birth
@@ -68,6 +74,7 @@ public:
 
     bool  localSpace;             // local or world coordinate system
     bool glow;
+    float glowIntensity = 0.0f;
     int   maxParticles;           // max particles
     EmitterShape shape;           // spawn shape
     glm::vec3 spawnPosition;      // offset
@@ -104,6 +111,8 @@ public:
     // =-=-=-=-=-=-=-=-= Controlling partcisystm =-=-=-=-=-=-=-=-=-=
     void Play();
     void Stop();
+    void End();
+    bool ended = false;
     void Pause();
     void Restart(); // does Stop(), then Play()
     void spawnParticles(int count);  // spawns immediately

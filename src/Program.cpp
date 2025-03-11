@@ -81,10 +81,7 @@ void RecreateSceneHelper(int bounds)
     for (int i = 0; i < 2; i++)
     {
         glm::vec3 pos = glm::vec3(distPos(gen), distPos(gen), distPos(gen));
-        // LightNode * light = new LightNode("light_" + to_string(i), glm::vec3(1.0f, 1.0f, 1.0), 10.0, 10);
-        Scene::Instance().AddLight(pos, glm::vec3(1,1,1), 10.0f, 1.0f);
-        // Scene::Instance().AddLight(Light(pos,  glm::vec3(1,1,1), 10.0f, 10.0f));
-        // DebugRender::Instance().DrawCircle(pos, 10.0f, vec3(1,1,0));
+        Scene::Instance().AddLight(pos, glm::vec3(1,1,1), 10.0f, 10.0f);
     }
 }
 
@@ -260,9 +257,6 @@ void buildParticleScene()
     std::cout<<"E2: "<<Emitter1->GetMaterial()<<"\n";
     Emitter2->GetMaterial()->SetTexture("u_texture", texture2);
     std::cout<<"E3: "<<Emitter2->GetMaterial()<<"\n";
-
-    Affector* a = new DiePastAxisAffector(1,-10,true);
-    Emitter1->AddAffector(a);
 
     Scene::Instance().AddNode(Emitter);
     Scene::Instance().AddNode(Emitter1);
@@ -521,6 +515,9 @@ void Program::DrawInspector()
         {
             g_selectedNode->SetReactToLight(react);
         }
+        ImGui::SameLine();
+        if(g_selectedNode->GetMaterial())
+            ImGui::Text("Shdr: %s", g_selectedNode->GetMaterial()->GetName().c_str());
     }
 
     // Node specific BUT once I convert codebase to entity system, this will muchhh simpler
@@ -677,6 +674,8 @@ void Program::DrawInspector()
             emitter->Stop();
         }
         ImGui::SameLine();
+        if(ImGui::Button("End")) { emitter->End(); }
+        ImGui::SameLine();
         if(ImGui::Button("Restart")) {
             emitter->Restart();
         }
@@ -708,16 +707,29 @@ void Program::DrawInspector()
         ImGui::Checkbox("Local Space", &emitter->localSpace);
         ImGui::SameLine();
         ImGui::Checkbox("Glow", &emitter->glow);
+        if(emitter->glow)
+        {
+            ImGui::SameLine();
+            ImGui::PushItemWidth(60); 
+            ImGui::DragFloat("Intensity", &emitter->glowIntensity, 0.05f, 0.0f);
+            ImGui::PopItemWidth();
+        }
         if(ImGui::Checkbox("Face Camera", &emitter->faceCamera)) {}
-
+        
         if(!emitter->faceCamera)
         {
             ImGui::DragFloat3("Custom Look Dir", (float*)&emitter->customLookDir, 0.05f);
             ImGui::DragFloat3("Custom Up Dir",   (float*)&emitter->customUpDir,   0.05f);
         }
+        else
+        {
+            ImGui::Checkbox("Lock X Axis", &emitter->lockXAxis);
+            ImGui::Checkbox("Lock Y Axis", &emitter->lockYAxis);
+        }
+        ImGui::DragFloat2("Stretch (X,Y)", (float*)&emitter->defaultStretch, 0.01f, 0.0f, 10.0f);
 
         // Emitter shape
-        static const char* shapeNames[] = {"Point","Sphere","Cone","Box","Mesh"};
+        static const char* shapeNames[] = {"Point","Sphere","Donut","Cone","Box","Mesh"};
         int shapeIdx = (int)emitter->shape;
         if(ImGui::Combo("Shape", &shapeIdx, shapeNames, IM_ARRAYSIZE(shapeNames))) {
             emitter->shape = (EmitterShape)shapeIdx;
@@ -1034,6 +1046,8 @@ void Program::DrawInspector()
         if(ImGui::Button("Stop")) { effect->Stop(); }
         ImGui::SameLine();
         if(ImGui::Button("Pause")) { effect->Pause(); }
+        ImGui::SameLine();
+        if(ImGui::Button("End")) { effect->End(); }
         ImGui::SameLine();
         if(ImGui::Button("Restart")) { effect->Restart(); }
 
@@ -1550,7 +1564,7 @@ void Program::update(float dt)
         }
     }
 
-    if(m_pApp->isKeyJustDown('C')) { //switch cameras
+    if(m_pApp->isKeyJustDown(GLFW_KEY_RIGHT_ALT)) { //switch cameras
         whichCamera = !whichCamera;
         if(whichCamera)
             Scene::Instance().SetActiveCamera(orbitCamera);
@@ -1576,4 +1590,3 @@ void Program::draw(int width, int height)
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
-

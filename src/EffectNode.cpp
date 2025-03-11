@@ -115,6 +115,16 @@ void EffectNode::Pause()
     }
 }
 
+void EffectNode::End()
+{
+    for(auto* c : m_children){
+        auto* emitter = dynamic_cast<ParticleNode*>(c);
+        if(emitter){
+            emitter->End();
+        }
+    }
+}
+
 void EffectNode::Restart()
 {
     for(auto* c : m_children){

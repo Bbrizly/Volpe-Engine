@@ -426,7 +426,8 @@ YAML::Node SceneSerializer::SerializeParticleNode(const ParticleNode* emitter)
     n["emissionRate"]       = emitter->emissionRate;
     n["duration"]           = emitter->duration;
     n["localSpace"]         = emitter->localSpace;
-    n["glow"]              = emitter->glow;
+    n["glow"]               = emitter->glow;
+    n["glowIntensity"]      = emitter->glowIntensity;
     n["maxParticles"]       = emitter->maxParticles;
     n["shape"]              = (int) emitter->shape;
     
@@ -469,6 +470,20 @@ YAML::Node SceneSerializer::SerializeParticleNode(const ParticleNode* emitter)
     n["startSizeMax"]  = emitter->startSizeMax;
     n["startAlphaMin"] = emitter->startAlphaMin;
     n["startAlphaMax"] = emitter->startAlphaMax;
+    
+    {
+        YAML::Node stretchNode;
+        stretchNode.SetStyle(YAML::EmitterStyle::Flow);
+        stretchNode.push_back(emitter->customUpDir.x);
+        stretchNode.push_back(emitter->customUpDir.y);
+        stretchNode.push_back(emitter->customUpDir.z);
+        n["customUpDir"] = stretchNode;
+    }
+    // n["defaultStretch"].push_back(emitter->defaultStretch.x);
+    // n["defaultStretch"].push_back(emitter->defaultStretch.y);
+    
+    n["lockXAxis"] = emitter->lockXAxis;
+    n["lockYAxis"] = emitter->lockYAxis;
 
     // rotation range
     n["rotationMin"]      = emitter->rotationMin;
@@ -514,6 +529,8 @@ void SceneSerializer::DeserializeParticleNode(const YAML::Node& n, ParticleNode*
     if(n["duration"])           emitter->duration           = n["duration"].as<float>();
     if(n["localSpace"])         emitter->localSpace         = n["localSpace"].as<bool>();
     if(n["glow"])               emitter->glow               = n["glow"].as<bool>();
+    if(n["glowIntensity"])      emitter->glowIntensity      = n["glowIntensity"].as<float>();
+    // n["glowIntensity"]      = emitter->glowIntensity;
     if(n["maxParticles"])       emitter->maxParticles       = n["maxParticles"].as<int>();
 
     if(n["shape"]){
@@ -567,6 +584,14 @@ void SceneSerializer::DeserializeParticleNode(const YAML::Node& n, ParticleNode*
     if(n["startAlphaMin"]) emitter->startAlphaMin = n["startAlphaMin"].as<float>();
     if(n["startAlphaMax"]) emitter->startAlphaMax = n["startAlphaMax"].as<float>();
 
+    if(n["defaultStretch"] && n["defaultStretch"].IsSequence() && n["defaultStretch"].size() == 2){
+        emitter->defaultStretch.x = n["defaultStretch"][0].as<float>();
+        emitter->defaultStretch.y = n["defaultStretch"][1].as<float>();
+    }
+    if(n["lockXAxis"])
+        emitter->lockXAxis = n["lockXAxis"].as<bool>();
+    if(n["lockYAxis"])
+        emitter->lockYAxis = n["lockYAxis"].as<bool>();
 
     // rotation
     if(n["rotationMin"])      emitter->rotationMin = n["rotationMin"].as<float>();
@@ -894,12 +919,16 @@ EffectNode* SceneSerializer::LoadEffectNode(Scene& scene, const std::string& fil
         return nullptr;
     }
 
-    EffectNode* fx = new EffectNode("UnnamedEffect");
+    EffectNode* fx;
+    if(nEff["name"]){
+        fx = new EffectNode(nEff["name"].as<std::string>());
+    }
+    else
+    {
+        fx = new EffectNode("UnnamedEffect");
+    }
     scene.AddNode(fx);
 
-    if(nEff["name"]){
-        fx->setName(nEff["name"].as<std::string>());
-    }
     if(nEff["combineDraws"]){
         fx->combineDraws = nEff["combineDraws"].as<bool>();
     }
@@ -972,9 +1001,13 @@ ParticleNode* SceneSerializer::LoadEmitter(const std::string& filePath) //DECIDE
         std::cerr<<"[SceneSerializer] No 'Emitter' in "<<filePath<<"\n";
         return nullptr;
     }
-    ParticleNode* emitter = new ParticleNode("Emitter");
+    ParticleNode* emitter;
     if(nEm["name"]){
-        emitter->setName(nEm["name"].as<std::string>());
+        emitter = new ParticleNode(nEm["name"].as<std::string>());
+    }
+    else 
+    {
+        emitter = new ParticleNode("Emitter");
     }
     // transform
     if(nEm["transform"]){

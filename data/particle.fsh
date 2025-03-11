@@ -8,6 +8,7 @@ out vec4 FragColor;
 uniform sampler2D u_texture;
 uniform bool useTexture;  // Toggle texture
 uniform vec3 u_color;
+uniform float u_glowIntensity;
 
 float discardAlpha = 0.1f;
 //vec4
@@ -21,6 +22,10 @@ void main()
   if(useTexture) {
     baseColor *= texture(u_texture, v_uv1.xy);
     baseColor = vec4(baseColor.rgb * baseColor.a, baseColor.a); //premultiplied shits
+  }
+  if(u_glowIntensity != 0.0f) 
+  {
+    baseColor.rgb *= u_glowIntensity;
   }
 
 //  if(baseColor.a <= discardAlpha)
