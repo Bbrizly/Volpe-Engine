@@ -9,6 +9,10 @@ Nodes:
       glow: false
       maxParticles: 70
       shape: 3
+      emitterMode: 0
+      faceCamera: false
+      customLookDir: [0, 1, 0]
+      customUpDir: [0, 0, 1]
       spawnPosition: [0, 0, 0]
       spawnVelocity: [0, 0, 0]
       lifetimeMin: 0.4
@@ -51,6 +55,10 @@ Nodes:
       glow: false
       maxParticles: 1000
       shape: 3
+      emitterMode: 0
+      faceCamera: true
+      customLookDir: [0, 0, 1]
+      customUpDir: [0, 1, 0]
       spawnPosition: [0, 0, 0]
       spawnVelocity: [0, -5, 0]
       lifetimeMin: 0.8
@@ -74,9 +82,12 @@ Nodes:
             - 0
             - -4.4
             - 0
+        - type: DiePastAxis
+          axis: 1
+          threshold: 0
+          greaterThan: false
       texturePath: data/Textures/bar.png
     Transform:
       Position: [0, 20, 0]
       Rotation: [0, 0, 0, 1]
       Scale: [10, 0.1, 10]
-Lights: ~

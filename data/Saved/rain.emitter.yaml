@@ -1,0 +1,45 @@
+Emitter:
+  name: Rain
+  transform:
+    Position: [0, 20, 0]
+    Rotation: [0, 0, 0, 1]
+    Scale: [10, 0.1, 10]
+  particle:
+    emissionRate: 100
+    duration: -1
+    localSpace: false
+    glow: false
+    maxParticles: 1000
+    shape: 3
+    emitterMode: 0
+    faceCamera: true
+    customLookDir: [0, 0, 1]
+    customUpDir: [0, 1, 0]
+    spawnPosition: [0, 0, 0]
+    spawnVelocity: [0, -5, 0]
+    lifetimeMin: 0.8
+    lifetimeMax: 0.5
+    startSizeMin: 0.5
+    startSizeMax: 0.5
+    startAlphaMin: 0.5
+    startAlphaMax: 0.9
+    rotationMin: 0
+    rotationMax: 0
+    rotationSpeedMin: -7.5
+    rotationSpeedMax: 7.5
+    velocityScaleMin: 0
+    velocityScaleMax: 0
+    colorKeys:
+      - time: 0
+        color: [0.37773928, 0.579941, 0.64215684, 1]
+    affectors:
+      - type: Acceleration
+        velocity:
+          - 0
+          - -4.4
+          - 0
+      - type: DiePastAxis
+        axis: 1
+        threshold: 0
+        greaterThan: false
+    texturePath: data/Textures/bar.png

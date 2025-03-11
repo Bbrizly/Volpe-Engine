@@ -172,10 +172,10 @@ Nodes:
                 - 0
             - type: ScaleOverLife
               startScale: 1
-              endScale: 0.56
+              endScale: 0.21
             - type: FadeOverLife
-              startAlpha: 0.62
-              endAlpha: 0.38
+              startAlpha: 1
+              endAlpha: 1
             - type: TowardsPoint
               target:
                 - 0
@@ -338,10 +338,10 @@ Nodes:
             - 0
         - type: ScaleOverLife
           startScale: 1
-          endScale: 0.56
+          endScale: 0.21
         - type: FadeOverLife
-          startAlpha: 0.62
-          endAlpha: 0.38
+          startAlpha: 1
+          endAlpha: 1
         - type: TowardsPoint
           target:
             - 0

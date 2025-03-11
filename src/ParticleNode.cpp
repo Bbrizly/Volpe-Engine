@@ -494,3 +494,4 @@ glm::vec4 ParticleNode::EvaluateColorGradient(float t)
     }
     return colorKeys.back().color;
 }
+

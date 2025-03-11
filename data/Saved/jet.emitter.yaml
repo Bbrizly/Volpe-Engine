@@ -1,0 +1,48 @@
+Emitter:
+  name: jet
+  transform:
+    Position: [0, 0, 0]
+    Rotation: [0, 2.9802314e-08, 0, 1]
+    Scale: [0.08, 0.08, 0.08]
+  particle:
+    emissionRate: 10
+    duration: -1
+    localSpace: false
+    glow: true
+    maxParticles: 1000
+    shape: 1
+    emitterMode: 0
+    faceCamera: true
+    customLookDir: [0, 0, 1]
+    customUpDir: [0, 1, 0]
+    spawnPosition: [0, 0, 0]
+    spawnVelocity: [0, 0, 0]
+    lifetimeMin: 1
+    lifetimeMax: 1
+    startSizeMin: 1
+    startSizeMax: 1
+    startAlphaMin: 1
+    startAlphaMax: 1
+    rotationMin: 0
+    rotationMax: 360
+    rotationSpeedMin: -7.5
+    rotationSpeedMax: 7.5
+    velocityScaleMin: 0.01
+    velocityScaleMax: 0.05
+    colorKeys:
+      - time: 0
+        color: [1, 0.7058823, 0, 1]
+      - time: 0.447
+        color: [1, 0.52941173, 0, 1]
+      - time: 1
+        color: [0.33823532, 0.33823532, 0.33823532, 1]
+    affectors:
+      - type: Acceleration
+        velocity:
+          - 0
+          - 0
+          - -260.2
+      - type: ScaleOverLife
+        startScale: 0.48
+        endScale: 0
+    texturePath: data/Textures/smoke.png

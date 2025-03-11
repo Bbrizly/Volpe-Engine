@@ -1,15 +1,20 @@
 Emitter:
   name: Pow
   transform:
-    Position: [9.6, 0, 0]
+    Position: [-0.2, 0, 0]
     Rotation: [0, 0, 0, 1]
-    Scale: [1, 1, 1]
+    Scale: [1.7, 1, 1]
   particle:
     emissionRate: 0
-    duration: 1.7
+    duration: -1
     localSpace: false
+    glow: true
     maxParticles: 1000
     shape: 0
+    emitterMode: 1
+    faceCamera: true
+    customLookDir: [0, 0, 1]
+    customUpDir: [0, 1, 0]
     spawnPosition: [0, 0, 0]
     spawnVelocity: [0, 6, 0]
     lifetimeMin: 1.7

@@ -1,0 +1,61 @@
+Emitter:
+  name: Firebase
+  transform:
+    Position: [0.2, 0, 0]
+    Rotation: [0, 0, 0, 1]
+    Scale: [0.5, 0.5, 0.5]
+  particle:
+    emissionRate: 55.2
+    duration: -1
+    localSpace: false
+    glow: true
+    maxParticles: 247
+    shape: 1
+    emitterMode: 0
+    faceCamera: true
+    customLookDir: [0, 0, 1]
+    customUpDir: [0, 1, 0]
+    spawnPosition: [0, 0, 0]
+    spawnVelocity: [0, 1, 0]
+    lifetimeMin: 2
+    lifetimeMax: 2
+    startSizeMin: 1
+    startSizeMax: 1.5
+    startAlphaMin: 1
+    startAlphaMax: 1
+    rotationMin: 0
+    rotationMax: 360
+    rotationSpeedMin: -7.5
+    rotationSpeedMax: 7.5
+    velocityScaleMin: 1
+    velocityScaleMax: 1
+    colorKeys:
+      - time: 0
+        color: [1, 0.9411765, 0, 1]
+      - time: 0.045
+        color: [1, 0.58823526, 0, 1]
+      - time: 0.407
+        color: [1, 0, 0, 1]
+      - time: 0.816
+        color: [1, 0, 0, 1]
+      - time: 1
+        color: [0, 0, 0, 1]
+    affectors:
+      - type: Acceleration
+        velocity:
+          - 0
+          - 0.3
+          - 0
+      - type: ScaleOverLife
+        startScale: 1
+        endScale: 0.21
+      - type: FadeOverLife
+        startAlpha: 1
+        endAlpha: 1
+      - type: TowardsPoint
+        target:
+          - 0
+          - 3
+          - 0
+        strength: 3
+    texturePath: data/Textures/smoke.png

@@ -1495,45 +1495,45 @@ void Program::update(float dt)
     if(rebuildTreeEveryFrame)
         Scene::Instance().ReBuildTree();
 
-    if(m_pApp->isKeyJustDown('J') || m_pApp->isKeyJustDown('j'))
-    {
-        // buildParticleScene();
-        Scene::Instance().Clear();
-        SceneSerializer::LoadScene(Scene::Instance() ,"autosave");
-        Scene::Instance().ReBuildTree();
-    }
-    if(m_pApp->isKeyJustDown('H') || m_pApp->isKeyJustDown('h'))
-    {
-        Scene& scene = Scene::Instance();
-        SceneSerializer::SaveScene(scene, "autosave");
-    }
+    // if(m_pApp->isKeyJustDown('J') || m_pApp->isKeyJustDown('j'))
+    // {
+    //     // buildParticleScene();
+    //     Scene::Instance().Clear();
+    //     SceneSerializer::LoadScene(Scene::Instance() ,"autosave");
+    //     Scene::Instance().ReBuildTree();
+    // }
+    // if(m_pApp->isKeyJustDown('H') || m_pApp->isKeyJustDown('h'))
+    // {
+    //     Scene& scene = Scene::Instance();
+    //     SceneSerializer::SaveScene(scene, "autosave");
+    // }
 
     if(solarSystem)
     {
         //Toggle rotation axis X Y Z 
-        if(m_pApp->isKeyJustDown('I')) {
-            if(OrbitAxis.x == 1)
-                OrbitAxis.x = 0;
-            else
-                OrbitAxis.x = 1;
-        }
-        if(m_pApp->isKeyJustDown('O')) {
-            if(OrbitAxis.y == 1)
-                OrbitAxis.y = 0;
-            else
-                OrbitAxis.y = 1;
-        }
-        if(m_pApp->isKeyJustDown('P')) {
-            if(OrbitAxis.z == 1)
-                OrbitAxis.z = 0;
-            else
-                OrbitAxis.z = 1;
-        }
-        if(m_pApp->isKeyJustDown('J')) 
-            speedMultipler *= 0.8;
+        // if(m_pApp->isKeyJustDown('I')) {
+        //     if(OrbitAxis.x == 1)
+        //         OrbitAxis.x = 0;
+        //     else
+        //         OrbitAxis.x = 1;
+        // }
+        // if(m_pApp->isKeyJustDown('O')) {
+        //     if(OrbitAxis.y == 1)
+        //         OrbitAxis.y = 0;
+        //     else
+        //         OrbitAxis.y = 1;
+        // }
+        // if(m_pApp->isKeyJustDown('P')) {
+        //     if(OrbitAxis.z == 1)
+        //         OrbitAxis.z = 0;
+        //     else
+        //         OrbitAxis.z = 1;
+        // }
+        // if(m_pApp->isKeyJustDown('J')) 
+        //     speedMultipler *= 0.8;
     
-        if(m_pApp->isKeyJustDown('K')) 
-            speedMultipler *= 1.2;
+        // if(m_pApp->isKeyJustDown('K')) 
+        //     speedMultipler *= 1.2;
         
         UpdateSolarSystem(dt);
     }
