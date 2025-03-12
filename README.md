@@ -1,4 +1,76 @@
 
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+# Particle System:
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+A quick crash course on how to use the Volpe particle system.
+
+CONTROLS:
+- Tab to unlock mouse
+- Right Alt to switch cameras
+- IN ORBIT CAMERA
+    - Mouse wheel to zoom
+    - HOLD LEFT Alt to orbit camera around
+    - HOLD Shift to MOVE camera around
+
+
+First lets get you started, 
+
+At the top bar you will notice File, Add and then a few prebuilt scenes (Solar system has 3 variations).
+- File
+    - Save scene
+    - Load scene
+    - Quick save and exit (does not exit but saves scene as "autosave")
+- Add
+    - 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+
 # Volpe Engine
 
 ![Volpe Engine Demo](https://github.com/Bbrizly/Volpe-Engine/blob/main/volpe/readmeVisuals/gif.gif)

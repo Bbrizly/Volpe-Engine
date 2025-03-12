@@ -58,34 +58,6 @@ void SceneSerializer::SaveScene(Scene& scene, const std::string& givenFilePath)
     }
     root["Nodes"] = allNodes;
 
-    // YAML::Node lightsArr;
-    // for(auto& L : scene.GetLights()){
-    //     YAML::Node ln;
-    //     // position
-    //     {
-    //         YAML::Node pos;
-    //         pos.SetStyle(YAML::EmitterStyle::Flow);
-    //         pos.push_back(L.position.x);
-    //         pos.push_back(L.position.y);
-    //         pos.push_back(L.position.z);
-    //         ln["Position"] = pos;
-    //     }
-    //     // color
-    //     {
-    //         YAML::Node col;
-    //         col.SetStyle(YAML::EmitterStyle::Flow);
-    //         col.push_back(L.color.r);
-    //         col.push_back(L.color.g);
-    //         col.push_back(L.color.b);
-    //         ln["Color"] = col;
-    //     }
-    //     ln["Radius"]    = L.radius;
-    //     ln["Intensity"] = L.intensity;
-    //     lightsArr.push_back(ln);
-    // }
-    // root["Lights"] = lightsArr;
-
-    // filePath += ".yaml";
     std::string filePath = givenFilePath;
     
     filePath += ".yaml";
@@ -150,7 +122,7 @@ void SceneSerializer::LoadScene(Scene& scene, const std::string& givenFilePath)
     std::cout<<"[SceneSerializer] Scene loaded from "<<filePath<<"\n";
 }
 
-YAML::Node SceneSerializer::SerializeNode(Node* node)
+/*YAML::Node SceneSerializer::SerializeNode(Node* node)
 {
     YAML::Node n;
     n["Name"] = node->getName();
@@ -215,7 +187,82 @@ YAML::Node SceneSerializer::SerializeNode(Node* node)
             if(childYAML)
                 childArray.push_back(childYAML);
         }
-        n["Children"] = childArray;
+    }
+
+    return n;
+}
+*/
+
+YAML::Node SceneSerializer::SerializeNode(Node* node)
+{
+    if (auto* fx = dynamic_cast<EffectNode*>(node))
+    {
+        return SerializeEffectNode(fx);
+    }
+
+    YAML::Node n;
+    n["Name"] = node->getName();
+
+    // diff values for each type of object
+    if(auto* c = dynamic_cast<DebugCube*>(node)){
+        n["Type"] = "DebugCube";
+        glm::vec3 col = c->getColor();
+        YAML::Node colNode;
+        colNode.SetStyle(YAML::EmitterStyle::Flow);
+        colNode.push_back(col.r);
+        colNode.push_back(col.g);
+        colNode.push_back(col.b);
+        n["Color"] = colNode;
+    }
+    else if (auto* ln = dynamic_cast<LightNode*>(node))
+    {
+        n["Type"] = "LightNode";
+        YAML::Node colNode;
+        colNode.SetStyle(YAML::EmitterStyle::Flow);
+        colNode.push_back(ln->color.r);
+        colNode.push_back(ln->color.g);
+        colNode.push_back(ln->color.b);
+        n["Color"] = colNode;
+        n["Intensity"] = ln->intensity;
+        n["Radius"] = ln->GetRadius();
+    }
+    else if(auto* s = dynamic_cast<DebugSphere*>(node)){
+        n["Type"] = "DebugSphere";
+        glm::vec3 col = s->getColor();
+        YAML::Node colNode;
+        colNode.SetStyle(YAML::EmitterStyle::Flow);
+        colNode.push_back(col.r);
+        colNode.push_back(col.g);
+        colNode.push_back(col.b);
+        n["Color"]  = colNode;
+        n["Radius"] = s->getRadius();
+    }
+    else if(auto* emitter = dynamic_cast<ParticleNode*>(node)){
+        n["Type"] = "ParticleNode";
+        n["ParticleData"] = SerializeParticleNode(emitter);
+    }
+    else if(auto* fx = dynamic_cast<EffectNode*>(node))
+    {
+        n["Type"] = "Effect";
+        n["combineDraws"] = fx->combineDraws; 
+    }
+    else {
+        n["Type"] = "Node";
+    }
+
+    n["Transform"] = SerializeTransform(node);
+
+    const auto& childList = node->getChildren();
+    if (!childList.empty())
+    {
+        YAML::Node childArray;
+        for (auto* childNode : childList)
+        {
+            YAML::Node childYAML = SerializeNode(childNode);
+
+            if(childYAML)
+                childArray.push_back(childYAML);
+        }
     }
 
     return n;
@@ -282,55 +329,24 @@ Node* SceneSerializer::DeserializeNode(const YAML::Node& nodeData, Scene& scene,
     }
     else if(type == "Effect")
     {
+        // Use the dedicated Effect deserialization:
+        newNode = DeserializeEffectNode(nodeData, scene);
+        return newNode;
+    }
+    /*else if(type == "Effect")
+    {
         auto* fx = new EffectNode(name);
         newNode = fx;
 
         if(nodeData["combineDraws"]) {
             fx->combineDraws = nodeData["combineDraws"].as<bool>();
         }
-    }
+    }*/
     else{
         newNode = new Node(name);
     }
 
-    /*if(newNode)
-    {
-        // 1) Always put it in the Scene’s node list so we can do culling, iteration, etc.
-        scene.AddNode(newNode);
 
-        // 2) Then add it as a child of 'parent' if 'parent' is not null
-        if(parent)
-        {
-            // If the parent is an EffectNode and the new node is a ParticleNode, 
-            // we can also call `effect->addEmitter(...)` 
-            // but we *still* do scene.AddNode(...) above to ensure it's the same pointer in the scene.
-
-            if(auto* parentEffect = dynamic_cast<EffectNode*>(parent))
-            {
-                // If it’s a ParticleNode => effect->addEmitter(...) calls addChild internally
-                if(auto* childEmitter = dynamic_cast<ParticleNode*>(newNode))
-                    parentEffect->addEmitter(childEmitter);
-                else
-                    parentEffect->addChild(newNode);
-            }
-            else
-            {
-                // Normal parent-child
-                parent->addChild(newNode);
-            }
-        }
-
-        // 3) Recurse if we have child YAML
-        if(nodeData["Children"])
-        {
-            for(auto childData : nodeData["Children"])
-            {
-                DeserializeNode(childData, scene, newNode);
-            }
-        }
-    }*/
-
-    
     if(newNode){
         // Apply transform
         if(nodeData["Transform"]){
@@ -338,29 +354,16 @@ Node* SceneSerializer::DeserializeNode(const YAML::Node& nodeData, Scene& scene,
         }
 
         // Deal with children
-        if(parent){
-            if(auto* parentEffect = dynamic_cast<EffectNode*>(parent))
-            {
-                if(auto* childEmitter = dynamic_cast<ParticleNode*>(newNode))
-                    parentEffect->addEmitter(childEmitter);
-                
-                else
-                    parentEffect->addChild(newNode);
-            }
-            else 
-            {
-                parent->addChild(newNode);
-            }
-            
-        } else {
-            scene.AddNode(newNode);
-        }
-
-        if(nodeData["Children"]){
+        if(nodeData["Children"] && type != "Effect"){
             for(auto childData : nodeData["Children"]){
                 DeserializeNode(childData, scene, newNode);
             }
         }
+        
+        if(parent)
+            parent->addChild(newNode);
+        else
+            scene.AddNode(newNode);
     }
     
     return newNode;
@@ -479,11 +482,10 @@ YAML::Node SceneSerializer::SerializeParticleNode(const ParticleNode* emitter)
         stretchNode.push_back(emitter->customUpDir.z);
         n["customUpDir"] = stretchNode;
     }
-    // n["defaultStretch"].push_back(emitter->defaultStretch.x);
-    // n["defaultStretch"].push_back(emitter->defaultStretch.y);
     
     n["lockXAxis"] = emitter->lockXAxis;
     n["lockYAxis"] = emitter->lockYAxis;
+    n["lockZAxis"] = emitter->lockZAxis;
 
     // rotation range
     n["rotationMin"]      = emitter->rotationMin;
@@ -592,6 +594,8 @@ void SceneSerializer::DeserializeParticleNode(const YAML::Node& n, ParticleNode*
         emitter->lockXAxis = n["lockXAxis"].as<bool>();
     if(n["lockYAxis"])
         emitter->lockYAxis = n["lockYAxis"].as<bool>();
+    if(n["lockZAxis"])
+        emitter->lockZAxis = n["lockZAxis"].as<bool>();
 
     // rotation
     if(n["rotationMin"])      emitter->rotationMin = n["rotationMin"].as<float>();
@@ -637,6 +641,70 @@ void SceneSerializer::DeserializeParticleNode(const YAML::Node& n, ParticleNode*
     }
     emitter->Stop();
     emitter->Play();
+}
+
+YAML::Node SceneSerializer::SerializeEffectNode(EffectNode* fx)
+{
+    YAML::Node n;
+    n["Name"] = fx->getName();
+    n["Type"] = "Effect";
+    n["combineDraws"] = fx->combineDraws;
+    n["Transform"] = SerializeTransform(fx);
+    
+    // Instead of recursing into fx->getChildren(), we explicitly save
+    // the effect’s emitters in a dedicated “emitters” array.
+    YAML::Node emitterArray(YAML::NodeType::Sequence);
+    for(auto* child : fx->getChildren())
+    {
+        if(auto* emitter = dynamic_cast<ParticleNode*>(child))
+        {
+            YAML::Node oneEm;
+            oneEm["EmitterName"] = emitter->getName();
+            oneEm["Transform"] = SerializeTransform(emitter);
+            oneEm["ParticleData"] = SerializeParticleNode(emitter);
+            emitterArray.push_back(oneEm);
+        }
+    }
+    n["emitters"] = emitterArray;
+    // Do not add a generic "Children" field here.
+    return n;
+}
+Node* SceneSerializer::DeserializeEffectNode(const YAML::Node& nodeData, Scene& scene)
+{
+    EffectNode* fx = nullptr;
+    if(nodeData["Name"])
+        fx = new EffectNode(nodeData["Name"].as<std::string>());
+    else
+        fx = new EffectNode("UnnamedEffect");
+
+    if(nodeData["combineDraws"])
+        fx->combineDraws = nodeData["combineDraws"].as<bool>();
+
+    if(nodeData["Transform"])
+        DeserializeTransform(fx, nodeData["Transform"]);
+
+    // Instead of processing generic children, load emitters only from the "emitters" field.
+    if(nodeData["emitters"] && nodeData["emitters"].IsSequence())
+    {
+        for(auto e : nodeData["emitters"])
+        {
+            std::string eName = "Emitter";
+            if(e["EmitterName"])
+                eName = e["EmitterName"].as<std::string>();
+            ParticleNode* emitter = new ParticleNode(eName);
+
+            if(e["Transform"])
+                DeserializeTransform(emitter, e["Transform"]);
+            if(e["ParticleData"])
+                DeserializeParticleNode(e["ParticleData"], emitter);
+
+            fx->addEmitter(emitter);
+            // Do not add emitter separately to the scene; they are children of fx.
+        }
+    }
+
+    scene.AddNode(fx);
+    return fx;
 }
 
 //Color keys (bane of my existance)
@@ -948,7 +1016,6 @@ EffectNode* SceneSerializer::LoadEffectNode(Scene& scene, const std::string& fil
                 DeserializeParticleNode(e["ParticleData"], emitter);
 
             fx->addEmitter(emitter);
-            scene.AddNode(emitter);
         }
     }
 

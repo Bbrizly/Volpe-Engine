@@ -54,6 +54,7 @@ public:
     glm::vec2 defaultStretch = glm::vec2(1.0f, 1.0f);
     
     bool lockXAxis = false;
+    bool lockZAxis = false;
     bool lockYAxis = false;
     
     float startSizeMin = 0.5f;   // min size at birth

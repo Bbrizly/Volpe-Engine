@@ -1,0 +1,82 @@
+Scene: VolpeScene
+Nodes:
+  - Name: Effect_0
+    Type: Effect
+    combineDraws: false
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0, 1]
+      Scale: [1, 1, 1]
+    emitters:
+      - EmitterName: Emitter_1
+        Transform:
+          Position: [7.9, 5.8, 0]
+          Rotation: [0, 0, 0, 1]
+          Scale: [1, 1, 1]
+        ParticleData:
+          emissionRate: 10
+          duration: -1
+          localSpace: false
+          glow: false
+          glowIntensity: 0
+          maxParticles: 1000
+          shape: 0
+          emitterMode: 0
+          faceCamera: true
+          customLookDir: [0, 0, 1]
+          customUpDir: [0, 1, 0]
+          spawnPosition: [0, 0, 0]
+          spawnVelocity: [0, 1, 0]
+          lifetimeMin: 1
+          lifetimeMax: 4
+          startSizeMin: 0.5
+          startSizeMax: 1.5
+          startAlphaMin: 1
+          startAlphaMax: 1
+          lockXAxis: false
+          lockYAxis: false
+          lockZAxis: false
+          rotationMin: 0
+          rotationMax: 360
+          rotationSpeedMin: -7.5
+          rotationSpeedMax: 7.5
+          velocityScaleMin: 0
+          velocityScaleMax: 2
+          colorKeys: ~
+          texturePath: data/Textures/smoke.png
+      - EmitterName: Emitter_2
+        Transform:
+          Position: [0, 0, 0]
+          Rotation: [0, 0, 0, 1]
+          Scale: [1, 1, 1]
+        ParticleData:
+          emissionRate: 10
+          duration: -1
+          localSpace: false
+          glow: false
+          glowIntensity: 0
+          maxParticles: 1000
+          shape: 0
+          emitterMode: 0
+          faceCamera: true
+          customLookDir: [0, 0, 1]
+          customUpDir: [0, 1, 0]
+          spawnPosition: [0, 0, 0]
+          spawnVelocity: [0, 1, 0]
+          lifetimeMin: 1
+          lifetimeMax: 4
+          startSizeMin: 0.5
+          startSizeMax: 1.5
+          startAlphaMin: 1
+          startAlphaMax: 1
+          lockXAxis: false
+          lockYAxis: false
+          lockZAxis: false
+          rotationMin: 0
+          rotationMax: 360
+          rotationSpeedMin: -7.5
+          rotationSpeedMax: 7.5
+          velocityScaleMin: 0
+          velocityScaleMax: 2
+          colorKeys: ~
+          texturePath: data/Textures/smoke.png

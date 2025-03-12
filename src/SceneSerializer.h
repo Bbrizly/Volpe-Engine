@@ -34,6 +34,9 @@ private:
     int variance = 0;
     static YAML::Node SerializeNode(Node* node);
     static Node*     DeserializeNode(const YAML::Node& nodeData, Scene& scene, Node* parent);
+    
+    static YAML::Node SerializeEffectNode(EffectNode* fx);
+    static Node* DeserializeEffectNode(const YAML::Node& nodeData, Scene& scene);
 
     // for gradient keysss
     static YAML::Node SerializeColorKeys(const std::vector<ColorKey>& keys);

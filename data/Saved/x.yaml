@@ -23,11 +23,11 @@ Nodes:
           Rotation: [0, 0, 0, 1]
           Scale: [1, 1, 1]
         ParticleData:
-          emissionRate: 1
+          emissionRate: 9999
           duration: -1
           localSpace: false
           glow: true
-          glowIntensity: 6.85
+          glowIntensity: 0
           maxParticles: 1
           shape: 0
           emitterMode: 0
@@ -38,8 +38,8 @@ Nodes:
           spawnVelocity: [0, 0, 0]
           lifetimeMin: 5
           lifetimeMax: 5
-          startSizeMin: 3
-          startSizeMax: 3
+          startSizeMin: 2.5
+          startSizeMax: 2.5
           startAlphaMin: 100
           startAlphaMax: 100
           lockXAxis: false
@@ -47,8 +47,8 @@ Nodes:
           lockZAxis: false
           rotationMin: 0
           rotationMax: 360
-          rotationSpeedMin: 35
-          rotationSpeedMax: 35
+          rotationSpeedMin: 20
+          rotationSpeedMax: 20
           velocityScaleMin: 0
           velocityScaleMax: 0
           colorKeys:

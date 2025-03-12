@@ -506,25 +506,33 @@ void ParticleNode::buildVertexData(const glm::mat4& view)
 }
 
 // =-=-=-=-=-=-=-=-=HELPERS=-=-=-=-=-=-=-=-=-=
+
 void ParticleNode::getCameraRightUp(const glm::mat4& view, glm::vec3& outRight, glm::vec3& outUp)
 {
-    glm::mat3 rot = glm::inverse(glm::mat3(view));
-    //billboard codee
-    if(lockYAxis) {
-        
-        glm::vec3 camDir = glm::normalize(glm::vec3(rot[2][0], rot[2][1], rot[2][2]));
-        outUp = glm::vec3(0,1,0);
-        outRight = glm::normalize(glm::cross(camDir, outUp));
-        return;
-    }
-    else if(lockXAxis) {
-        glm::vec3 camDir = glm::normalize(glm::vec3(rot[2][0], rot[2][1], rot[2][2]));
-        outRight = glm::vec3(1,0,0);
-        outUp = glm::normalize(glm::cross(outRight, camDir));
-        return;
-    }
-    outRight = glm::normalize(glm::vec3(rot[0][0], rot[0][1], rot[0][2]));
-    outUp    = glm::normalize(glm::vec3(rot[1][0], rot[1][1], rot[1][2]));
+    glm::mat3 camRot = glm::inverse(glm::mat3(view));
+    glm::vec3 camRight = glm::normalize(glm::vec3(camRot[0]));
+    glm::vec3 camUp    = glm::normalize(glm::vec3(camRot[1]));
+
+    const glm::vec3 globalRight   = glm::vec3(1, 0, 1);
+    const glm::vec3 globalUp      = glm::vec3(0, 1, 0);
+
+    // and if not locked then use 1 (takes cam values)
+    glm::vec3 mask( lockXAxis ? 0.0f : 1.0f,
+                    lockYAxis ? 0.0f : 1.0f,
+                    lockZAxis ? 0.0f : 1.0f );
+                
+    glm::vec3 invMask = glm::vec3(1.0f) - mask;
+
+    //mask is just xyz as 1 and 0. so if x is 0 then we multiply it 
+    //by camright and we lose the camright and are left with the added globalRight that is defined bfeore
+    glm::vec3 blendedRight = (camRight * mask) + (globalRight * invMask);
+    blendedRight = glm::normalize(blendedRight);
+    glm::vec3 blendedUp = (camUp * mask) + (globalUp * invMask);
+    blendedUp = glm::normalize(blendedUp - glm::dot(blendedUp, blendedRight) * blendedRight);
+
+
+    outRight = blendedRight;
+    outUp = blendedUp;
 }
 
 glm::vec4 ParticleNode::EvaluateColorGradient(float t)

@@ -704,8 +704,7 @@ void Program::DrawInspector()
 
         ImGui::DragFloat("Emission Rate", &emitter->emissionRate, 0.1f, 0.f, 9999.f);
 
-        ImGui::Checkbox("Local Space", &emitter->localSpace);
-        ImGui::SameLine();
+        // ImGui::Checkbox("Local Space", &emitter->localSpace);
         ImGui::Checkbox("Glow", &emitter->glow);
         if(emitter->glow)
         {
@@ -714,8 +713,8 @@ void Program::DrawInspector()
             ImGui::DragFloat("Intensity", &emitter->glowIntensity, 0.05f, 0.0f);
             ImGui::PopItemWidth();
         }
-        if(ImGui::Checkbox("Face Camera", &emitter->faceCamera)) {}
         
+        ImGui::Checkbox("Face Camera", &emitter->faceCamera);
         if(!emitter->faceCamera)
         {
             ImGui::DragFloat3("Custom Look Dir", (float*)&emitter->customLookDir, 0.05f);
@@ -723,8 +722,11 @@ void Program::DrawInspector()
         }
         else
         {
-            ImGui::Checkbox("Lock X Axis", &emitter->lockXAxis);
-            ImGui::Checkbox("Lock Y Axis", &emitter->lockYAxis);
+            ImGui::Checkbox(",##XAxis", &emitter->lockXAxis);
+            ImGui::SameLine();
+            ImGui::Checkbox(",##YAxis", &emitter->lockYAxis);
+            ImGui::SameLine();
+            ImGui::Checkbox("Lock (x,y,z)##ZAxis", &emitter->lockZAxis);
         }
         ImGui::DragFloat2("Stretch (X,Y)", (float*)&emitter->defaultStretch, 0.01f, 0.0f, 10.0f);
 
@@ -985,6 +987,8 @@ void Program::DrawInspector()
     }
     else if (auto* effect = dynamic_cast<EffectNode*>(g_selectedNode))
     {
+        if(!g_selectedNode || !effect) return;
+
         #pragma region Saving & loadingg
 
         // Save
@@ -1310,12 +1314,18 @@ void Program::DrawTopBar()
             if (ImGui::MenuItem("Default solar system"))
             {
                 SwitchScene(SceneType::SolarSystem);
-                // BuildSolarSystem(true);
+            }
+            if (ImGui::MenuItem("COOL SHIT solar system"))
+            {
+                SwitchScene(SceneType::SolarSystem);
+                EffectNode* effect = new EffectNode("Effect_" + to_string(addedNode++));
+                Scene::Instance().AddNode(effect);
+                effect = SceneSerializer::LoadEffectNode(Scene::Instance(), "data/Saved/dunno.effect.yaml");
+                Scene::Instance().ReBuildTree();
             }
             if (ImGui::MenuItem("Astroids included?"))
             {
                 SwitchScene(SceneType::SolarSystem);
-                // BuildSolarSystem(true);
                 BuildAsteroidField(200, 25.0f, 40.0f);
             }
             ImGui::EndMenu();
@@ -1324,6 +1334,25 @@ void Program::DrawTopBar()
             SwitchScene(SceneType::Random);
         if (ImGui::MenuItem("Particle Scene"))
             SwitchScene(SceneType::Particle);
+        if (ImGui::MenuItem("Fire Scene"))
+        {
+            SwitchScene(SceneType::Particle);
+            SceneSerializer::LoadScene(Scene::Instance(), "data/Saved/firescene");
+            Scene::Instance().ReBuildTree();
+        }
+        if (ImGui::MenuItem("Rain Scene"))
+        {
+            SwitchScene(SceneType::Particle);
+            SceneSerializer::LoadScene(Scene::Instance(), "data/Saved/rain1");
+            Scene::Instance().ReBuildTree();
+        }
+        if (ImGui::MenuItem("Magic spell"))
+        {
+            SwitchScene(SceneType::Particle);
+            SceneSerializer::LoadScene(Scene::Instance(), "data/Saved/magicspell");
+            Scene::Instance().ReBuildTree();
+        }
+
 
         ImGui::EndMainMenuBar();
     }
@@ -1480,9 +1509,11 @@ void Program::init()
     orbitCamera = new OrbitCamera(m_pApp);
     orbitCamera->focusOn(glm::vec3(-10.0f,-10.0f,-10.0f),glm::vec3(10.0f,10.0f,10.0f));
 
-    Scene::Instance().SetActiveCamera(fpsCamera);
+    Scene::Instance().SetActiveCamera(orbitCamera);
     
     Scene::Instance().InitLights();
+    Scene::Instance().showGrid = false;
+    rebuildTreeEveryFrame = true;
 
     // buildParticleScene();
     // BuildSolarSystem(bounds);
