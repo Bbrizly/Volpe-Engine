@@ -5,7 +5,7 @@
 #include "DebugSphere.h"
 #include "QuadTree.h"
 #include "OctTree.h"
-#include "Light.h"
+#include "LightNode.h"
 #include "../samplefw/Camera.h"
 #include "../samplefw/Grid3D.h"
 #include "../samplefw/Sphere.h"
@@ -34,7 +34,7 @@ private:
 
     vector<Node*> m_nodes;
     vector<Node*> m_nodesToRender;
-    vector<Light> m_lights; 
+    // vector<Light> m_lights; 
     Camera* m_activeCamera;
     Camera* m_movemenetCamera;
     QuadTree* m_quadTree;
@@ -52,7 +52,7 @@ private:
     TextBox* textBox = nullptr;
     TextBox* debugTextBox = nullptr;
 
-    vector<Light> pickLightsForNode(const Node* node);
+    // vector<Light> pickLightsForNode(const Node* node);
 
     Frustum m_debugFrustum;
     bool m_useDebugFrustum = false;
@@ -62,10 +62,8 @@ private:
 
     //STATISTICSSS
 
-    // Track the last time (in ms) it took to build the QuadTree.
     float m_lastQuadTreeBuildTimeMs = 0.0f;
 
-    // We'll keep exponential-moving-average for each update time:
     float m_avgCreation             = 0.0f;
     float m_avgCameraUpdateMs       = 0.0f;
     float m_avgNodeUpdateMs         = 0.0f;
@@ -77,29 +75,66 @@ private:
     //BOUNDS
     float m_bounds = 10.0f;
 
+    bool shownLights = false;
     bool reDebug = false;
     
-    const float m_smoothAlpha = 0.0001f;
+    const float m_smoothAlpha = 0.01f;
+
+    float m_lastKnownFps = 0.0f;
 
 public:
 
+    bool showGrid = true;
+
+    #pragma region GETTERS FOR IMGUI
+
+    float getFPS() const { return m_lastKnownFps; }  // m_lastKnownFps should be updated in Update()
+    bool getShowDebug() const { return m_ShowDebug; }
+    bool getShowBoundingVolumes() const { return m_ShowBoundingVolumes; }
+    bool getUseDebugFrustum() const { return m_useDebugFrustum; }
+    std::string getActiveTreeName() const { return m_useQuadTreeOrOct ? "Quad" : "Oct"; }
+    float getSceneCreationTime() const { return m_avgCreation; }
+    float getTreeBuildTime() const { return m_lastQuadTreeBuildTimeMs; }
+    float getAvgCameraUpdateMs() const { return m_avgCameraUpdateMs; }
+    float getAvgNodeUpdateMs() const { return m_avgNodeUpdateMs; }
+    float getAvgBoundingVolumeMs() const { return m_avgBoundingVolumeMs; }
+    float getAvgFrustumExtractMs() const { return m_avgFrustumExtractMs; }
+    float getAvgQuadTreeQueryMs() const { return m_avgQuadTreeQueryMs; }
+    float getAvgLightQuery() const { return m_avgLightQuery; }
+    size_t getNodesAffectedByLight() const
+    {
+        size_t count = 0;
+        for (const auto* node : m_nodes)
+        {
+            if (node && !node->m_affectingLights.empty())
+                count++;
+        }
+        return count;
+    }
+
+    // const std::vector<Light>& GetLights() const { return m_lights; }
+    const std::vector<Node*>& GetNodes() const { return m_nodes; }
+    const std::vector<Node*>& GetNodesToRender() const { return m_nodesToRender; }
+
+    #pragma endregion
+
+
     static Scene& Instance();
-    
+    void AddLight(const glm::vec3& position, const glm::vec3& color, float intensity, float radius);
     void AddNode(Node* node);
+    void RemoveNode(Node* node);
 
     void RandomInitScene(int amount);
 
     void SetActiveCamera(Camera* cam) { m_activeCamera = cam; }
+    Camera* GetActiveCamera() { return m_activeCamera; }
     void BuildQuadTree();
     void BuildOctTree();
     void Update(float dt, int screenWidth, int screenHeight);
     void Render(int screenWidth, int screenHeight);
 
-    void AddLight(Light l);
     void InitLights();         // rando lgihts
     void UpdateLighting();     // choose which cubes get which program
-    void MoveLights();
-    
 
     void setTextBoxPos(float x, float y)
     {
@@ -118,9 +153,11 @@ public:
     void ToggleUseDebugFrustum(Camera* c);
 
     bool getWhichTree() {return m_useQuadTreeOrOct;} //true quadtree, false octree
+    void ReBuildTree(); 
 
     //TEMPORARYYYY
     vector<Node*> GetNodes() { return m_nodes; }
+    vector<Node*> GetNodesToRender() { return m_nodesToRender; }
 
     void Clear();
 

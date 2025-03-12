@@ -1,0 +1,180 @@
+Scene: VolpeScene
+Nodes:
+  - Name: Wall
+    Type: DebugCube
+    Color: [0.34509805, 0.34509805, 0.34509805]
+    Transform:
+      Position: [-6.4, 5.2, 0]
+      Rotation: [0, 0, 0.116670735, 0.9931707]
+      Scale: [0.0010000004, 50.00005, 20]
+  - Name: ground
+    Type: DebugCube
+    Color: [0.0627451, 0.0627451, 0.0627451]
+    Transform:
+      Position: [0, -1, 0.1]
+      Rotation: [0, 0, 0, 1]
+      Scale: [20, 0.001, 20]
+  - Name: FullFire
+    Type: Effect
+    combineDraws: false
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0, 1]
+      Scale: [1, 1, 1]
+    Children:
+      - Name: FireSparksk
+        Type: ParticleNode
+        ParticleData:
+          emissionRate: 10
+          duration: -1
+          localSpace: false
+          glow: true
+          maxParticles: 30
+          shape: 1
+          emitterMode: 0
+          faceCamera: true
+          customLookDir: [0, 0, 1]
+          customUpDir: [0, 1, 0]
+          spawnPosition: [0, 0, 0]
+          spawnVelocity: [0, 1, 0]
+          lifetimeMin: 2
+          lifetimeMax: 2
+          startSizeMin: 1
+          startSizeMax: 1.5
+          startAlphaMin: 1
+          startAlphaMax: 1
+          rotationMin: 0
+          rotationMax: 360
+          rotationSpeedMin: -7.5
+          rotationSpeedMax: 7.5
+          velocityScaleMin: 1
+          velocityScaleMax: 1
+          colorKeys:
+            - time: 0
+              color: [1, 0.9411765, 0, 1]
+            - time: 1
+              color: [1, 0.8235294, 0, 1]
+          affectors:
+            - type: Acceleration
+              velocity:
+                - 0
+                - 0.3
+                - 0
+            - type: ScaleOverLife
+              startScale: 0.2
+              endScale: 0
+            - type: FadeOverLife
+              startAlpha: 1
+              endAlpha: 1
+            - type: TowardsPoint
+              target:
+                - 0
+                - 3
+                - 0
+              strength: 1
+          texturePath: data/Textures/smoke.png
+        Transform:
+          Position: [0.4, 0, 0]
+          Rotation: [0, 0, 0, 1]
+          Scale: [0.5, 0.5, 0.5]
+      - Name: Smokek
+        Type: ParticleNode
+        ParticleData:
+          emissionRate: 5
+          duration: -1
+          localSpace: false
+          glow: false
+          maxParticles: 1000
+          shape: 0
+          emitterMode: 0
+          faceCamera: true
+          customLookDir: [0, 0, 1]
+          customUpDir: [0, 1, 0]
+          spawnPosition: [0, 0, 0]
+          spawnVelocity: [0, 3.85, 0]
+          lifetimeMin: 4
+          lifetimeMax: 4
+          startSizeMin: 3.5
+          startSizeMax: 3.9
+          startAlphaMin: 0
+          startAlphaMax: 0
+          rotationMin: 0
+          rotationMax: 360
+          rotationSpeedMin: -5
+          rotationSpeedMax: 5
+          velocityScaleMin: 1
+          velocityScaleMax: 1
+          colorKeys: ~
+          affectors:
+            - type: ScaleOverLife
+              startScale: 0.6
+              endScale: 2
+            - type: FadeOverLife
+              startAlpha: 0.6
+              endAlpha: 0
+          texturePath: data/Textures/smoke2.png
+        Transform:
+          Position: [0, 4.4, 0]
+          Rotation: [0, 0, 0, 1]
+          Scale: [1, 1, 1]
+      - Name: Firebasek
+        Type: ParticleNode
+        ParticleData:
+          emissionRate: 55.2
+          duration: -1
+          localSpace: false
+          glow: true
+          maxParticles: 247
+          shape: 2
+          emitterMode: 0
+          faceCamera: true
+          customLookDir: [0, 0, 1]
+          customUpDir: [0, 1, 0]
+          spawnPosition: [0, 0, 0]
+          spawnVelocity: [0, 1, 0]
+          lifetimeMin: 2
+          lifetimeMax: 2
+          startSizeMin: 1
+          startSizeMax: 1.5
+          startAlphaMin: 1
+          startAlphaMax: 1
+          rotationMin: 0
+          rotationMax: 360
+          rotationSpeedMin: -7.5
+          rotationSpeedMax: 7.5
+          velocityScaleMin: 1
+          velocityScaleMax: 1
+          colorKeys:
+            - time: 0
+              color: [1, 0.9411765, 0, 1]
+            - time: 0.045
+              color: [1, 0.58823526, 0, 1]
+            - time: 0.407
+              color: [1, 0, 0, 1]
+            - time: 0.816
+              color: [1, 0, 0, 1]
+            - time: 1
+              color: [0, 0, 0, 1]
+          affectors:
+            - type: Acceleration
+              velocity:
+                - 0
+                - 0.3
+                - 0
+            - type: ScaleOverLife
+              startScale: 1
+              endScale: 0.21
+            - type: FadeOverLife
+              startAlpha: 1
+              endAlpha: 1
+            - type: TowardsPoint
+              target:
+                - 0
+                - 3
+                - 0
+              strength: 3
+          texturePath: data/Textures/smoke.png
+        Transform:
+          Position: [0.2, 0.5, 0]
+          Rotation: [0, 0, 0, 1]
+          Scale: [1, 2, 1]

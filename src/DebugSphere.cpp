@@ -20,20 +20,22 @@ DebugSphere::DebugSphere(const std::string& name, float radius)
     SetBoundingVolume(m_boundingVolumeSphere);
 
     volpe::Material* mat = volpe::MaterialManager::CreateMaterial("DebugSphereMat");
+    // volpe::Material* mat = volpe::MaterialManager::CreateMaterial(name + "DebugSphereMat"); //to work for multiple particle systems.
     mat->SetProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
     mat->SetDepthTest(true);
     mat->SetDepthWrite(true);
     SetMaterial(mat);
+    m_ownsMaterial = true;
 
-    initGeometry(20, 20);
+    initGeometry(10, 10);
 }
 
 DebugSphere::~DebugSphere()
 {
-    if(GetMaterial()) {
-        volpe::MaterialManager::DestroyMaterial(GetMaterial());
-        SetMaterial(nullptr);
-    }
+    // if(GetMaterial()) {
+    //     volpe::MaterialManager::DestroyMaterial(GetMaterial());
+    //     SetMaterial(nullptr);
+    // }
 }
 
 void DebugSphere::setColor(GLubyte r, GLubyte g, GLubyte b)

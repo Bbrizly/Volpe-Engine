@@ -1,6 +1,6 @@
 #pragma once
 #include "Node.h"
-#include "SphereVolume.h"
+#include "../samplefw/BoundingVolumes/SphereVolume.h"
 #include "../volpe/Volpe.h"
 #include <glm/glm.hpp>
 #include <vector>
@@ -12,7 +12,9 @@ public:
     virtual ~DebugSphere();
 
     void setColor(GLubyte r, GLubyte g, GLubyte b);
+    glm::vec3 getColor() {return m_color;}
     void setRadius(float r);
+    float getRadius() {return m_radius;}
 
     virtual void draw(const glm::mat4& proj, const glm::mat4& view) override;
 

@@ -3,7 +3,7 @@
 #include "AABBVolume.h"
 #include <glm/glm.hpp>
 #include <cmath>
-#include "DebugRender.h"
+#include "../src/DebugRender.h"
 
 class AABBVolume;
 

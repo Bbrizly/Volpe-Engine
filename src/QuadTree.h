@@ -7,7 +7,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <GL/glew.h>
 #include <iostream>
-#include "AABB2D.h"
+#include "../samplefw/BoundingVolumes/AABB2D.h"
+#include "../samplefw/BoundingVolumes/AABBVolume.h"
+#include "../samplefw/BoundingVolumes/SphereVolume.h"
 
 class QuadTree {
 public:

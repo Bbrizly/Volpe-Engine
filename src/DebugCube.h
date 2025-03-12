@@ -1,6 +1,6 @@
 #pragma once
 #include "Node.h"
-#include "AABBVolume.h"
+#include "../samplefw/BoundingVolumes/AABBVolume.h"
 #include "../volpe/Volpe.h"
 #include <glm/glm.hpp>
 #include <vector>
@@ -11,6 +11,7 @@ public:
     DebugCube(const std::string& name);
     virtual ~DebugCube();
 
+    glm::vec3 getColor() {return m_color;}
     void setColor(GLubyte r, GLubyte g, GLubyte b);
 
     virtual void draw(const glm::mat4& proj, const glm::mat4& view) override;

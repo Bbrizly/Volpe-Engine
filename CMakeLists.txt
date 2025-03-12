@@ -4,6 +4,11 @@ project(sample VERSION 0.1.0)
 set(OpenGL_GL_PREFERENCE "GLVND")
 find_package(OpenGL REQUIRED)
 
+# Optional: Force yaml-cpp to build as a static library if desired.
+set(YAML_CPP_BUILD_SHARED_LIBS OFF CACHE BOOL "Build yaml-cpp as a static library" FORCE)
+# Add yaml-cpp from your thirdparty folder.
+add_subdirectory(thirdparty/yaml-cpp)
+
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "If the test suite for Assimp is built in addition to the library." FORCE)
 set(ASSIMP_NO_EXPORT ON CACHE BOOL "Disable Assimp's export functionality." FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "If the supplementary tools for Assimp are built in addition to the library." FORCE)
@@ -56,44 +61,59 @@ add_definitions(-DASSIMP_BUILD_NO_X_IMPORTER
                 -DASSIMP_BUILD_NO_STEP_IMPORTER
                 -DASSIMP_BUILD_NO_BLEND_IMPORTER)
 
-
 add_definitions(-DNO_ASSIMP)
 add_subdirectory(thirdparty/glfw)
 add_subdirectory(thirdparty/glm)
 add_subdirectory(thirdparty/assimp)
 add_subdirectory(thirdparty/glew/build/cmake)
+# add_subdirectory(thirdparty/yaml-cpp)
+
+set(IMGUI_SOURCES
+    ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui.cpp
+    ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_draw.cpp
+    ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_widgets.cpp
+    ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_demo.cpp
+    ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_tables.cpp
+    ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_impl_glfw.cpp
+    ${CMAKE_SOURCE_DIR}/thirdparty/imgui/imgui_impl_opengl3.cpp
+)
+add_library(imgui ${IMGUI_SOURCES})
+target_include_directories(imgui PUBLIC ${CMAKE_SOURCE_DIR}/thirdparty/imgui)
+target_compile_definitions(imgui PUBLIC IMGUI_IMPL_OPENGL_LOADER_GLEW)
 
 include_directories(
     thirdparty/glfw/include 
     thirdparty/glm 
     thirdparty/glew/include 
     thirdparty/assimp/include
+    # thirdparty
+    thirdparty/yaml-cpp/include
     ${CMAKE_SOURCE_DIR}/volpe
-    # ${CMAKE_SOURCE_DIR}/volpe/TextRendering # Add this if needed
-    ${OPENGL_INCLUDE_DIRS})
+    ${OPENGL_INCLUDE_DIRS}
+)
 
 file(GLOB_RECURSE SAMPLEFW_SOURCE_FILES 
-	${CMAKE_SOURCE_DIR}/samplefw/*.c
+    ${CMAKE_SOURCE_DIR}/samplefw/*.c
     ${CMAKE_SOURCE_DIR}/samplefw/*.cpp)
 
 file(GLOB_RECURSE SAMPLEFW_HEADER_FILES 
-	${CMAKE_SOURCE_DIR}/samplefw/*.h
+    ${CMAKE_SOURCE_DIR}/samplefw/*.h
     ${CMAKE_SOURCE_DIR}/samplefw/*.hpp)
 
 file(GLOB_RECURSE VOLPE_SOURCE_FILES 
-	${CMAKE_SOURCE_DIR}/volpe/*.c
+    ${CMAKE_SOURCE_DIR}/volpe/*.c
     ${CMAKE_SOURCE_DIR}/volpe/*.cpp)
 
 file(GLOB_RECURSE VOLPE_HEADER_FILES 
-	${CMAKE_SOURCE_DIR}/volpe/*.h
+    ${CMAKE_SOURCE_DIR}/volpe/*.h
     ${CMAKE_SOURCE_DIR}/volpe/*.hpp)
 
 file(GLOB_RECURSE SOURCE_FILES 
-	${CMAKE_SOURCE_DIR}/src/*.c
-	${CMAKE_SOURCE_DIR}/src/*.cpp)
-	
+    ${CMAKE_SOURCE_DIR}/src/*.c
+    ${CMAKE_SOURCE_DIR}/src/*.cpp)
+    
 file(GLOB_RECURSE HEADER_FILES 
-	${CMAKE_SOURCE_DIR}/src/*.h
+    ${CMAKE_SOURCE_DIR}/src/*.h
     ${CMAKE_SOURCE_DIR}/src/*.hpp)
 
 add_executable(sample 
@@ -103,9 +123,9 @@ add_executable(sample
     ${VOLPE_HEADER_FILES}
     ${SOURCE_FILES}
     ${HEADER_FILES}
-    )
+)
 
-target_link_libraries(sample assimp glfw glew ${OPENGL_LIBRARIES} ${GLFW_LIBRARIES})
+target_link_libraries(sample assimp glfw glew imgui yaml-cpp ${OPENGL_LIBRARIES} ${GLFW_LIBRARIES})
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

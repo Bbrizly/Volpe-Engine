@@ -1,0 +1,69 @@
+Scene: VolpeScene
+Nodes:
+  - Name: Effect_0
+    Type: Node
+    Transform:
+      Position: [0.2, 0, 0]
+      Rotation: [0, 0, 0, 1]
+      Scale: [1, 1, 1]
+  - Name: Emitter_1
+    Type: ParticleNode
+    ParticleData:
+      emissionRate: 10
+      localSpace: false
+      maxParticles: 1000
+      shape: 0
+      globalAcceleration: [0, -9.81, 0]
+      spawnPosition: [0, 0, 0]
+      spawnVelocity: [0, 1, 0]
+      lifetimeMin: 1
+      lifetimeMax: 4
+      startSizeMin: 0.5
+      startSizeMax: 1.5
+      startAlphaMin: 1
+      startAlphaMax: 1
+      rotationMin: 0
+      rotationMax: 360
+      rotationSpeedMin: -7.5
+      rotationSpeedMax: 7.5
+      velocityScaleMin: 0
+      velocityScaleMax: 2
+      sizeOverLife: 1
+      alphaOverLife: 1
+      colorKeys: ~
+      texturePath: data/Textures/smoke.png
+    Transform:
+      Position: [2.2, 0, 0]
+      Rotation: [0, 0, 0, 1]
+      Scale: [1, 1, 1]
+  - Name: Emitter_2
+    Type: ParticleNode
+    ParticleData:
+      emissionRate: 10
+      localSpace: false
+      maxParticles: 1000
+      shape: 0
+      globalAcceleration: [0, -9.81, 0]
+      spawnPosition: [0, 0, 0]
+      spawnVelocity: [0, 1, 0]
+      lifetimeMin: 1
+      lifetimeMax: 4
+      startSizeMin: 0.5
+      startSizeMax: 1.5
+      startAlphaMin: 1
+      startAlphaMax: 1
+      rotationMin: 0
+      rotationMax: 360
+      rotationSpeedMin: -7.5
+      rotationSpeedMax: 7.5
+      velocityScaleMin: 0
+      velocityScaleMax: 2
+      sizeOverLife: 1
+      alphaOverLife: 1
+      colorKeys: ~
+      texturePath: data/Textures/smoke.png
+    Transform:
+      Position: [0, 3.4, 2.6]
+      Rotation: [0, 0, 0, 1]
+      Scale: [1, 1, 1]
+Lights: ~

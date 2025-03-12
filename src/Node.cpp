@@ -19,6 +19,11 @@ Node::~Node()
     if(m_boundingVolume)
         delete m_boundingVolume;
     m_boundingVolume =nullptr;
+
+    if(m_material && m_ownsMaterial) {
+        volpe::MaterialManager::DestroyMaterial(m_material);
+        m_material = nullptr;
+    }
 }
 
 void Node::addChild(Node* child)
@@ -58,7 +63,7 @@ void Node::draw(const glm::mat4& proj, const glm::mat4& view) //remove skip bind
 void Node::setName(const std::string& name) { m_name = name; }
 std::string Node::getName() const { return m_name; }
 
-void Node::setTransform(const glm::mat4& transform) { m_localTransform = transform; if(m_boundingVolume){ m_boundingVolume->UpdateVolume(getWorldTransform());}} //UPDATING VOLUME TWICE
+void Node::setTransform(const glm::mat4& transform) { m_localTransform = transform; UpdateBoundingVolume();}//if(m_boundingVolume){ m_boundingVolume->UpdateVolume(getWorldTransform());}} //UPDATING VOLUME TWICE
 glm::mat4 Node::getTransform() const { return m_localTransform; }
 
 glm::mat4 Node::getWorldTransform() const
@@ -86,24 +91,41 @@ void Node::SetBoundingVolume(BoundingVolume* volume)
 // EXpanding the bounding volume to cover dem children
 void Node::UpdateBoundingVolume()
 {
-    if(!m_boundingVolume) 
-        return;
-    std::cout<<"NAME: "<<m_name<<std::endl;
-    m_boundingVolume->UpdateVolume(getWorldTransform());
-    
     for (auto* c : m_children)
     {
         c->UpdateBoundingVolume();
     }
+    if(!m_boundingVolume) 
+        return;
+    // std::cout<<"NAME: "<<m_name<<std::endl;
+    m_boundingVolume->UpdateVolume(getWorldTransform());
+    
 
-
-    for (auto* c : m_children) // IT WORKS WITH THE SOLAR SYSTEM BUT FUCKS UP DEBUG LINES
-    {
-        BoundingVolume* childVol = c->GetBoundingVolume();
-        if(!childVol) continue;
-        glm::mat4 childWorld = c->getWorldTransform();
-        m_boundingVolume->ExpandToFit(*childVol, childWorld);
-    }
+    // for (auto* c : m_children) // IT WORKS WITH THE SOLAR SYSTEM BUT FUCKS UP DEBUG LINES
+    // {
+    //     BoundingVolume* childVol = c->GetBoundingVolume();
+    //     if(!childVol) continue;
+    //     glm::mat4 childWorld = c->getWorldTransform();
+    //     m_boundingVolume->ExpandToFit(*childVol, childWorld);
+    // }
     
 }
 
+void Node::getTransformDecomposed(glm::vec3& outPos, glm::quat& outRot, glm::vec3& outScale) const
+{
+    glm::vec3 skew;
+    glm::vec4 perspective;
+    glm::decompose(m_localTransform, outScale, outRot, outPos, skew, perspective);
+}
+
+void Node::setTransformDecomposed(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale)
+{
+    glm::mat4 T = glm::translate(glm::mat4(1.0f), pos);
+    glm::mat4 R = glm::toMat4(rot);
+    glm::mat4 S = glm::scale(glm::mat4(1.0f), scale);
+    
+    m_localTransform = T * R * S;
+    if(m_boundingVolume){
+        m_boundingVolume->UpdateVolume(getWorldTransform());
+    }
+}

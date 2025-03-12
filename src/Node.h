@@ -1,4 +1,7 @@
 #pragma once
+#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include "../volpe/Volpe.h"
 #include <vector>
@@ -6,7 +9,7 @@
 #include <glm/glm.hpp>
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
-#include "BoundingVolume.h"
+#include "../samplefw/BoundingVolumes/BoundingVolume.h"
 
 class Node
 {
@@ -16,9 +19,8 @@ protected:
     Node*             m_parent;
     std::vector<Node*> m_children;
 
-    volpe::Material* m_material = 0;
-    
-    volpe::Material*  m_pMaterial = nullptr;
+    volpe::Material* m_material = nullptr;
+    bool m_ownsMaterial = false;
 
     BoundingVolume* m_boundingVolume;
     
@@ -30,6 +32,9 @@ public:
 
     void addChild(Node* child);
     void removeChild(Node* child);
+    std::vector<Node*> getChildren() {return m_children;}
+    Node*              getParent() {return m_parent;}
+
 
     virtual void update(float dt);
     virtual void draw(const glm::mat4& proj, const glm::mat4& view);
@@ -47,13 +52,12 @@ public:
 
     glm::mat4 getWorldTransform() const;
     
-    volpe::Material* GetMaterial() const { return m_pMaterial; }
-    void SetMaterial(volpe::Material* mat) { m_pMaterial = mat; }
+    volpe::Material* GetMaterial() const { return m_material; }
+    void SetMaterial(volpe::Material* mat) { m_material = mat; }
+    
+    void getTransformDecomposed(glm::vec3& outPos, glm::quat& outRot, glm::vec3& outScale) const;
+    void setTransformDecomposed(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale);
 
-    // volpe::Program* GetProgram() const { return m_pProgram; }
-    // void SetProgram(volpe::Program* prog) { m_pProgram = prog; }
-
-    // Bounding volume
     void SetBoundingVolume(BoundingVolume* volume);
     BoundingVolume* GetBoundingVolume() const;
     virtual void UpdateBoundingVolume();

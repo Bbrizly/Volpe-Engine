@@ -1,0 +1,40 @@
+Scene: VolpeScene
+Nodes:
+  - Name: Fire
+    Type: ParticleNode
+    ParticleData:
+      emissionRate: 40
+      duration: -1
+      localSpace: false
+      glow: true
+      maxParticles: 40
+      shape: 1
+      spawnPosition: [0, 0, 0]
+      spawnVelocity: [0, 1, 0]
+      lifetimeMin: 1
+      lifetimeMax: 1.3
+      startSizeMin: 1
+      startSizeMax: 1.5
+      startAlphaMin: 0.6
+      startAlphaMax: 1
+      rotationMin: 0
+      rotationMax: 360
+      rotationSpeedMin: -7.5
+      rotationSpeedMax: 7.5
+      velocityScaleMin: 0
+      velocityScaleMax: 0.8
+      colorKeys:
+        - time: 0
+          color: [1, 0.9411765, 0, 1]
+        - time: 0.358
+          color: [1, 0.58823526, 0, 1]
+        - time: 0.614
+          color: [1, 0, 0, 1]
+        - time: 1
+          color: [1, 0, 0, 1]
+      texturePath: data/Textures/smoke.png
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0, 1]
+      Scale: [0.5, 0.5, 0.5]
+Lights: ~

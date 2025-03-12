@@ -1,0 +1,84 @@
+effect:
+  name: solar
+  combineDraws: false
+  emitters:
+    - EmitterName: orbitEffect
+      Transform:
+        Position: [14.1, 0, 0]
+        Rotation: [0, 0, 0, 1]
+        Scale: [1, 1, 1]
+      ParticleData:
+        emissionRate: 10
+        duration: -1
+        localSpace: false
+        maxParticles: 300
+        shape: 1
+        spawnPosition: [0, 0, 0]
+        spawnVelocity: [0, 0, -7]
+        lifetimeMin: 30
+        lifetimeMax: 40
+        startSizeMin: 0.5
+        startSizeMax: 1.5
+        startAlphaMin: 1
+        startAlphaMax: 1
+        rotationMin: 0
+        rotationMax: 360
+        rotationSpeedMin: -7.5
+        rotationSpeedMax: 7.5
+        velocityScaleMin: 0
+        velocityScaleMax: 2
+        colorKeys:
+          - time: 0
+            color: [0, 0.97058845, 1, 1]
+          - time: 0.547
+            color: [0.99509805, 0.5268166, 0, 1]
+          - time: 1
+            color: [1, 0, 0.14705896, 1]
+        affectors:
+          - type: TowardsPoint
+            target:
+              - 0
+              - 0
+              - 0
+            strength: 2
+        texturePath: data/Textures/smoke.png
+    - EmitterName: secondOrbit
+      Transform:
+        Position: [-0.7, 13.9, 0]
+        Rotation: [0, 0, 0, 1]
+        Scale: [1, 1, 1]
+      ParticleData:
+        emissionRate: 10
+        duration: -1
+        localSpace: false
+        maxParticles: 300
+        shape: 1
+        spawnPosition: [0, 0, 0]
+        spawnVelocity: [0, 0, -7]
+        lifetimeMin: 30
+        lifetimeMax: 40
+        startSizeMin: 0.5
+        startSizeMax: 1.5
+        startAlphaMin: 1
+        startAlphaMax: 1
+        rotationMin: 0
+        rotationMax: 360
+        rotationSpeedMin: -7.5
+        rotationSpeedMax: 7.5
+        velocityScaleMin: 0
+        velocityScaleMax: 2
+        colorKeys:
+          - time: 0
+            color: [0.94117653, 1, 0, 1]
+          - time: 0.43
+            color: [0.7058821, 0, 1, 1]
+          - time: 1
+            color: [0, 1, 0.11764693, 1]
+        affectors:
+          - type: TowardsPoint
+            target:
+              - 0
+              - 0
+              - 0
+            strength: 2
+        texturePath: data/Textures/smoke.png

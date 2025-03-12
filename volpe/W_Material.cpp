@@ -7,6 +7,8 @@
 #include "W_Material.h"
 #include "W_Common.h"
 
+#include "iostream"
+
 namespace volpe
 {
 bool			Material::s_currentDepthTest = false;
@@ -285,6 +287,10 @@ void Material::SetUniform(const std::string& name, float val)
 //----------------------------------------------------------
 void Material::SetTexture(const std::string& name, const Texture* pTex)
 {
+	// if (!pTex || !pTex->IsValid()) {
+    //     std::cerr << "Error: Invalid texture provided." << std::endl;
+    //     return;
+    // }
 	m_uniforms[name].type = Program::UniformType::Texture;
 	m_uniforms[name].pTexture = pTex;
 }

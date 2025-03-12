@@ -1,6 +1,4 @@
 #include "QuadTree.h"
-#include "AABBVolume.h"
-#include "SphereVolume.h"
 
 // This method projects a 3D bounding volume (either an AABB or Sphere) into a 2D AABB on the XZ plane.
 AABB2D QuadTree::FlattenBoundingVolume(const BoundingVolume* bv) const {

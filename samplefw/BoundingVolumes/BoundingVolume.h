@@ -1,5 +1,5 @@
 #pragma once
-#include "Frustum.h"
+#include "../src/Frustum.h"
 #include "iostream"
 
 class AABBVolume;  

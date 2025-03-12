@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include "iostream"
-#include "DebugRender.h"
+#include "../src/DebugRender.h"
 
 class AABBVolume : public BoundingVolume
 {

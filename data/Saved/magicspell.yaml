@@ -1,0 +1,118 @@
+Scene: VolpeScene
+Nodes:
+  - Name: Effect_0
+    Type: Effect
+    combineDraws: false
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0, 1]
+      Scale: [1, 1, 1]
+    emitters:
+      []
+  - Name: MAGIC SPELL
+    Type: Effect
+    combineDraws: false
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0, 1]
+      Scale: [1, 1, 1]
+    emitters:
+      - EmitterName: magic
+        Transform:
+          Position: [0, 0, 0]
+          Rotation: [0, 0, 0, 1]
+          Scale: [1, 1, 1]
+        ParticleData:
+          emissionRate: 1
+          duration: -1
+          localSpace: false
+          glow: true
+          glowIntensity: 6.85
+          maxParticles: 1
+          shape: 0
+          emitterMode: 0
+          faceCamera: false
+          customLookDir: [0, 1, 0]
+          customUpDir: [0, 0, 1]
+          spawnPosition: [0, 0, 0]
+          spawnVelocity: [0, 0, 0]
+          lifetimeMin: 5
+          lifetimeMax: 5
+          startSizeMin: 3
+          startSizeMax: 3
+          startAlphaMin: 100
+          startAlphaMax: 100
+          lockXAxis: false
+          lockYAxis: false
+          lockZAxis: false
+          rotationMin: 0
+          rotationMax: 360
+          rotationSpeedMin: 35
+          rotationSpeedMax: 35
+          velocityScaleMin: 0
+          velocityScaleMax: 0
+          colorKeys:
+            - time: 0
+              color: [1, 0, 0, 0]
+            - time: 0.157
+              color: [1, 0, 0, 1]
+            - time: 0.905
+              color: [1, 0, 0, 1]
+            - time: 1
+              color: [1, 0, 0, 0]
+          affectors:
+            - type: ScaleOverLife
+              startScale: 0.5
+              endScale: 1.5
+          texturePath: data/Textures/magicshit.png
+      - EmitterName: redCircle
+        Transform:
+          Position: [0, 0, 0]
+          Rotation: [0, 0, 0, 1]
+          Scale: [1, 1, 1]
+        ParticleData:
+          emissionRate: 400
+          duration: -1
+          localSpace: false
+          glow: true
+          glowIntensity: 0
+          maxParticles: 1000
+          shape: 2
+          emitterMode: 0
+          faceCamera: true
+          customLookDir: [0, 0, 1]
+          customUpDir: [0, 1, 0]
+          spawnPosition: [0, 0, 0]
+          spawnVelocity: [0, 0.1, 0]
+          lifetimeMin: 1
+          lifetimeMax: 1
+          startSizeMin: 0.5
+          startSizeMax: 0.5
+          startAlphaMin: 1
+          startAlphaMax: 1
+          lockXAxis: false
+          lockYAxis: false
+          lockZAxis: false
+          rotationMin: 0
+          rotationMax: 360
+          rotationSpeedMin: -7.5
+          rotationSpeedMax: 7.5
+          velocityScaleMin: 0
+          velocityScaleMax: 1
+          colorKeys:
+            - time: 0
+              color: [0, 0, 0, 1]
+            - time: 0.279
+              color: [0, 0.20242214, 0.25490195, 1]
+            - time: 0.441
+              color: [1, 0, 0, 1]
+          affectors:
+            - type: Acceleration
+              velocity:
+                - 0
+                - 3
+                - 0
+            - type: ScaleOverLife
+              startScale: 0.5
+              endScale: 0
+          texturePath: data/Textures/smoke.png

@@ -1,5 +1,5 @@
 #include "Scene.h"
-
+#include "ParticleNode.h"
 //REMOVE LATERRRR RMEOV EMRO ERMO
 #include <string>
 #include <sstream>
@@ -19,7 +19,7 @@ Scene::~Scene() {
     // for (auto node : m_nodes)
     //     delete node;
     m_nodes.clear();
-    m_lights.clear();
+    // m_lights.clear(); shownLights = false;
     delete m_pGrid;
     if(m_quadTree) {
         delete m_quadTree;
@@ -35,42 +35,56 @@ Scene::~Scene() {
 void Scene::AddNode(Node* node) {
     if(node)
         m_nodes.push_back(node);
+
+    ReBuildTree();
 }
 
-void Scene::AddLight(Light l)
+void Scene::RemoveNode(Node* node)
 {
-    
-    m_lights.push_back(l);
+    if (node && node->getParent()) {
+        node->getParent()->removeChild(node);
+    }
+
+    auto it = std::find(m_nodes.begin(), m_nodes.end(), node);
+    if (it != m_nodes.end())
+    {
+        delete *it;
+        m_nodes.erase(it);
+    }
+    ReBuildTree();
+}
+
+void Scene::AddLight(const glm::vec3& position, const glm::vec3& color, float intensity, float radius)
+{
+    static int s_lightCounter = 0;
+    std::string nodeName = "Light_" + std::to_string(s_lightCounter++);
+
+    LightNode* ln = new LightNode(nodeName, color, intensity, radius);
+
+    glm::mat4 T = glm::translate(glm::mat4(1.0f), position);
+    ln->setTransform(T);
+
+    AddNode(ln); 
 }
 
 void Scene::DebugDrawFrustum(const Frustum& frustum)
 {
-    // For demonstration, let’s just show each plane as a square.
-    // Each plane = (A,B,C,D) in Ax+By+Cz+D=0, normal = (A,B,C), distance = -D
-    // We'll pick an arbitrary “square size” in that plane.
-
-    float planeSize = 5.0f; // half-extent
+    float planeSize = 5.0f;
 
     for (int i = 0; i < 6; ++i)
     {
         const glm::vec4& p = frustum.planes[i];
         glm::vec3 normal(p.x, p.y, p.z);
 
-        // Distance from origin
-        float dist = p.w;  // recall plane eq is A*x + B*y + C*z + D = 0
-                           // if plane is normalized, w = D => distance is -D
-        // For clarity, let's invert sign if we used D=+someValue:
-        // float d = -dist; 
+        float dist = p.w;
+        
         float d = -dist;
-
-        // Plane center in world space is normal * distance
+        
         glm::vec3 planeCenter = normal * d;
 
-        // Now we need 2 perpendicular vectors in the plane
-        // Let's pick an arbitrary up vector to cross with normal:
         glm::vec3 up(0,1,0);
         if (fabs(glm::dot(up, normal)) > 0.99f) {
-            up = glm::vec3(1,0,0); // if normal is near vertical, choose a different "up"
+            up = glm::vec3(1,0,0);
         }
         glm::vec3 right = glm::normalize(glm::cross(normal, up));
         glm::vec3 planeUp = glm::normalize(glm::cross(right, normal));
@@ -92,20 +106,16 @@ void Scene::DebugDrawFrustum(const Frustum& frustum)
 void Scene::ToggleUseDebugFrustum(Camera* c)
 {
     m_debugCamera = c;
-    //Left, Right, Bottom, Top, Near, Far
-    // m_debugFrustum.planes[0] = glm::vec4( 1, 0, 0,  10.0f);  //   x + 0*y + 0*z + 10 = 0
-    // m_debugFrustum.planes[1] = glm::vec4(-1, 0, 0,  10.0f);  //  -x + 0*y + 0*z + 10 = 0
-    // m_debugFrustum.planes[2] = glm::vec4( 0, 1, 0,   5.0f);  //   0*x +  y + 0*z +  5 = 0
-    // m_debugFrustum.planes[3] = glm::vec4( 0,-1, 0,   5.0f);  //   0*x + -y + 0*z +  5 = 0
-    // m_debugFrustum.planes[4] = glm::vec4( 0, 0, 1,   1.0f);  //   0*x + 0*y +  z +  1 = 0
-    // m_debugFrustum.planes[5] = glm::vec4( 0, 0,-1, 100.0f);  //   0*x + 0*y + -z +100 = 0
-
-    // for (int i = 0; i < 6; ++i) {
-    //     float length = glm::length(glm::vec3(m_debugFrustum.planes[i]));
-    //     m_debugFrustum.planes[i] /= length;
-    // }
 
     m_useDebugFrustum  = !m_useDebugFrustum;
+}
+
+void InsertOctHierarchy(Node* node, OctTree* tree) {
+    if (!node) return;
+    tree->Insert(node);
+    for (Node* child : node->getChildren()) {
+        InsertOctHierarchy(child, tree);
+    }
 }
 
 void Scene::BuildOctTree()
@@ -123,15 +133,30 @@ void Scene::BuildOctTree()
     m_octTree = new OctTree(sceneBounds3D);
 
     DebugRender::Instance().ClearLayer("Tree");
-    for (Node* n : m_nodes) {
-        m_octTree->Insert(n);
-    }
+    // for(auto node : m_nodes)
+    // {
+    //     m_octTree->Insert(node);
+    // }
     
+    for (Node* node : m_nodes) {
+        if (node->getParent() == nullptr) {
+            InsertOctHierarchy(node, m_octTree);
+        }
+    }
+
     auto t1 = high_resolution_clock::now();
     float buildTimeMs = duration<float, milli>(t1 - t0).count();
     m_lastQuadTreeBuildTimeMs = buildTimeMs;
     
     reDebug = true;
+}
+
+void InsertQuadHierarchy(Node* node, QuadTree* tree) {
+    if (!node) return;
+    tree->Insert(node);
+    for (Node* child : node->getChildren()) {
+        InsertQuadHierarchy(child, tree);
+    }
 }
 
 void Scene::BuildQuadTree() {
@@ -149,9 +174,11 @@ void Scene::BuildQuadTree() {
     m_quadTree = new QuadTree(sceneBounds);
 
     DebugRender::Instance().ClearLayer("Tree");
-    for(auto node : m_nodes)
-    {
-        m_quadTree->Insert(node);
+
+    for (Node* node : m_nodes) {
+        if (node->getParent() == nullptr) {
+            InsertQuadHierarchy(node, m_quadTree);
+        }
     }
     
     auto t1 = high_resolution_clock::now();
@@ -161,17 +188,29 @@ void Scene::BuildQuadTree() {
     reDebug = true;
 }
 
+void Scene::ReBuildTree()
+{
+    if(m_useQuadTreeOrOct)
+    {
+        BuildQuadTree();
+    }
+    else
+    {
+        BuildOctTree();
+    }
+}
+
 void Scene::RandomInitScene(int amount)
 {
     auto t0 = high_resolution_clock::now();
     Clear();
     m_pGrid = new Grid3D(m_bounds);
     // /* GRID 
-    int gridSize = std::ceil(std::cbrt(amount)); // Determine the grid dimensions (N x N x N)
-    float spacing = (2.0f * m_bounds) / gridSize; // Adjust spacing to fit within bounds
+    int gridSize = std::ceil(std::cbrt(amount)); 
+    float spacing = (2.0f * m_bounds) / gridSize; 
 
     random_device rd;
-    // mt19937 gen(rd());
+    
     mt19937 gen(100);
     uniform_real_distribution<float> distPos(-m_bounds, m_bounds);
     uniform_real_distribution<float> rgb(0.0f, 255.0f);
@@ -180,7 +219,7 @@ void Scene::RandomInitScene(int amount)
     for (int     x = 0; x < gridSize && cubeCount < amount; x++) {
         for (int y = 0; y < gridSize && cubeCount < amount; y++) {
             for (int z = 0; z < gridSize && cubeCount < amount; z++) {
-                // Map (x, y, z) to a position within -bounds to bounds
+
                 float posX = -m_bounds + x * spacing;
                 float posY = -m_bounds + y * spacing;
                 float posZ = -m_bounds + z * spacing;
@@ -204,44 +243,6 @@ void Scene::RandomInitScene(int amount)
             }
         }
     }
-    // */
-    
-    /*
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_real_distribution<float> distPos(-bounds, bounds);
-    uniform_real_distribution<float> rgb(0.0f, 255.0f);
-    // rgb = new vec3(rgb(gen),rgb(gen),rgb(gen));
-    
-
-    for (int i = 1; i <= amount; ++i)
-    {
-        DebugCube* newCube = new DebugCube("cube_" + to_string(i));
-        glm::vec3 randomPos(distPos(gen), distPos(gen), distPos(gen));
-        newCube->setTransform(glm::translate(glm::mat4(1.0f), randomPos));
-        GLubyte r = rgb(gen)
-               ,g = rgb(gen)
-               ,b = rgb(gen);
-        newCube->setColor(r,g,b);
-        
-        // DebugRender::Instance().DrawCircle(randomPos, 0.2f, glm::vec3(1.0f));
-        AddNode(newCube);
-    }
-    for (int i = 0; i < 2; i++)
-    {
-        glm::vec3 pos = glm::vec3(distPos(gen), distPos(gen), distPos(gen));
-        m_lights.push_back( Light(pos,  glm::vec3(1,1,1), 1.0f, 10.0f));
-        // DebugRender::Instance().DrawCircle(pos, 0.2f, glm::vec3(1.0f));
-    }
-    
-    */
-    // DebugCube* cube = new DebugCube("Cube_");// + to_string(cubeCount));
-    // cube->setTransform(glm::translate(glm::mat4(1.0f), glm::vec3(0,2,0)));
-    // AddNode(cube); // Add cube to scene
-    // m_lights.push_back( Light(glm::vec3(0, 5, 0),  glm::vec3(1,1,1), 10.0f, 10.0f));
-    // m_lights.push_back( Light(glm::vec3(-5, 0, 0), glm::vec3(0,1,0), 1.0f, 10.0f));
-    // m_lights.push_back( Light(glm::vec3(0, 0, 5), glm::vec3(0,0,1), 1.0f, 10.0f));
-
     
     auto t1 = high_resolution_clock::now();
     m_avgCreation = duration<float, milli>(t1 - t0).count();
@@ -291,10 +292,10 @@ void Scene::ShowDebugText()
     debugTextBox =  m_textRenderer->createTextBox(fontArial,"FPS, Each Process's MS, Other important values", 640-200.0f, 95.0f, 200, 200);
     debugTextBox->SetColor(0, 0, 0, 255);
     
-    m_textRenderer->setTextBox(solarSysTextBox);
-    m_textRenderer->setTextBox(debugTextBox);
-    m_textRenderer->setTextBox(textBoc);
-    m_textRenderer->setTextBox(textBox);
+    // m_textRenderer->setTextBox(solarSysTextBox);
+    // m_textRenderer->setTextBox(debugTextBox);
+    // m_textRenderer->setTextBox(textBoc);
+    // m_textRenderer->setTextBox(textBox);
 }
 
 void Scene::Update(float dt, int screenWidth, int screenHeight) {
@@ -312,11 +313,12 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     static int   frameCounter = 0;
     static float accumulatedTime = 0.0f;
     static float lastKnownFps   = 0.0f;
-
+    
     frameCounter++;
     accumulatedTime += dt;
     if (frameCounter >= 60) {
         lastKnownFps = frameCounter / accumulatedTime;  // smoothed FPS
+        m_lastKnownFps = lastKnownFps;
         frameCounter = 0;
         accumulatedTime = 0.0f;
     }
@@ -390,21 +392,21 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
         }
     }
 
-    std::string shapes = "";
+    // std::string shapes = "";
 
-    for (auto& object : m_nodesToRender) {
-        vec3 x = object->getWorldTransform()[3];
+    // for (auto& object : m_nodesToRender) {
+    //     vec3 x = object->getWorldTransform()[3];
 
-        std::ostringstream oss;
-        oss << std::fixed << std::setprecision(0) << x.x << ", " 
-            << std::fixed << std::setprecision(0) << x.y << ", " 
-            << std::fixed << std::setprecision(0) << x.z;
+    //     std::ostringstream oss;
+    //     oss << std::fixed << std::setprecision(0) << x.x << ", " 
+    //         << std::fixed << std::setprecision(0) << x.y << ", " 
+    //         << std::fixed << std::setprecision(0) << x.z;
 
-        shapes += object->getName() + " | " + oss.str() + "\n";
-    }
+    //     shapes += object->getName() + " | " + oss.str() + "\n";
+    // }
 
     // Set text in the debug UI
-    debugTextBox->SetText(shapes);
+    // debugTextBox->SetText(shapes);
     
     t1 = high_resolution_clock::now();
     float quadTreeQueryMS = duration<float, milli>(t1 - t0).count();
@@ -428,12 +430,20 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
 
     #pragma region Statistics
 
-    m_avgCameraUpdateMs   = EMA(m_avgCameraUpdateMs,   cameraUpdateMS);
-    m_avgNodeUpdateMs     = EMA(m_avgNodeUpdateMs,     nodeUpdateMS);
-    m_avgBoundingVolumeMs = EMA(m_avgBoundingVolumeMs, boundingVolumeMS);
-    m_avgFrustumExtractMs = EMA(m_avgFrustumExtractMs, frustumExtractMS);
-    m_avgQuadTreeQueryMs  = EMA(m_avgQuadTreeQueryMs,  quadTreeQueryMS);
-    m_avgLightQuery  = EMA(m_avgLightQuery,  lightQueryMS);
+    // m_avgCameraUpdateMs   = EMA(m_avgCameraUpdateMs,   cameraUpdateMS);
+    // m_avgNodeUpdateMs     = EMA(m_avgNodeUpdateMs,     nodeUpdateMS);
+    // m_avgBoundingVolumeMs = EMA(m_avgBoundingVolumeMs, boundingVolumeMS);
+    // m_avgFrustumExtractMs = EMA(m_avgFrustumExtractMs, frustumExtractMS);
+    // m_avgQuadTreeQueryMs  = EMA(m_avgQuadTreeQueryMs,  quadTreeQueryMS);
+    // m_avgLightQuery       = EMA(m_avgLightQuery,  lightQueryMS);
+    
+    //Testing:
+    m_avgCameraUpdateMs   = cameraUpdateMS;
+    m_avgNodeUpdateMs     = nodeUpdateMS;
+    m_avgBoundingVolumeMs = boundingVolumeMS;
+    m_avgFrustumExtractMs = frustumExtractMS;
+    m_avgQuadTreeQueryMs  = quadTreeQueryMS;
+    m_avgLightQuery       = lightQueryMS;
     // m_avgQuadTreeQueryMs  = EMA(m_avgQuadTreeQueryMs,  quadTreeQueryMS);
 
     string activeTreeName = m_useQuadTreeOrOct ? "Quad" : "Oct";
@@ -456,7 +466,7 @@ void Scene::Update(float dt, int screenWidth, int screenHeight) {
     info += "Tree Build Time: " + to_string(m_lastQuadTreeBuildTimeMs) + " ms\n";
     info += "Existing Nodes : " + to_string(m_nodes.size()) + "\n";
     info += "Nodes Visible  : " + to_string(m_nodesToRender.size()) + "\n";
-    info += "Lights In Scene: " + to_string(m_lights.size()) + "\n";
+    // info += "Lights In Scene: " + to_string(m_lights.size()) + "\n";
     info += "Nodes Affected by light: " + to_string(nodesAffectedByLight) + "\n";
     info += "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
     info += "Camera Update      : " + to_string(m_avgCameraUpdateMs)    + " ms\n";
@@ -488,6 +498,50 @@ void Scene::InitLights()
 }
 
 void Scene::UpdateLighting()
+{
+    for(auto* nd : m_nodes)
+        nd->m_affectingLights.clear();
+    
+    std::vector<LightNode*> lightNodes;
+    for(auto* nd : m_nodes)
+    {
+        auto* ln = dynamic_cast<LightNode*>(nd);
+        if(ln) {
+            lightNodes.push_back(ln);
+        }
+    }
+
+    for(int i = 0; i < (int)lightNodes.size(); i++)
+    {
+        LightNode* ln = lightNodes[i];
+        float range    = ln->GetRadius();
+        glm::vec3 pos  = ln->getWorldTransform()[3];
+        // glm::vec3 pos  = ln->getWorldPosition();
+
+        std::vector<Node*> inRange;
+        if(m_useQuadTreeOrOct && m_quadTree) {
+            m_quadTree->QueryLight(pos, range, inRange);
+        }
+        else if(!m_useQuadTreeOrOct && m_octTree) {
+            m_octTree->QueryLight(pos, range, inRange);
+        }
+        else {
+            for(auto* node : m_nodes)
+            {
+                auto* bv = node->GetBoundingVolume();
+                if(!bv) continue;
+                SphereVolume s(pos, range);
+                if(s.Overlaps(*bv)) 
+                    inRange.push_back(node);
+            }
+        }
+
+        for(auto* node : inRange)
+            node->m_affectingLights.push_back(i);  
+    }
+}
+
+/*void Scene::UpdateLighting()
 {
     for(auto* node : m_nodes)
     {
@@ -525,34 +579,17 @@ void Scene::UpdateLighting()
             n->m_affectingLights.push_back(i);
         }
     }
-}
-
-void Scene::MoveLights()
-{
-    if(m_lights.empty()) return;
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> distPos(-m_bounds, m_bounds);
-
-    for(auto& light : m_lights)
-    {
-        light.position.x = distPos(gen);
-        light.position.y = distPos(gen);
-        light.position.z = distPos(gen);
-    }
-}
+}*/
 
 void Scene::Clear()
 {
     if(!m_nodes.empty())
         m_nodes.clear();
-    
-    if(!m_lights.empty())
-        m_lights.clear();
 
     if(!m_nodesToRender.empty())
         m_nodesToRender.clear();
+
+    BuildOctTree();
 
     DebugRender::Instance().Clear();
 }
@@ -563,16 +600,26 @@ void Scene::Render(int screenWidth, int screenHeight) {
         return;
     glm::mat4 proj = m_activeCamera->getProjMatrix(screenWidth, screenHeight);
     glm::mat4 view = m_activeCamera->getViewMatrix();
-    if(m_pGrid)
+    if(m_pGrid && showGrid)
         m_pGrid->render(view,proj);
+        
+    std::vector<Node*> opaqueNodes;
+    std::vector<Node*> particleNodes;
+    for (auto* n : m_nodesToRender) {
+            if (dynamic_cast<ParticleNode*>(n))
+                particleNodes.push_back(n);
+            else
+                opaqueNodes.push_back(n);
+    }
 
-    for(auto* n : m_nodesToRender) //m_nodesToRender //m_nodes
+    for(auto* n : opaqueNodes) //m_nodesToRender //m_nodes
     {   
-        if(n->m_affectingLights.size() > 0 && n->GetReactToLight())
+        if(n->m_affectingLights.size() > 0 && n->GetReactToLight() && !dynamic_cast<LightNode*>(n)) //light node shit cuz if user turns on react to light
         {
-            n->SetMaterial(m_matPoint);
+            // n->SetMaterial(m_matPoint);
             volpe::Material* mat = n->GetMaterial();
-
+            mat->SetProgram("data/PointLights.vsh", "data/PointLights.fsh"); 
+            
             int maxLights = 5;
             int lightCount = std::min(static_cast<int>(n->m_affectingLights.size()), maxLights);
 
@@ -580,9 +627,15 @@ void Scene::Render(int screenWidth, int screenHeight) {
             //     lightCount = maxLights;
             
             mat->SetUniform("lightsInRange", lightCount);
-            // cout<<lightCount<<", lights in range\n";
+
+            std::vector<LightNode*> allLights;
+            for(auto* nd : m_nodes)
+            {
+                if(auto* ln = dynamic_cast<LightNode*>(nd))
+                    allLights.push_back(ln);
+            }
             
-            for(int i=0; i<lightCount; i++)
+            /*for(int i=0; i<lightCount; i++)
             {
                 int lightIdx = n->m_affectingLights[i]; 
                 Light& L     = m_lights[lightIdx];
@@ -597,15 +650,40 @@ void Scene::Render(int screenWidth, int screenHeight) {
                 mat->SetUniform(base+".PositionRange", vec4(pos, radius));
                 mat->SetUniform(base+".Color",              col);
                 mat->SetUniform(base+".Strength",           strength);
+            }*/
+            for(int i = 0; i < lightCount; i++)
+            {
+                int lightIdx = n->m_affectingLights[i];
+                if(lightIdx >= (int)allLights.size()) 
+                    break; // safety check
+                LightNode* L = allLights[lightIdx];
+                
+                std::string base = "pointLights[" + std::to_string(i) + "]";
+
+                glm::vec3 pos  = L->getWorldTransform()[3];
+                float radius   = L->GetRadius();
+                glm::vec3 col  = L->color;
+                float strength = L->intensity;
+
+                mat->SetUniform(base + ".PositionRange", glm::vec4(pos, radius));
+                mat->SetUniform(base + ".Color",         col);
+                mat->SetUniform(base + ".Strength",      strength);
             }
             mat->SetUniform("fade", 1.0f);
         }
-        // else        
-            // n->SetMaterial(m_matUnlit);
-        
+        else        
+        {
+            if(!dynamic_cast<ParticleNode*>(n) && !dynamic_cast<LightNode*>(n))
+            // if(n->GetReactToLight())
+                n->GetMaterial()->SetProgram("data/Unlit3d.vsh", "data/Unlit3d.fsh");
+        }              
         n->draw(proj, view);
     }
     
+    for (auto* n : particleNodes) {
+        n->draw(proj, view);
+   }
+
     #pragma region debug
     
     if(m_debugCamera != NULL && m_useDebugFrustum)
@@ -618,16 +696,21 @@ void Scene::Render(int screenWidth, int screenHeight) {
     {
         if(m_ShowBoundingVolumes)
         {
+            DebugRender::Instance().ClearLayer("BoundingVolumes");
             for(auto* n : m_nodesToRender)
             {
                 if(n->GetBoundingVolume())
                 {  n->GetBoundingVolume()->DrawMe();  }
             }
-        }
-        for (Light l : m_lights)
-        {
-            DebugRender::Instance().DrawSphere(l.position,l.radius,vec3(1));
-        }
+        } else { DebugRender::Instance().ClearLayer("BoundingVolumes");}
+
+        // if (!shownLights)
+        // {
+        //     for (Light l : m_lights)
+        //     {
+        //         DebugRender::Instance().DrawSphere(l.position,l.radius,vec3(1), "lights");
+        //     }
+        // }else { DebugRender::Instance().ClearLayer("lights"); }
 
         if(reDebug) // if there was a change
         {
@@ -651,11 +734,11 @@ void Scene::Render(int screenWidth, int screenHeight) {
     #pragma endregion
     
     // Render text
-    if(m_textRenderer && textBox)
-    {
-        glDisable(GL_DEPTH_TEST);
-        m_textRenderer->setScreenSize(screenWidth,screenHeight);
-        m_textRenderer->render(proj,view);
-        glEnable(GL_DEPTH_TEST);
-    }
+    // if(m_textRenderer && textBox)
+    // {
+    //     glDisable(GL_DEPTH_TEST);
+    //     m_textRenderer->setScreenSize(screenWidth,screenHeight);
+    //     m_textRenderer->render(proj,view);
+    //     glEnable(GL_DEPTH_TEST);
+    // }
 }

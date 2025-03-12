@@ -7,9 +7,8 @@
 #include <iostream>
 #include <algorithm>
 #include "DebugCube.h"
-#include "AABBVolume.h"
+#include "../samplefw/BoundingVolumes/AABBVolume.h"
 
-// 3D Oct-Tree
 class OctTree
 {
 public:
@@ -33,14 +32,12 @@ private:
 
     std::vector<Node*> m_nodes;
 
-    // Tuning constants
     static const int MAX_OBJECTS = 4;
     static const int MAX_LEVELS  = 5;
 
     void Subdivide();
     bool Contains(const glm::vec3& point) const;
 
-    // If true, we have not yet built debug lines
     bool keepOld = true;
 };
 

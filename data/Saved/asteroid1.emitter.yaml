@@ -1,0 +1,44 @@
+Emitter:
+  name: asteroids
+  transform:
+    Position: [35, 0, 0]
+    Rotation: [0, 2.9802317e-08, 0, 1]
+    Scale: [10, 10, 0.9999979]
+  particle:
+    emissionRate: 30
+    duration: -1
+    localSpace: false
+    glow: false
+    maxParticles: 5000
+    shape: 1
+    emitterMode: 0
+    faceCamera: true
+    customLookDir: [0, 0, 1]
+    customUpDir: [0, 1, 0]
+    spawnPosition: [0, 0, 0]
+    spawnVelocity: [0, 0, -10]
+    lifetimeMin: 30
+    lifetimeMax: 40
+    startSizeMin: 0.5
+    startSizeMax: 1.5
+    startAlphaMin: 1
+    startAlphaMax: 1
+    lockXAxis: false
+    lockYAxis: false
+    rotationMin: 0
+    rotationMax: 360
+    rotationSpeedMin: -30
+    rotationSpeedMax: 30
+    velocityScaleMin: 2
+    velocityScaleMax: 2
+    colorKeys:
+      - time: 0
+        color: [0.3333333, 0.3333333, 0.3333333, 1]
+    affectors:
+      - type: TowardsPoint
+        target:
+          - 0
+          - 0
+          - 0
+        strength: 2
+    texturePath: data/Textures/asteroid.png
