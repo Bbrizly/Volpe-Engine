@@ -1,0 +1,111 @@
+effect:
+  name: Solar
+  combineDraws: false
+  emitters:
+    - EmitterName: orbitEffect1
+      Transform:
+        Position: [20, 0, 0]
+        Rotation: [0, 0, 0, 1]
+        Scale: [1, 1, 1]
+      ParticleData:
+        emissionRate: 30
+        duration: -1
+        localSpace: false
+        glow: false
+        glowIntensity: 0
+        maxParticles: 1000
+        shape: 1
+        emitterMode: 0
+        faceCamera: true
+        customLookDir: [0, 0, 1]
+        customUpDir: [0, 1, 0]
+        spawnPosition: [0, 0, 0]
+        spawnVelocity: [0, 0, -7]
+        lifetimeMin: 30
+        lifetimeMax: 40
+        startSizeMin: 0.5
+        startSizeMax: 1.5
+        startAlphaMin: 1
+        startAlphaMax: 1
+        lockXAxis: false
+        lockYAxis: false
+        lockZAxis: false
+        rotationMin: 0
+        rotationMax: 360
+        rotationSpeedMin: -7.5
+        rotationSpeedMax: 7.5
+        velocityScaleMin: 0
+        velocityScaleMax: 2
+        colorKeys:
+          - time: 0
+            color: [0.49509805, 0.49509805, 0.49509805, 1]
+          - time: 0.207
+            color: [0.17647058, 0.17647058, 0.17647058, 1]
+          - time: 0.62
+            color: [0.49411765, 0.49411765, 0.49411765, 1]
+          - time: 1
+            color: [0.1764706, 0.1764706, 0.1764706, 1]
+        affectors:
+          - type: TowardsPoint
+            target:
+              - 0
+              - 0
+              - 0
+            strength: 2
+        texturePath: data/Textures/asteroid.png
+    - EmitterName: orbitEffect
+      Transform:
+        Position: [0, 0, 0]
+        Rotation: [0.70710665, 0, 0, 0.7071069]
+        Scale: [25, 99.99998, 24.999815]
+      ParticleData:
+        emissionRate: 500
+        duration: -1
+        localSpace: false
+        glow: true
+        glowIntensity: 0
+        maxParticles: 3000
+        shape: 2
+        emitterMode: 0
+        faceCamera: true
+        customLookDir: [0, 0, 1]
+        customUpDir: [0, 1, 0]
+        spawnPosition: [0, 0, 0]
+        spawnVelocity: [0, -1336.6, 0]
+        lifetimeMin: 30
+        lifetimeMax: 40
+        startSizeMin: 0.5
+        startSizeMax: 1.5
+        startAlphaMin: 1
+        startAlphaMax: 1
+        lockXAxis: false
+        lockYAxis: false
+        lockZAxis: false
+        rotationMin: 0
+        rotationMax: 360
+        rotationSpeedMin: -7.5
+        rotationSpeedMax: 7.5
+        velocityScaleMin: 10
+        velocityScaleMax: 10
+        colorKeys:
+          - time: 0
+            color: [1, 1, 1, 1]
+          - time: 0.178
+            color: [0, 1, 1, 1]
+          - time: 0.485
+            color: [0.9999995, 0, 1, 1]
+          - time: 0.765
+            color: [0, 1, 0.029411554, 1]
+          - time: 1
+            color: [1, 1, 1, 1]
+        affectors:
+          - type: TowardsPoint
+            target:
+              - 0
+              - 0
+              - 0
+            strength: 5
+          - type: FadeOverLife
+            startAlpha: 1
+            endAlpha: 1
+        texturePath: data/Textures/smoke.png

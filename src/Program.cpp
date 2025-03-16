@@ -436,6 +436,14 @@ void Program::DrawDebugWindow()
     ImGui::End();
 }
 
+void deleteNode(Node* n)
+{
+    // if(n->getParent())
+    //         n->getParent()->removeChild(n);
+    Scene::Instance().RemoveNode(n);
+    n = nullptr;
+}
+
 void Program::DrawInspector()
 {
     float inspectorWidth = 300.0f;
@@ -465,15 +473,7 @@ void Program::DrawInspector()
     ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - 40);
     if (ImGui::SmallButton("Delete"))
     {
-        if(g_selectedNode->getParent())
-        {
-            g_selectedNode->getParent()->removeChild(g_selectedNode);
-            // if(auto* effectParent = dynamic_cast<EffectNode*>(g_selectedNode->getParent()))
-            // {
-                // effectParent->addEmitter
-            // }
-        }
-        Scene::Instance().RemoveNode(g_selectedNode);
+        deleteNode(g_selectedNode);
         g_selectedNode = nullptr;
         ImGui::End();
         return;
@@ -661,305 +661,313 @@ void Program::DrawInspector()
         #pragma endregion
         
         ImGui::Separator();
-        ImGui::Text("Particle System Controls");
-        if(ImGui::Button("Play")) {
-            emitter->Play();
+        // ImGui::Text("Particle System Controls");
+        if (ImGui::CollapsingHeader("Emitter Controls", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            if(ImGui::Button("Play")) {
+                emitter->Play();
+            }
+            ImGui::SameLine();
+            if(ImGui::Button("Pause")) {
+                emitter->Pause();
+            }
+            ImGui::SameLine();
+            if(ImGui::Button("Stop")) {
+                emitter->Stop();
+            }
+            ImGui::SameLine();
+            if(ImGui::Button("End")) { emitter->End(); }
+            ImGui::SameLine();
+            if(ImGui::Button("Restart")) {
+                emitter->Restart();
+            }
+        
+            ImGui::Text("Current State: %s",
+            (emitter->systemState == ParticleSystemState::Playing) ? "Playing" :
+            (emitter->systemState == ParticleSystemState::Paused)  ? "Paused"  : 
+                                                                    "Stopped");
         }
-        ImGui::SameLine();
-        if(ImGui::Button("Pause")) {
-            emitter->Pause();
-        }
-        ImGui::SameLine();
-        if(ImGui::Button("Stop")) {
-            emitter->Stop();
-        }
-        ImGui::SameLine();
-        if(ImGui::Button("End")) { emitter->End(); }
-        ImGui::SameLine();
-        if(ImGui::Button("Restart")) {
-            emitter->Restart();
-        }
-    
-        ImGui::Text("Current State: %s",
-           (emitter->systemState == ParticleSystemState::Playing) ? "Playing" :
-           (emitter->systemState == ParticleSystemState::Paused)  ? "Paused"  : 
-                                                                   "Stopped");
-
         //Emitter mode
-        
-        static const char* emitterModeNames[] = {"Continuous","Burst"};
-        int currentModeIndex = (emitter->emitterMode == EmitterMode::Continuous) ? 0 : 1;
-        if(ImGui::Combo("Emitter Mode", &currentModeIndex, emitterModeNames, IM_ARRAYSIZE(emitterModeNames)))
+        if (ImGui::CollapsingHeader("Emitter Settings", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            emitter->emitterMode = (currentModeIndex == 0) ? EmitterMode::Continuous : EmitterMode::Burst;
-        }                                                
+            static const char* emitterModeNames[] = {"Continuous","Burst"};
+            int currentModeIndex = (emitter->emitterMode == EmitterMode::Continuous) ? 0 : 1;
+            if(ImGui::Combo("Emitter Mode", &currentModeIndex, emitterModeNames, IM_ARRAYSIZE(emitterModeNames)))
+            {
+                emitter->emitterMode = (currentModeIndex == 0) ? EmitterMode::Continuous : EmitterMode::Burst;
+            }                                                
 
-        ImGui::Text("Active Particles: %d", emitter->getParticles().size());
+            ImGui::Text("Active Particles: %d", emitter->getParticles().size());
 
-        ImGui::PushItemWidth(60); 
-        ImGui::DragInt("Max Particles", &emitter->maxParticles, 1, 1, 100000);
-        ImGui::SameLine();
-        ImGui::DragFloat("Duration", &emitter->duration, 0.25, -1, 100000);
-        ImGui::PopItemWidth();
-
-        ImGui::DragFloat("Emission Rate", &emitter->emissionRate, 0.1f, 0.f, 9999.f);
-
-        // ImGui::Checkbox("Local Space", &emitter->localSpace);
-        ImGui::Checkbox("Glow", &emitter->glow);
-        if(emitter->glow)
-        {
-            ImGui::SameLine();
             ImGui::PushItemWidth(60); 
-            ImGui::DragFloat("Intensity", &emitter->glowIntensity, 0.05f, 0.0f);
+            ImGui::DragInt("Max Particles", &emitter->maxParticles, 1, 1, 100000);
+            ImGui::SameLine();
+            ImGui::DragFloat("Duration", &emitter->duration, 0.25, -1, 100000);
             ImGui::PopItemWidth();
-        }
-        
-        ImGui::Checkbox("Face Camera", &emitter->faceCamera);
-        if(!emitter->faceCamera)
-        {
-            ImGui::DragFloat3("Custom Look Dir", (float*)&emitter->customLookDir, 0.05f);
-            ImGui::DragFloat3("Custom Up Dir",   (float*)&emitter->customUpDir,   0.05f);
-        }
-        else
-        {
-            ImGui::Checkbox(",##XAxis", &emitter->lockXAxis);
-            ImGui::SameLine();
-            ImGui::Checkbox(",##YAxis", &emitter->lockYAxis);
-            ImGui::SameLine();
-            ImGui::Checkbox("Lock (x,y,z)##ZAxis", &emitter->lockZAxis);
-        }
-        ImGui::DragFloat2("Stretch (X,Y)", (float*)&emitter->defaultStretch, 0.01f, 0.0f, 10.0f);
 
-        // Emitter shape
-        static const char* shapeNames[] = {"Point","Sphere","Donut","Cone","Box","Mesh"};
-        int shapeIdx = (int)emitter->shape;
-        if(ImGui::Combo("Shape", &shapeIdx, shapeNames, IM_ARRAYSIZE(shapeNames))) {
-            emitter->shape = (EmitterShape)shapeIdx;
-        }
-        ImGui::PushItemWidth(50);
-        ImGui::DragFloat(" - ##size", (float*)&emitter->startSizeMin, 0.05f); ImGui::SameLine();
-        ImGui::DragFloat("Spawn Size range", (float*)&emitter->startSizeMax, 0.05f);
-        
-        ImGui::DragFloat(" - ##lifetime", (float*)&emitter->lifetimeMin, 0.05f); ImGui::SameLine();
-        ImGui::DragFloat("Lifetime range", (float*)&emitter->lifetimeMax, 0.05f);
-        
-        ImGui::DragFloat(" - ##rot", (float*)&emitter->rotationMin, 0.05f); ImGui::SameLine();
-        ImGui::DragFloat("Rotation range", (float*)&emitter->rotationMax, 0.05f);
-        
-        ImGui::DragFloat(" - ##rotSpeed", (float*)&emitter->rotationSpeedMin, 0.05f); ImGui::SameLine();
-        ImGui::DragFloat("Rotation Speed range", (float*)&emitter->rotationSpeedMax, 0.05f);
-        
-        ImGui::DragFloat(" - ##vel", (float*)&emitter->velocityScaleMin, 0.05f); ImGui::SameLine();
-        ImGui::DragFloat("Random Velocity range", (float*)&emitter->velocityScaleMax, 0.05f);
-        
-        ImGui::DragFloat(" - ##alpha", (float*)&emitter->startAlphaMin, 0.05f); ImGui::SameLine();
-        ImGui::DragFloat("Alpha range", (float*)&emitter->startAlphaMax, 0.05f);
+            ImGui::DragFloat("Emission Rate", &emitter->emissionRate, 0.1f, 0.f, 9999.f);
 
-        ImGui::PopItemWidth();
-
-        ImGui::DragFloat3("Spawn Pos", (float*)&emitter->spawnPosition, 0.05f);
-        ImGui::DragFloat3("Spawn Vel", (float*)&emitter->spawnVelocity, 0.05f);
-    
-        // Over-lifetime
-        #pragma region AFFECTORS
-        ImGui::Separator();
-        ImGui::Text("Affectors:");
-        static const char* affectorTypes[] = { "Acceleration", "FadeOverLife", "ScaleOverLife", "TowardsPoint", "AwayFromPoint", "DiePastAxis" };
-        static int selectedAffType = 0;
-
-        if(ImGui::BeginCombo("##affTypes", affectorTypes[selectedAffType]))
-        {
-            for (int i = 0; i < IM_ARRAYSIZE(affectorTypes); i++)
+            // ImGui::Checkbox("Local Space", &emitter->localSpace);
+            ImGui::Checkbox("Glow", &emitter->glow);
+            if(emitter->glow)
             {
-                bool isSelected = (selectedAffType == i);
-                if (ImGui::Selectable(affectorTypes[i], isSelected))
-                {
-                    selectedAffType = i;
-                }
-                if (isSelected) ImGui::SetItemDefaultFocus();
+                ImGui::SameLine();
+                ImGui::PushItemWidth(60); 
+                ImGui::DragFloat("Intensity", &emitter->glowIntensity, 0.05f, 0.0f);
+                ImGui::PopItemWidth();
             }
-            ImGui::EndCombo();
-        }
-        ImGui::SameLine();
-        if(ImGui::Button("Add Affector"))
-        {
-            Affector* newA = nullptr;
-            if(selectedAffType == 0) // Acceleration
+            
+            ImGui::Checkbox("Face Camera", &emitter->faceCamera);
+            if(!emitter->faceCamera)
             {
-                newA = new AccelerationAffector(glm::vec3(0,0,0));
-            }
-            else if(selectedAffType == 1) // FadeOverLife
-            {
-                newA = new FadeOverLifeAffector(1.0f, 0.0f);
-            }
-            else if(selectedAffType == 2) // ScaleOverLife
-            {
-                newA = new ScaleOverLifeAffector(1.f, 2.f);
-            }
-            else if(selectedAffType == 3) // TowardsPoint
-            {
-                newA = new TowardsPointAffector(glm::vec3(0,0,0), 1.0f);
-            }
-            else if(selectedAffType == 4) // AwayFromPoint
-            {
-                newA = new AwayFromPointAffector(glm::vec3(0,0,0), 1.0f);
-            }
-            if(selectedAffType == 5) // DiePastAxis
-            {
-                newA = new DiePastAxisAffector(1, -10.0f, true);
-            }
-            if(newA)
-            {
-                emitter->AddAffector(newA);
-            }
-        }
-
-        auto& affList = emitter->getAffectors();
-        for (int i = 0; i < (int)affList.size(); i++)
-        {
-            ImGui::PushID(i);
-            Affector* A = affList[i];
-            std::string uniqueID = "##" + std::to_string(i);
-
-            // DYNAMIC CAST HELL 
-            if(auto* av = dynamic_cast<AccelerationAffector*>(A))
-            {
-                ImGui::Text("AccelerationAffector");
-                float vel[3] = { av->velocityToAdd.x, av->velocityToAdd.y, av->velocityToAdd.z };
-                if(ImGui::DragFloat3("Acc##aff" , vel, 0.1f))
-                {
-                    av->velocityToAdd = glm::vec3(vel[0], vel[1], vel[2]);
-                }
-                ImGui::Checkbox("Local to Node", &av->localToNode);
-            }
-            else if(auto* fo = dynamic_cast<FadeOverLifeAffector*>(A))
-            {
-                ImGui::Text("FadeOverLifeAffector");
-                ImGui::DragFloat("Start Alpha", &fo->startAlpha, 0.01f, 0.f, 1.f);
-                ImGui::DragFloat("End Alpha", &fo->endAlpha, 0.01f, 0.f, 1.f);
-            }
-            else if(auto* so = dynamic_cast<ScaleOverLifeAffector*>(A))
-            {
-                ImGui::Text("ScaleOverLifeAffector");
-                ImGui::DragFloat("Start Scale", &so->startScale, 0.01f, 0.f, 10.f);
-                ImGui::DragFloat("End Scale", &so->endScale, 0.01f, 0.f, 10.f);
-            }
-            else if(auto* tp = dynamic_cast<TowardsPointAffector*>(A))
-            {
-                ImGui::Text("TowardsPointAffector");
-                float p[3] = { tp->target.x, tp->target.y, tp->target.z };
-                if(ImGui::DragFloat3("Target##tpa", p, 0.1f))
-                {
-                    tp->target = glm::vec3(p[0], p[1], p[2]);
-                }
-                ImGui::DragFloat("Strength", &tp->strength, 0.1f, -999.f, 999.f);
-                ImGui::Checkbox("Local to Node", &tp->localToNode);
-            }                                                           //ADD ABIlity to maybe set a node as pointAffector??? WOULD BE SICK WITH THE SUN
-            else if(auto* aw = dynamic_cast<AwayFromPointAffector*>(A)) //OMG I JUST REALIZED AWAY FROM POINT IS JUST TOWARDS POINT BUT NEGATIVEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE FUCKING DUMBASS
-            {
-                ImGui::Text("AwayFromPointAffector");
-                float c[3] = { aw->center.x, aw->center.y, aw->center.z };
-                if(ImGui::DragFloat3("Center##awa", c, 0.1f))
-                {
-                    aw->center = glm::vec3(c[0], c[1], c[2]);
-                }
-                ImGui::DragFloat("Strength", &aw->strength, 0.1f, -999.f, 999.f);
-                ImGui::Checkbox("Local to Node", &aw->localToNode);
-            }
-            else if(auto* dpa = dynamic_cast<DiePastAxisAffector*>(A))
-            {
-                ImGui::Text("DiePastAxisAffector");
-                // Combo box for axis selection:
-                const char* axisNames[] = { "X", "Y", "Z" };
-                int axisInt = dpa->axis;
-                if(ImGui::Combo("Axis", &axisInt, axisNames, IM_ARRAYSIZE(axisNames)))
-                {
-                    dpa->axis = axisInt;
-                }
-                ImGui::DragFloat("Threshold", &dpa->threshold, 0.1f, -1000.f, 1000.f);
-                ImGui::Checkbox("Die if > Threshold", &dpa->greaterThan);
-                ImGui::Checkbox("Local to Node", &dpa->localToNode);
+                ImGui::DragFloat3("Custom Look Dir", (float*)&emitter->customLookDir, 0.05f);
+                ImGui::DragFloat3("Custom Up Dir",   (float*)&emitter->customUpDir,   0.05f);
             }
             else
             {
-                ImGui::Text("Unknown Affector");
+                ImGui::Checkbox(",##XAxis", &emitter->lockXAxis);
+                ImGui::SameLine();
+                ImGui::Checkbox(",##YAxis", &emitter->lockYAxis);
+                ImGui::SameLine();
+                ImGui::Checkbox("Lock (x,y,z)##ZAxis", &emitter->lockZAxis);
             }
-            // ImGui::SameLine();
-            if(ImGui::SmallButton("Remove##aff"))
-            {
-                emitter->RemoveAffector(i);
-            }
-            ImGui::PopID();
+            ImGui::DragFloat2("Stretch (X,Y)", (float*)&emitter->defaultStretch, 0.01f, 0.0f, 10.0f);
         }
-#pragma endregion
-    
-        //Cplor gradient
-        if (ImGui::TreeNode("Color Gradient"))
+        if (ImGui::CollapsingHeader("Shape & Spawn Parameters"))
         {
-            // Loop through current keys
-            for (size_t i = 0; i < emitter->colorKeys.size(); i++)
-            {
-                ImGui::PushID(static_cast<int>(i));
-                float time = emitter->colorKeys[i].time;
-                // Create a temporary color array for ImGui
-                float col[4] = {
-                    emitter->colorKeys[i].color.r,
-                    emitter->colorKeys[i].color.g,
-                    emitter->colorKeys[i].color.b,
-                    emitter->colorKeys[i].color.a
-                };
-                if (ImGui::SliderFloat("Time", &time, 0.0f, 1.0f))
-                {
-                    emitter->colorKeys[i].time = time;
-                }
-                if (ImGui::ColorEdit4("Color", col))
-                {
-                    emitter->colorKeys[i].color = glm::vec4(col[0], col[1], col[2], col[3]);
-                }
-                if (ImGui::Button("Remove"))
-                {
-                    emitter->colorKeys.erase(emitter->colorKeys.begin() + i);
-                    ImGui::PopID();
-                    break; // break out of the loop so we don’t use an invalid iterator
-                }
-                ImGui::Separator();
-                ImGui::PopID();
+            // Emitter shape
+            static const char* shapeNames[] = {"Point","Sphere","Donut","Cone","Box","Mesh"};
+            int shapeIdx = (int)emitter->shape;
+            if(ImGui::Combo("Shape", &shapeIdx, shapeNames, IM_ARRAYSIZE(shapeNames))) {
+                emitter->shape = (EmitterShape)shapeIdx;
             }
-            // Button to add a new key (defaults to time 0 and white)
-            if (ImGui::Button("Add Key"))
-            {
-                ColorKey newKey;
-                newKey.time = 0.0f;
-                newKey.color = glm::vec4(1.0f);
-                emitter->colorKeys.push_back(newKey);
-            }
-            ImGui::TreePop();
+            ImGui::PushItemWidth(50);
+            ImGui::DragFloat(" - ##size", (float*)&emitter->startSizeMin, 0.05f); ImGui::SameLine();
+            ImGui::DragFloat("Spawn Size range", (float*)&emitter->startSizeMax, 0.05f);
+            
+            ImGui::DragFloat(" - ##lifetime", (float*)&emitter->lifetimeMin, 0.05f); ImGui::SameLine();
+            ImGui::DragFloat("Lifetime range", (float*)&emitter->lifetimeMax, 0.05f);
+            
+            ImGui::DragFloat(" - ##rot", (float*)&emitter->rotationMin, 0.05f); ImGui::SameLine();
+            ImGui::DragFloat("Rotation range", (float*)&emitter->rotationMax, 0.05f);
+            
+            ImGui::DragFloat(" - ##rotSpeed", (float*)&emitter->rotationSpeedMin, 0.05f); ImGui::SameLine();
+            ImGui::DragFloat("Rotation Speed range", (float*)&emitter->rotationSpeedMax, 0.05f);
+            
+            ImGui::DragFloat(" - ##vel", (float*)&emitter->velocityScaleMin, 0.05f); ImGui::SameLine();
+            ImGui::DragFloat("Random Velocity range", (float*)&emitter->velocityScaleMax, 0.05f);
+            
+            ImGui::DragFloat(" - ##alpha", (float*)&emitter->startAlphaMin, 0.05f); ImGui::SameLine();
+            ImGui::DragFloat("Alpha range", (float*)&emitter->startAlphaMax, 0.05f);
+
+            ImGui::PopItemWidth();
+
+            ImGui::DragFloat3("Spawn Pos", (float*)&emitter->spawnPosition, 0.05f);
+            ImGui::DragFloat3("Spawn Vel", (float*)&emitter->spawnVelocity, 0.05f);
         }
 
-        // Burst
-        if(ImGui::TreeNode("Bursts"))
+        if (ImGui::CollapsingHeader("Affectors"))
         {
-            for(size_t i=0; i<emitter->burstTimes.size(); i++)
+            // Over-lifetime
+            #pragma region AFFECTORS
+            ImGui::Separator();
+            ImGui::Text("Affectors:");
+            static const char* affectorTypes[] = { "Acceleration", "FadeOverLife", "ScaleOverLife", "TowardsPoint", "AwayFromPoint", "DiePastAxis" };
+            static int selectedAffType = 0;
+
+            if(ImGui::BeginCombo("##affTypes", affectorTypes[selectedAffType]))
             {
-                ImGui::PushID((int)i);
-                ImGui::DragFloat("Time", &emitter->burstTimes[i], 0.01f, 0.f, 999999.f);
-                ImGui::DragInt("Count", &emitter->burstCounts[i], 1, 0, 100000);
-                if(ImGui::Button("Remove")) {
-                    emitter->burstTimes.erase(emitter->burstTimes.begin() + i);
-                    emitter->burstCounts.erase(emitter->burstCounts.begin()+ i);
-                    ImGui::PopID();
-                    break;
+                for (int i = 0; i < IM_ARRAYSIZE(affectorTypes); i++)
+                {
+                    bool isSelected = (selectedAffType == i);
+                    if (ImGui::Selectable(affectorTypes[i], isSelected))
+                    {
+                        selectedAffType = i;
+                    }
+                    if (isSelected) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::SameLine();
+            if(ImGui::Button("Add Affector"))
+            {
+                Affector* newA = nullptr;
+                if(selectedAffType == 0) // Acceleration
+                {
+                    newA = new AccelerationAffector(glm::vec3(0,0,0));
+                }
+                else if(selectedAffType == 1) // FadeOverLife
+                {
+                    newA = new FadeOverLifeAffector(1.0f, 0.0f);
+                }
+                else if(selectedAffType == 2) // ScaleOverLife
+                {
+                    newA = new ScaleOverLifeAffector(1.f, 2.f);
+                }
+                else if(selectedAffType == 3) // TowardsPoint
+                {
+                    newA = new TowardsPointAffector(glm::vec3(0,0,0), 1.0f);
+                }
+                else if(selectedAffType == 4) // AwayFromPoint
+                {
+                    newA = new AwayFromPointAffector(glm::vec3(0,0,0), 1.0f);
+                }
+                if(selectedAffType == 5) // DiePastAxis
+                {
+                    newA = new DiePastAxisAffector(1, -10.0f, true);
+                }
+                if(newA)
+                {
+                    emitter->AddAffector(newA);
+                }
+            }
+
+            auto& affList = emitter->getAffectors();
+            for (int i = 0; i < (int)affList.size(); i++)
+            {
+                ImGui::PushID(i);
+                Affector* A = affList[i];
+                std::string uniqueID = "##" + std::to_string(i);
+
+                // DYNAMIC CAST HELL 
+                if(auto* av = dynamic_cast<AccelerationAffector*>(A))
+                {
+                    ImGui::Text("AccelerationAffector");
+                    float vel[3] = { av->velocityToAdd.x, av->velocityToAdd.y, av->velocityToAdd.z };
+                    if(ImGui::DragFloat3("Acc##aff" , vel, 0.1f))
+                    {
+                        av->velocityToAdd = glm::vec3(vel[0], vel[1], vel[2]);
+                    }
+                    ImGui::Checkbox("Local to Node", &av->localToNode);
+                }
+                else if(auto* fo = dynamic_cast<FadeOverLifeAffector*>(A))
+                {
+                    ImGui::Text("FadeOverLifeAffector");
+                    ImGui::DragFloat("Start Alpha", &fo->startAlpha, 0.01f, 0.f, 1.f);
+                    ImGui::DragFloat("End Alpha", &fo->endAlpha, 0.01f, 0.f, 1.f);
+                }
+                else if(auto* so = dynamic_cast<ScaleOverLifeAffector*>(A))
+                {
+                    ImGui::Text("ScaleOverLifeAffector");
+                    ImGui::DragFloat("Start Scale", &so->startScale, 0.01f, 0.f, 10.f);
+                    ImGui::DragFloat("End Scale", &so->endScale, 0.01f, 0.f, 10.f);
+                }
+                else if(auto* tp = dynamic_cast<TowardsPointAffector*>(A))
+                {
+                    ImGui::Text("TowardsPointAffector");
+                    float p[3] = { tp->target.x, tp->target.y, tp->target.z };
+                    if(ImGui::DragFloat3("Target##tpa", p, 0.1f))
+                    {
+                        tp->target = glm::vec3(p[0], p[1], p[2]);
+                    }
+                    ImGui::DragFloat("Strength", &tp->strength, 0.1f, -999.f, 999.f);
+                    ImGui::Checkbox("Local to Node", &tp->localToNode);
+                }                                                           //ADD ABIlity to maybe set a node as pointAffector??? WOULD BE SICK WITH THE SUN
+                else if(auto* aw = dynamic_cast<AwayFromPointAffector*>(A)) //OMG I JUST REALIZED AWAY FROM POINT IS JUST TOWARDS POINT BUT NEGATIVEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE FUCKING DUMBASS
+                {
+                    ImGui::Text("AwayFromPointAffector");
+                    float c[3] = { aw->center.x, aw->center.y, aw->center.z };
+                    if(ImGui::DragFloat3("Center##awa", c, 0.1f))
+                    {
+                        aw->center = glm::vec3(c[0], c[1], c[2]);
+                    }
+                    ImGui::DragFloat("Strength", &aw->strength, 0.1f, -999.f, 999.f);
+                    ImGui::Checkbox("Local to Node", &aw->localToNode);
+                }
+                else if(auto* dpa = dynamic_cast<DiePastAxisAffector*>(A))
+                {
+                    ImGui::Text("DiePastAxisAffector");
+                    // Combo box for axis selection:
+                    const char* axisNames[] = { "X", "Y", "Z" };
+                    int axisInt = dpa->axis;
+                    if(ImGui::Combo("Axis", &axisInt, axisNames, IM_ARRAYSIZE(axisNames)))
+                    {
+                        dpa->axis = axisInt;
+                    }
+                    ImGui::DragFloat("Threshold", &dpa->threshold, 0.1f, -1000.f, 1000.f);
+                    ImGui::Checkbox("Die if > Threshold", &dpa->greaterThan);
+                    ImGui::Checkbox("Local to Node", &dpa->localToNode);
+                }
+                else
+                {
+                    ImGui::Text("Unknown Affector");
+                }
+                // ImGui::SameLine();
+                if(ImGui::SmallButton("Remove##aff"))
+                {
+                    emitter->RemoveAffector(i);
                 }
                 ImGui::PopID();
-                ImGui::Separator();
             }
-            if(ImGui::Button("Add Burst")) {
-                emitter->burstTimes.push_back(1.f);
-                emitter->burstCounts.push_back(10);
+    #pragma endregion
+        
+            //Cplor gradient
+            if (ImGui::TreeNode("Color Gradient"))
+            {
+                // Loop through current keys
+                for (size_t i = 0; i < emitter->colorKeys.size(); i++)
+                {
+                    ImGui::PushID(static_cast<int>(i));
+                    float time = emitter->colorKeys[i].time;
+                    // Create a temporary color array for ImGui
+                    float col[4] = {
+                        emitter->colorKeys[i].color.r,
+                        emitter->colorKeys[i].color.g,
+                        emitter->colorKeys[i].color.b,
+                        emitter->colorKeys[i].color.a
+                    };
+                    if (ImGui::SliderFloat("Time", &time, 0.0f, 1.0f))
+                    {
+                        emitter->colorKeys[i].time = time;
+                    }
+                    if (ImGui::ColorEdit4("Color", col))
+                    {
+                        emitter->colorKeys[i].color = glm::vec4(col[0], col[1], col[2], col[3]);
+                    }
+                    if (ImGui::Button("Remove"))
+                    {
+                        emitter->colorKeys.erase(emitter->colorKeys.begin() + i);
+                        ImGui::PopID();
+                        break; // break out of the loop so we don’t use an invalid iterator
+                    }
+                    ImGui::Separator();
+                    ImGui::PopID();
+                }
+                // Button to add a new key (defaults to time 0 and white)
+                if (ImGui::Button("Add Key"))
+                {
+                    ColorKey newKey;
+                    newKey.time = 0.0f;
+                    newKey.color = glm::vec4(1.0f);
+                    emitter->colorKeys.push_back(newKey);
+                }
+                ImGui::TreePop();
             }
-            ImGui::TreePop();
-        }
 
+            // Burst
+            if(ImGui::TreeNode("Bursts"))
+            {
+                for(size_t i=0; i<emitter->burstTimes.size(); i++)
+                {
+                    ImGui::PushID((int)i);
+                    ImGui::DragFloat("Time", &emitter->burstTimes[i], 0.01f, 0.f, 999999.f);
+                    ImGui::DragInt("Count", &emitter->burstCounts[i], 1, 0, 100000);
+                    if(ImGui::Button("Remove")) {
+                        emitter->burstTimes.erase(emitter->burstTimes.begin() + i);
+                        emitter->burstCounts.erase(emitter->burstCounts.begin()+ i);
+                        ImGui::PopID();
+                        break;
+                    }
+                    ImGui::PopID();
+                    ImGui::Separator();
+                }
+                if(ImGui::Button("Add Burst")) {
+                    emitter->burstTimes.push_back(1.f);
+                    emitter->burstCounts.push_back(10);
+                }
+                ImGui::TreePop();
+            }
+        }
         if (ImGui::CollapsingHeader("Debug: Active Particles"))
         {
             // Number of active
@@ -1029,9 +1037,14 @@ void Program::DrawInspector()
             {
                 
                 std::string filename = std::string("data/Saved/") + loadEffectFile;
-                effect = SceneSerializer::LoadEffectNode(Scene::Instance(), filename);
                 
-                // EffectNode* newFx = SceneSerializer::LoadEffectNode(Scene::Instance(), loadEffectFile);
+                // delete g_selectedNode;
+                // g_selectedNode = nullptr;
+                deleteNode(g_selectedNode);
+                EffectNode* newFx = SceneSerializer::LoadEffectNode(Scene::Instance(), filename);
+                g_selectedNode = newFx;
+
+                // effect = newFx;
                 ImGui::CloseCurrentPopup();
             }
             ImGui::SameLine();
@@ -1352,6 +1365,13 @@ void Program::DrawTopBar()
             SceneSerializer::LoadScene(Scene::Instance(), "data/Saved/magicspell");
             Scene::Instance().ReBuildTree();
         }
+        if (ImGui::MenuItem("Jet"))
+        {
+            SwitchScene(SceneType::Particle);
+            SceneSerializer::LoadScene(Scene::Instance(), "data/Saved/jet");
+            Scene::Instance().ReBuildTree();
+        }
+
 
 
         ImGui::EndMainMenuBar();

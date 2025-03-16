@@ -1,0 +1,70 @@
+Scene: VolpeScene
+Nodes:
+  - Name: cube_2
+    Type: DebugCube
+    Color: [0.35686275, 0.35686275, 0.35686275]
+    Transform:
+      Position: [2.9, 0.5, 0]
+      Rotation: [-6.181725e-08, -0.70749545, -6.181726e-08, 0.7067179]
+      Scale: [0.2599975, 0.24999829, 0.9998929]
+  - Name: light_3
+    Type: LightNode
+    Color: [0.73039216, 0.73039216, 0.73039216]
+    Intensity: 9.9
+    Radius: 20.3
+    Transform:
+      Position: [0.9, 2.5, -3.9]
+      Rotation: [0, 0, 0, 1]
+      Scale: [1, 1, 1]
+  - Name: jet
+    Type: ParticleNode
+    ParticleData:
+      emissionRate: 10
+      duration: -1
+      localSpace: false
+      glow: false
+      glowIntensity: 0
+      maxParticles: 1000
+      shape: 1
+      emitterMode: 0
+      faceCamera: true
+      customLookDir: [0, 0, 1]
+      customUpDir: [0, 1, 0]
+      spawnPosition: [0, 0, 0]
+      spawnVelocity: [0, 0, 0]
+      lifetimeMin: 1
+      lifetimeMax: 1
+      startSizeMin: 1
+      startSizeMax: 1
+      startAlphaMin: 1
+      startAlphaMax: 1
+      lockXAxis: false
+      lockYAxis: false
+      lockZAxis: false
+      rotationMin: 0
+      rotationMax: 360
+      rotationSpeedMin: -7.5
+      rotationSpeedMax: 7.5
+      velocityScaleMin: 0.01
+      velocityScaleMax: 0.05
+      colorKeys:
+        - time: 0
+          color: [1, 0.7058823, 0, 1]
+        - time: 0.447
+          color: [1, 0.52941173, 0, 1]
+        - time: 1
+          color: [0.33823532, 0.33823532, 0.33823532, 1]
+      affectors:
+        - type: Acceleration
+          velocity:
+            - 0
+            - 0
+            - -604.7
+        - type: ScaleOverLife
+          startScale: 0.48
+          endScale: 0
+      texturePath: data/Textures/smoke.png
+    Transform:
+      Position: [0, 0, -0.5]
+      Rotation: [0, 2.9802314e-08, 0, 1]
+      Scale: [0.08, 0.08, 0.08]
